@@ -17,7 +17,7 @@ import {
 } from "react-icons/si";
 
 // Import additional icon sets for technologies that might not be in simple-icons
-import { FaUniversalAccess, FaGraduationCap, FaGlobeAmericas, FaBriefcase, FaUsers } from "react-icons/fa";
+import { FaUniversalAccess, FaGraduationCap, FaGlobeAmericas, FaBriefcase, FaUsers, FaLaptopCode, FaServer, FaTools } from "react-icons/fa";
 
 // Import Aceternity UI components
 import { BackgroundGradient } from "@/components/ui/aceternity/background-gradient";
@@ -84,7 +84,7 @@ export default function AboutPage() {
               <BackgroundGradient className="rounded-2xl h-full">
                 <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-xl flex items-center justify-center">
                   <img
-                    src="/images/Jacob City.png"
+                    src="/images/optimized/Jacob Boreas.webp"
                     alt="Jacob Barkin"
                     className="w-full h-full object-cover"
                   />
@@ -167,8 +167,9 @@ export default function AboutPage() {
               className="border-none shadow-none p-0 bg-transparent mb-8 sm:mb-10 md:mb-12 mx-auto text-center"
             />
 
-            <div className="max-w-3xl mx-auto">
-              <div className="relative pl-6 sm:pl-8 pb-8 sm:pb-12 border-l-2 border-primary/30 last:border-0">
+            <div className="max-w-3xl mx-auto space-y-8">
+              {/* IT Student Employee */}
+              <div className="relative pl-6 sm:pl-8 pb-8 sm:pb-12 border-l-2 border-primary/30">
                 <MovingBorder className="p-0.5" containerClassName="absolute top-0 left-0 -translate-x-1/2 rounded-full" duration={5000}>
                   <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-background flex items-center justify-center">
                     <FaBriefcase className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
@@ -177,6 +178,79 @@ export default function AboutPage() {
 
                 <BackgroundGradient className="rounded-xl">
                   <Card className="border-0 bg-background/80 backdrop-blur-sm p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4">
+                      <h3 className="text-lg sm:text-xl font-semibold">Kent Denver School</h3>
+                      <span className="text-sm text-muted-foreground mt-1 sm:mt-0">2025 - Present</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <MovingBorder className="p-0.5" containerClassName="rounded-md" duration={5000}>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-background rounded-md p-1 flex items-center justify-center">
+                          <FaLaptopCode className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                        </div>
+                      </MovingBorder>
+                      <div>
+                        <p className="font-medium text-sm sm:text-base">Information Technology Student Employee</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Software Development & IT Support</p>
+                      </div>
+                    </div>
+
+                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
+                      I am working on many projects for Kent Denver to improve student experience and make it easy for people to do their work. This includes:
+                    </p>
+
+                    <ul className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 space-y-2 ml-4">
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>A robust emergency management app that allows administrators to activate all of the proper emergency protocols in one, easy to use, comprehensive solution. This includes activating our PA system to announce the situation, setting digital signage to display important messages, controlling our Access Control system to properly lock or open doors, and contacting parents and the wider community about what is happening</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>A inventory management solution for our school&apos;s maker space built on Snipe-IT</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>A chatbot for students and faculty which allows them to interact with our LMS, Canvas, and making it easier to learn about what they need to do</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>A beta version of a comment writer that allows teachers to write personalized comments for students using AI instead of using copy-pasted templates</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>An intuitive app for grounds, custodial, and maintenance employees to view, update and check tickets in our school&apos;s Freshdesk ticketing solution</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>An in progress integration with Canvas for the Secure Exam Browser to be able to directly integrate Canvas quizzes into SEB for easier student and instructor workflows</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>A Gmail addon that enhances and improves the functionality of our school&apos;s soft phone system by allowing users to set Do not Disturb schedules, view directories with all extensions, and click-to-call functionality for easier dialing</span>
+                      </li>
+                    </ul>
+
+                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
+                      In addition to this, I have also done tech support for students and employees, and have helped set up new devices for them.
+                    </p>
+
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      Through this job, I have learned so much about the complexities and inner-workings of an IT department, and I have learned how to use so many different technologies. I have gotten more adept at troubleshooting and solving problems, and finding solutions to make the user experience better.
+                    </p>
+                  </Card>
+                </BackgroundGradient>
+              </div>
+
+              {/* Youth Advisory Board */}
+              <div className="relative pl-6 sm:pl-8 pb-8 sm:pb-12 border-l-2 border-primary/30 last:border-0">
+                <MovingBorder className="p-0.5" containerClassName="absolute top-0 left-0 -translate-x-1/2 rounded-full" duration={5000}>
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-background flex items-center justify-center">
+                    <FaBriefcase className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                  </div>
+                </MovingBorder>
+
+                <BackgroundGradient className="rounded-xl">
+                  <Card className="border-0 bg-background/80 backdrop-blur-sm p-4 sm:p-6 relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4">
                       <h3 className="text-lg sm:text-xl font-semibold">Young Americans Center For Financial Education</h3>
                       <span className="text-sm text-muted-foreground mt-1 sm:mt-0">2024 - Present</span>
@@ -198,12 +272,12 @@ export default function AboutPage() {
                       As a member of the Youth Advisory Board, I provide insights and perspectives on banking products, services, and programs designed for young people. I collaborate with a diverse group of students from across Colorado to advise Young Americans Bank and the nonprofit programs of Young Americans Center for Financial Education. This role has allowed me to develop skills in leadership, business etiquette, and financial literacy while serving as an ambassador for the organization at special events and functions.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-20">
                       <a
                         href="https://yacenter.org"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center text-primary hover:underline text-sm sm:text-base"
+                        className="inline-flex items-center text-primary hover:underline text-sm sm:text-base cursor-pointer"
                       >
                         <FaGlobeAmericas className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                         Visit Organization Website
@@ -213,7 +287,7 @@ export default function AboutPage() {
                         href="https://yacenter.org/about-us/youth-board/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center text-primary hover:underline text-sm sm:text-base"
+                        className="inline-flex items-center text-primary hover:underline text-sm sm:text-base cursor-pointer"
                       >
                         <FaUsers className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                         Learn About the Youth Board
@@ -398,10 +472,12 @@ function SkillCard({
   icon,
   title,
   gradientPosition,
+  index,
 }: Readonly<{
   icon: React.ReactNode,
   title: string,
   gradientPosition?: { x: number, y: number },
+  index?: number,
 }>) {
   return (
     <div className="group h-full perspective-[1000px] transform-gpu transition-all duration-300 hover:scale-[1.03]">
@@ -409,6 +485,7 @@ function SkillCard({
         className="rounded-xl h-full"
         gradientPosition={gradientPosition}
         useGlobalGradient={true}
+        index={index}
       >
         <Card className="overflow-hidden border-0 bg-background/80 backdrop-blur-sm h-full relative group-hover:shadow-xl transition-all duration-300">
           {/* Glass morphism effect */}

@@ -38,7 +38,7 @@ export const metadata: Metadata = {
         alt: "Jacob Barkin Logo",
       },
       {
-        url: "/images/Jacob City.png",
+        url: "/images/Jacob Boreas.jpeg",
         width: 1200,
         height: 630,
         alt: "Jacob Barkin Profile",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Jacob Barkin | Developer & Technology Consultant",
     description: "Developer, technology consultant, and technology enthusiast. Explore my projects, interests, and professional journey.",
-    images: ["/images/Jacob City.png"],
+    images: ["/images/Jacob Boreas.jpeg"],
     creator: "@jacobbarkin",
     site: "@jacobbarkin",
   },

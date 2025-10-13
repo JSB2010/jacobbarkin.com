@@ -22,7 +22,9 @@ import {
   FaCalculator,
   FaFlask,
   FaGlobe,
-  FaHistory
+  FaHistory,
+  FaCamera,
+  FaBalanceScale
 } from "react-icons/fa";
 import { ThreeDCard } from "@/components/ui/aceternity/3d-card";
 
@@ -56,18 +58,20 @@ export interface AcademicYearProps {
 const getClassIcon = (className: string) => {
   const lowerName = className.toLowerCase();
 
-  if (lowerName.includes("algebra") || lowerName.includes("math")) {
+  if (lowerName.includes("calculus") || lowerName.includes("algebra") || lowerName.includes("math") || lowerName.includes("precalculus")) {
     return <FaCalculator className="h-5 w-5" />;
-  } else if (lowerName.includes("english")) {
+  } else if (lowerName.includes("english") || lowerName.includes("journalism")) {
     return <FaBook className="h-5 w-5" />;
-  } else if (lowerName.includes("biology") || lowerName.includes("science")) {
+  } else if (lowerName.includes("chemistry") || lowerName.includes("biology") || lowerName.includes("science")) {
     return <FaFlask className="h-5 w-5" />;
-  } else if (lowerName.includes("history") || lowerName.includes("world")) {
-    return <FaHistory className="h-5 w-5" />;
+  } else if (lowerName.includes("history") || lowerName.includes("world") || lowerName.includes("policy") || lowerName.includes("debate")) {
+    return <FaBalanceScale className="h-5 w-5" />;
   } else if (lowerName.includes("spanish") || lowerName.includes("language")) {
     return <FaLanguage className="h-5 w-5" />;
   } else if (lowerName.includes("computer") || lowerName.includes("cs")) {
     return <FaCode className="h-5 w-5" />;
+  } else if (lowerName.includes("photography")) {
+    return <FaCamera className="h-5 w-5" />;
   } else {
     return <FaChalkboardTeacher className="h-5 w-5" />;
   }
@@ -75,10 +79,12 @@ const getClassIcon = (className: string) => {
 
 export function AcademicYear({ year, yearLabel, classes, sports, extraCurriculars, defaultOpen = false }: AcademicYearProps) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  // Create a unique ID for this accordion based on the year
+  const accordionId = `year-${year.replace(/\s+/g, '-')}`;
 
   // Handle accordion state change
   const handleAccordionChange = (value: string | undefined) => {
-    setIsOpen(value === "year");
+    setIsOpen(value === accordionId);
   };
 
   return (
@@ -94,15 +100,15 @@ export function AcademicYear({ year, yearLabel, classes, sports, extraCurricular
       </MovingBorder>
 
       <BackgroundGradient className="rounded-xl">
-        <Card className={`border-0 bg-background/80 backdrop-blur-sm transition-shadow duration-300 ${isOpen ? 'shadow-lg' : 'shadow-md'}`}>
-          <CardContent className="p-4 sm:p-6">
+        <Card className={`border-0 bg-background/80 backdrop-blur-sm transition-shadow duration-300 relative z-10 ${isOpen ? 'shadow-lg' : 'shadow-md'}`}>
+          <CardContent className="p-4 sm:p-6 relative z-10">
             <Accordion
               type="single"
               collapsible
-              defaultValue={defaultOpen ? "year" : undefined}
+              defaultValue={defaultOpen ? accordionId : undefined}
               onValueChange={handleAccordionChange}
             >
-              <AccordionItem value="year" className="border-none">
+              <AccordionItem value={accordionId} className="border-none">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
                   <AccordionTrigger className="py-2 hover:no-underline w-full">
                     <div className="flex items-center gap-3 w-full">

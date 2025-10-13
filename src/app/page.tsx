@@ -29,8 +29,9 @@ import Image from "next/image";
 import { BasicImage } from "@/components/ui/basic-image";
 
 export default function Home() {
-  // State to store the current greeting
-  const [greeting, setGreeting] = useState("Welcome");
+  // State to store the current greeting - start with null to avoid hydration mismatch
+  const [greeting, setGreeting] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Function to get time-based greeting
   const getTimeGreeting = () => {
@@ -60,6 +61,8 @@ export default function Home() {
 
   // Update greeting when component mounts and set interval to update it
   useEffect(() => {
+    // Mark component as mounted to avoid hydration mismatch
+    setIsMounted(true);
     // Set initial greeting
     setGreeting(getTimeGreeting());
 
@@ -97,7 +100,7 @@ export default function Home() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
                   </span>
-                  {greeting}, welcome to my portfolio!
+                  {isMounted && greeting ? `${greeting}, welcome to my portfolio!` : 'Welcome to my portfolio!'}
                 </div>
               </MovingBorder>
 
@@ -111,10 +114,11 @@ export default function Home() {
                   <BackgroundGradient className="rounded-full">
                     <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden border-2 border-background shadow-xl">
                       <Image
-                        src="/images/Jacob City.png"
+                        src="/images/optimized/Jacob Boreas.webp"
                         alt="Jacob Barkin"
                         fill
                         className="object-cover"
+                        style={{ objectPosition: 'center 30%' }}
                         priority={true}
                         quality={90}
                       />
@@ -181,10 +185,11 @@ export default function Home() {
               <BackgroundGradient className="rounded-full">
                 <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-full overflow-hidden border-2 sm:border-4 border-background shadow-xl">
                   <Image
-                    src="/images/Jacob City.png"
+                    src="/images/optimized/Jacob Boreas.webp"
                     alt="Jacob Barkin"
                     fill
                     className="object-cover"
+                    style={{ objectPosition: 'center 30%' }}
                     priority={true}
                     quality={90}
                   />

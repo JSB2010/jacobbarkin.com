@@ -94,7 +94,7 @@ export const BackgroundGradient = ({
     >
       <div
         className={cn(
-          "pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300",
+          "pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 z-0",
           isHovered && "opacity-100"
         )}
         style={{
@@ -103,12 +103,14 @@ export const BackgroundGradient = ({
       />
       <div
         className={cn(
-          "absolute inset-0 z-10 opacity-100 transition-opacity duration-500",
+          "pointer-events-none absolute inset-0 z-0 opacity-100 transition-opacity duration-500",
           className
         )}
         style={getGradientStyle()}
       />
-      {children}
+      <div className="relative z-10">
+        {children}
+      </div>
     </div>
   );
 };

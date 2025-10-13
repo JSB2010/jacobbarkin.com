@@ -76,6 +76,8 @@ const nextConfig = {
       },
 
     ],
+    // Configure allowed quality values for Next.js 16+ compatibility
+    qualities: [75, 85, 90, 95, 100],
     // Unoptimize images in production for Cloudflare Pages
     unoptimized: process.env.NODE_ENV === 'production',
   },

@@ -10,8 +10,8 @@ const ASSETS_TO_CACHE = [
   '/public-transportation',
   '/images/mountains-bg.jpg',
   '/images/Updated logo.png',
-  '/images/profile.jpg',
-  '/images/Jacob City.png',
+  '/images/Jacob Boreas.jpeg',
+  '/images/optimized/Jacob Boreas.webp',
   // Add more assets as needed
 ];
 

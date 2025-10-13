@@ -55,6 +55,8 @@ node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+build-output.log
+*.log
 
 # local env files
 .env
@@ -79,3 +81,7 @@ next-env.d.ts
 *.bak
 *.backup
 *.old
+
+# Temporary optimized files
+src/app/optimized/
+public/favicon.ico.png
