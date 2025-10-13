@@ -108,7 +108,7 @@ export const BackgroundGradient = ({
         )}
         style={getGradientStyle()}
       />
-      <div className="relative z-10">
+      <div className="relative z-10 h-full">
         {children}
       </div>
     </div>

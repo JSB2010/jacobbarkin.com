@@ -214,7 +214,7 @@ export default function Home() {
               </TextRevealCard>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 justify-items-center mx-auto max-w-screen-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 justify-items-center items-stretch mx-auto max-w-screen-xl">
               {/* Technology Card */}
               <BackgroundGradient className="rounded-xl h-full">
                 <Card className="border-0 bg-background/80 backdrop-blur-sm h-full flex flex-col">
