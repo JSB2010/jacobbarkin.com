@@ -82,13 +82,6 @@ export default function AdminSubmissionsPage() {
   const [orderBy] = useState('$createdAt');
   const [orderType] = useState('desc');
 
-  // Fetch submissions when filters, pagination, or sorting changes
-  useEffect(() => {
-    if (user) {
-      fetchSubmissions();
-    }
-  }, [user, fetchSubmissions]);
-
   // Fetch submissions directly from Appwrite
   const fetchSubmissions = useCallback(async () => {
     setIsLoading(true);
@@ -138,6 +131,13 @@ export default function AdminSubmissionsPage() {
       setIsLoading(false);
     }
   }, [limit, offset, statusFilter, priorityFilter, orderBy, orderType, router]);
+
+  // Fetch submissions when filters, pagination, or sorting changes
+  useEffect(() => {
+    if (user) {
+      fetchSubmissions();
+    }
+  }, [user, fetchSubmissions]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
