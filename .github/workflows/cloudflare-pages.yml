@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -81,7 +81,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/modern-redesign-shadcn'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download build artifact
         uses: actions/download-artifact@v6
