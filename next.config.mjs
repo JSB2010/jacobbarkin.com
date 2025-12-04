@@ -53,11 +53,10 @@ const nextConfig = {
     optimizeCss: true,
     // Enable memory cache for faster builds
     memoryBasedWorkersCount: true,
-    // Enable optimized font loading
-    optimizeFonts: true,
-    // Enable server components optimization
-    serverComponentsExternalPackages: [],
   },
+
+  // Server external packages (moved from experimental.serverComponentsExternalPackages)
+  serverExternalPackages: [],
 
   // Image configuration
   images: {
