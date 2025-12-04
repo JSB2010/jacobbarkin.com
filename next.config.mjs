@@ -81,11 +81,6 @@ const nextConfig = {
     unoptimized: process.env.NODE_ENV === 'production',
   },
 
-  // Disable ESLint during builds
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Disable TypeScript checking during build
   typescript: {
     ignoreBuildErrors: true,
