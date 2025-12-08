@@ -83,7 +83,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/webpack": "^5.28.5",
     "archiver": "^7.0.1",
-    "baseline-browser-mapping": "^2.9.0",
+    "baseline-browser-mapping": "^2.9.5",
     "critters": "^0.0.25",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
@@ -101,7 +101,7 @@
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
-    "wrangler": "^4.52.1"
+    "wrangler": "^4.53.0"
   },
   "overrides": {
     "framer-motion": {
