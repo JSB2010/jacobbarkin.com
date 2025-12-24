@@ -25,6 +25,24 @@
 
   const VERSION = '2.2.0';
   const SITE_URL = 'https://jacobbarkin.com';
+  
+  // Helper function to get the correct image path
+  // Uses relative path if on same domain, absolute URL if embedded elsewhere
+  function getImagePath(filename) {
+    const currentDomain = window.location.hostname;
+    const siteDomain = 'jacobbarkin.com';
+    
+    // If we're on the same domain or localhost/preview, use relative path
+    if (currentDomain === siteDomain || 
+        currentDomain === 'localhost' || 
+        currentDomain.includes('pages.dev') ||
+        currentDomain.includes('github.io')) {
+      return `/images/${filename}`;
+    }
+    
+    // Otherwise use absolute URL for external embeds
+    return `${SITE_URL}/images/${filename}`;
+  }
 
   // Detect if we should auto-inject
   const currentScript = document.currentScript;
@@ -594,6 +612,9 @@
                           variant === 'gradient-logo' || variant === 'icon-initials' ||
                           variant === 'stacked' || variant === 'logo-only' || variant === 'brand-bar';
 
+      // Get the correct image path
+      const logoPath = getImagePath('Updated%20logo.png');
+
       // Generate content based on variant
       let content = '';
       
@@ -606,7 +627,7 @@
         `;
       } else if (variant === 'company-name') {
         content = `
-          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
           <span class="credit-text">
             Designed by <span class="company-name">Ask The Kidz</span>
           </span>
@@ -614,7 +635,7 @@
       } else if (variant === 'gradient-logo') {
         content = `
           <div class="gradient-logo-wrapper">
-            <img src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+            <img src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
           </div>
           <span class="credit-text">
             Designed by <span class="credit-name">Jacob Barkin</span>
@@ -622,7 +643,7 @@
         `;
       } else if (variant === 'icon-initials') {
         content = `
-          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
           <span class="initials-text">JB</span>
           <span class="credit-text">
             Designed by <span class="credit-name">Jacob Barkin</span>
@@ -630,19 +651,19 @@
         `;
       } else if (variant === 'stacked') {
         content = `
-          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
           <span class="credit-text">
             Designed by <span class="credit-name">Jacob Barkin</span>
           </span>
         `;
       } else if (variant === 'logo-only') {
         content = `
-          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
         `;
       } else if (variant === 'brand-bar') {
         content = `
           <div class="brand-bar-content">
-            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+            <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
             <div class="brand-divider"></div>
             <span class="credit-text">
               Designed by <span class="credit-name">Jacob Barkin</span>
@@ -652,7 +673,7 @@
       } else {
         // Default content for chip, minimal, text, logo-prominent
         content = `
-          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <img class="logo-icon" src="${logoPath}" alt="" width="16" height="16" loading="lazy" decoding="async" />
           <span class="credit-text">
             Designed by <span class="credit-name">Jacob Barkin</span>
           </span>
