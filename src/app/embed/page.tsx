@@ -222,6 +222,60 @@ Demo: https://jacobbarkin.com/embed/demo.html`;
         </div>
       </Card>
 
+      {/* Brand Variants */}
+      <Card className="p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          Brand-Focused Variants
+          <span className="ml-2 px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 text-xs rounded-full font-medium">New!</span>
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Enhanced branding options featuring initials, company name, and creative logo presentations
+        </p>
+        <div className="grid gap-4">
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🔷 Logo Prominent</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="logo-prominent"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Larger logo with minimal text - emphasizes brand identity</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🎯 Initials Badge</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="initials-badge"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Stylized &quot;JB&quot; in gradient badge - modern and memorable</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🏪 Company Name</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="company-name"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Features &quot;Ask The Kidz&quot; with gradient styling</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🌈 Gradient Logo</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="gradient-logo"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Logo in colorful gradient circle - eye-catching</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">⚡ Icon + Initials</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="icon-initials"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Combined logo and &quot;JB&quot; initials - dual branding</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">📚 Stacked</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="stacked"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Vertical layout with logo on top - compact</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🎪 Logo Only</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="logo-only"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Just the logo - minimal footprint (hover for details)</p>
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm font-medium text-foreground mb-2">🎨 Brand Bar</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="brand-bar"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Full-width bar with gradient background - premium feel</p>
+          </div>
+        </div>
+      </Card>
+
       {/* Sizes */}
       <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">📐 Sizes</h2>
@@ -284,6 +338,7 @@ Demo: https://jacobbarkin.com/embed/demo.html`;
           <div className="border rounded-lg p-4">
             <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-variant</code>
             <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">chip</strong> (default) | minimal | text</p>
+            <p className="text-xs text-muted-foreground mt-1"><strong className="text-foreground">Brand variants:</strong> logo-prominent | initials-badge | company-name | gradient-logo | icon-initials | stacked | logo-only | brand-bar</p>
           </div>
           <div className="border rounded-lg p-4">
             <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-size</code>
@@ -368,7 +423,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       'jb-credit': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
-        'data-variant'?: 'chip' | 'minimal' | 'text';
+        'data-variant'?: 'chip' | 'minimal' | 'text' | 'logo-prominent' | 'initials-badge' | 'company-name' | 'gradient-logo' | 'icon-initials' | 'stacked' | 'logo-only' | 'brand-bar';
         'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'center' | 'left' | 'right';
         'data-theme'?: 'auto' | 'light' | 'dark';

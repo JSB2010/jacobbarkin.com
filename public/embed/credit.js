@@ -9,13 +9,13 @@
  *   <script src="https://jacobbarkin.com/embed/credit.js" data-auto></script>
  *
  * Attributes:
- *   data-variant="chip|minimal|text" - Style variant (default: chip)
+ *   data-variant="chip|minimal|text|logo-prominent|initials-badge|company-name|gradient-logo|icon-initials|stacked|logo-only|brand-bar" - Style variant (default: chip)
  *   data-theme="auto|light|dark" - Color theme (default: auto-detects)
  *   data-align="center|left|right" - Alignment (default: center)
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
  *
- * @version 2.1.0
+ * @version 2.2.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -23,7 +23,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.1.0';
+  const VERSION = '2.2.0';
   const SITE_URL = 'https://jacobbarkin.com';
 
   // Detect if we should auto-inject
@@ -338,6 +338,169 @@
       // Variant: "chip" (default) - logo + full effects
       // Variant: "minimal" - no logo, chip appears on hover
       // Variant: "text" - just text, no chip at all
+      // NEW BRAND VARIANTS:
+      // Variant: "logo-prominent" - larger logo with minimal text
+      // Variant: "initials-badge" - JB in stylized badge
+      // Variant: "company-name" - Ask The Kidz with logo
+      // Variant: "gradient-logo" - logo in gradient circle
+      // Variant: "icon-initials" - combined approach
+      // Variant: "stacked" - logo above text
+      // Variant: "logo-only" - just logo with tooltip
+      // Variant: "brand-bar" - full-width branded bar
+
+      if (variant === 'logo-prominent') {
+        styles += `
+        .logo-icon {
+          width: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+          height: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+        }
+        .credit-text {
+          font-size: ${s.font === '0.6875rem' ? '0.625rem' : s.font === '0.75rem' ? '0.6875rem' : '0.75rem'};
+        }
+`;
+      }
+
+      if (variant === 'initials-badge') {
+        styles += `
+        .logo-icon { display: none; }
+        .initials-badge {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+          height: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+          border-radius: 8px;
+          background: linear-gradient(135deg, ${c.primary}, ${c.secondary}, ${c.accent});
+          color: white;
+          font-weight: 700;
+          font-size: ${s.font === '0.6875rem' ? '0.625rem' : s.font === '0.75rem' ? '0.6875rem' : '0.75rem'};
+          flex-shrink: 0;
+          transition: transform 0.25s ease;
+        }
+        .jb-credit-chip:hover .initials-badge {
+          transform: scale(1.1) rotate(5deg);
+        }
+`;
+      }
+
+      if (variant === 'company-name') {
+        styles += `
+        .credit-text .company-name {
+          display: inline;
+          font-weight: 700;
+          background: linear-gradient(135deg, ${c.accent}, ${c.secondary});
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+`;
+      }
+
+      if (variant === 'gradient-logo') {
+        styles += `
+        .logo-icon { display: none; }
+        .gradient-logo-wrapper {
+          position: relative;
+          z-index: 2;
+          width: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+          height: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+          border-radius: 50%;
+          background: linear-gradient(135deg, ${c.primary}, ${c.secondary}, ${c.accent});
+          padding: ${s.logo === '12px' ? '4px' : s.logo === '16px' ? '5px' : '6px'};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: transform 0.25s ease;
+        }
+        .gradient-logo-wrapper img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+        }
+        .jb-credit-chip:hover .gradient-logo-wrapper {
+          transform: scale(1.1);
+        }
+`;
+      }
+
+      if (variant === 'icon-initials') {
+        styles += `
+        .logo-icon {
+          width: ${s.logo === '12px' ? '18px' : s.logo === '16px' ? '24px' : '30px'};
+          height: ${s.logo === '12px' ? '18px' : s.logo === '16px' ? '24px' : '30px'};
+        }
+        .initials-text {
+          font-weight: 700;
+          font-size: ${s.font === '0.6875rem' ? '0.75rem' : s.font === '0.75rem' ? '0.875rem' : '1rem'};
+          background: linear-gradient(135deg, ${c.primary}, ${c.secondary});
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-left: -0.125rem;
+        }
+`;
+      }
+
+      if (variant === 'stacked') {
+        styles += `
+        .jb-credit-chip {
+          flex-direction: column;
+          gap: ${s.gap === '0.25rem' ? '0.375rem' : s.gap === '0.4rem' ? '0.5rem' : '0.625rem'};
+          padding: ${s.padding === '0.25rem 0.5rem' ? '0.5rem 0.75rem' : s.padding === '0.4rem 0.75rem' ? '0.625rem 1rem' : '0.75rem 1.25rem'};
+        }
+        .logo-icon {
+          width: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+          height: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+        }
+        .credit-text {
+          text-align: center;
+        }
+`;
+      }
+
+      if (variant === 'logo-only') {
+        styles += `
+        .credit-text { display: none; }
+        .jb-credit-chip {
+          padding: ${s.padding === '0.25rem 0.5rem' ? '0.375rem' : s.padding === '0.4rem 0.75rem' ? '0.5rem' : '0.625rem'};
+        }
+        .logo-icon {
+          width: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+          height: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+        }
+`;
+      }
+
+      if (variant === 'brand-bar') {
+        styles += `
+        .jb-credit-chip {
+          border-radius: 12px;
+          width: 100%;
+          max-width: 400px;
+          background: linear-gradient(135deg, ${c.primary}15, ${c.secondary}10, ${c.accent}15);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+        .brand-bar-content {
+          display: flex;
+          align-items: center;
+          gap: ${s.gap};
+          width: 100%;
+        }
+        .logo-icon {
+          width: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+          height: ${s.logo === '12px' ? '24px' : s.logo === '16px' ? '32px' : '40px'};
+        }
+        .brand-divider {
+          width: 1px;
+          height: ${s.logo === '12px' ? '20px' : s.logo === '16px' ? '28px' : '36px'};
+          background: linear-gradient(to bottom, transparent, ${c.border}, transparent);
+        }
+`;
+      }
 
       if (variant === 'minimal') {
         styles += `
@@ -425,8 +588,76 @@
       const variant = this.getAttribute('data-variant') || 'chip';
       const size = this.getAttribute('data-size') || 'default';
 
-      // Show effects only for chip variant
-      const showEffects = variant === 'chip';
+      // Show effects only for chip variant and new brand variants (not minimal or text)
+      const showEffects = variant === 'chip' || variant === 'logo-prominent' || 
+                          variant === 'initials-badge' || variant === 'company-name' ||
+                          variant === 'gradient-logo' || variant === 'icon-initials' ||
+                          variant === 'stacked' || variant === 'logo-only' || variant === 'brand-bar';
+
+      // Generate content based on variant
+      let content = '';
+      
+      if (variant === 'initials-badge') {
+        content = `
+          <div class="initials-badge">JB</div>
+          <span class="credit-text">
+            Designed by <span class="credit-name">Jacob Barkin</span>
+          </span>
+        `;
+      } else if (variant === 'company-name') {
+        content = `
+          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <span class="credit-text">
+            Designed by <span class="company-name">Ask The Kidz</span>
+          </span>
+        `;
+      } else if (variant === 'gradient-logo') {
+        content = `
+          <div class="gradient-logo-wrapper">
+            <img src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          </div>
+          <span class="credit-text">
+            Designed by <span class="credit-name">Jacob Barkin</span>
+          </span>
+        `;
+      } else if (variant === 'icon-initials') {
+        content = `
+          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <span class="initials-text">JB</span>
+          <span class="credit-text">
+            Designed by <span class="credit-name">Jacob Barkin</span>
+          </span>
+        `;
+      } else if (variant === 'stacked') {
+        content = `
+          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <span class="credit-text">
+            Designed by <span class="credit-name">Jacob Barkin</span>
+          </span>
+        `;
+      } else if (variant === 'logo-only') {
+        content = `
+          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+        `;
+      } else if (variant === 'brand-bar') {
+        content = `
+          <div class="brand-bar-content">
+            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+            <div class="brand-divider"></div>
+            <span class="credit-text">
+              Designed by <span class="credit-name">Jacob Barkin</span>
+            </span>
+          </div>
+        `;
+      } else {
+        // Default content for chip, minimal, text, logo-prominent
+        content = `
+          <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+          <span class="credit-text">
+            Designed by <span class="credit-name">Jacob Barkin</span>
+          </span>
+        `;
+      }
 
       this.shadowRoot.innerHTML = `
         <style>${this.getStyles(theme, position, align, variant, size)}</style>
@@ -435,10 +666,7 @@
             ${showEffects ? '<div class="glow-bg"></div>' : ''}
             ${showEffects ? '<div class="animated-border"></div>' : ''}
             ${showEffects ? '<div class="pulse-ring"></div>' : ''}
-            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
-            <span class="credit-text">
-              Designed by <span class="credit-name">Jacob Barkin</span>
-            </span>
+            ${content}
           </a>
         </div>
       `;
