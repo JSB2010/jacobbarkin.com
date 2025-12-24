@@ -35,8 +35,8 @@
     // If we're on the same domain or localhost/preview, use relative path
     if (currentDomain === siteDomain || 
         currentDomain === 'localhost' || 
-        currentDomain.includes('pages.dev') ||
-        currentDomain.includes('github.io')) {
+        currentDomain.endsWith('.pages.dev') ||
+        currentDomain.endsWith('.github.io')) {
       return `/images/${filename}`;
     }
     
