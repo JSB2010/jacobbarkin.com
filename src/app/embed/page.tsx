@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Copy, Code, Palette, Layout, Sparkles } from "lucide-react";
+import { Check, Copy, Code, Palette, Layout, Sparkles, FileText } from "lucide-react";
 
 export default function EmbedPage() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -42,15 +42,139 @@ useEffect(() => {
 }, []);
 
 // In your JSX:
-<jb-credit data-variant="standard"></jb-credit>`,
-    custom: `<!-- Customized with all options -->
+<jb-credit></jb-credit>`,
+    custom: `<!-- Example with all options -->
 <script src="https://jacobbarkin.com/embed/credit.js"><\/script>
-<jb-credit 
-  data-theme="auto" 
-  data-variant="prominent" 
-  data-align="center">
+<jb-credit
+  data-variant="minimal"
+  data-size="small"
+  data-align="left"
+  data-theme="dark">
 </jb-credit>`,
   };
+
+  const instructionsText = `# Jacob Barkin Credit Embed
+
+A lightweight embeddable "Designed by Jacob Barkin" credit component.
+Works everywhere: React, Vue, Angular, vanilla HTML, WordPress, Webflow, etc.
+
+---
+
+## Implementation
+
+### Option 1: Manual Placement
+\`\`\`html
+<script src="https://jacobbarkin.com/embed/credit.js"><\/script>
+<jb-credit></jb-credit>
+\`\`\`
+
+### Option 2: Auto-Inject
+Automatically inserts at the bottom of the page:
+\`\`\`html
+<script src="https://jacobbarkin.com/embed/credit.js" data-auto><\/script>
+\`\`\`
+
+### Option 3: React / Next.js
+\`\`\`jsx
+import { useEffect } from 'react';
+
+useEffect(() => {
+  const script = document.createElement('script');
+  script.src = 'https://jacobbarkin.com/embed/credit.js';
+  document.head.appendChild(script);
+}, []);
+
+// In your JSX:
+<jb-credit></jb-credit>
+\`\`\`
+
+### Option 4: Vue
+\`\`\`vue
+<script setup>
+import { onMounted } from 'vue';
+
+onMounted(() => {
+  const script = document.createElement('script');
+  script.src = 'https://jacobbarkin.com/embed/credit.js';
+  document.head.appendChild(script);
+});
+<\/script>
+
+<template>
+  <jb-credit></jb-credit>
+</template>
+\`\`\`
+
+---
+
+## Configuration Options
+
+All options are optional. Set via data-* attributes:
+
+| Attribute        | Values                      | Default   | Description                                     |
+|------------------|-----------------------------|-----------|-------------------------------------------------|
+| \`data-variant\`   | \`chip\`, \`minimal\`, \`text\`   | \`chip\`    | Visual style variant                            |
+| \`data-size\`      | \`small\`, \`default\`, \`large\` | \`default\` | Component size                                  |
+| \`data-align\`     | \`left\`, \`center\`, \`right\`   | \`center\`  | Horizontal alignment within container           |
+| \`data-theme\`     | \`auto\`, \`light\`, \`dark\`     | \`auto\`    | Color theme (auto detects from page)            |
+| \`data-position\`  | \`inline\`, \`fixed\`           | \`inline\`  | inline = normal flow, fixed = sticky footer bar |
+
+---
+
+## Variants
+
+**chip** — Full-featured with logo icon, animated gradient border, pulse ring, mouse-follow glow
+**minimal** — Text only by default, chip background appears on hover
+**text** — Ultra low-profile, just text with gradient name, subtle underline on hover
+
+---
+
+## Examples
+
+Default:
+\`\`\`html
+<jb-credit></jb-credit>
+\`\`\`
+
+Minimal, small, left-aligned:
+\`\`\`html
+<jb-credit data-variant="minimal" data-size="small" data-align="left"></jb-credit>
+\`\`\`
+
+Text-only:
+\`\`\`html
+<jb-credit data-variant="text"></jb-credit>
+\`\`\`
+
+Large, right-aligned:
+\`\`\`html
+<jb-credit data-size="large" data-align="right"></jb-credit>
+\`\`\`
+
+Fixed footer bar:
+\`\`\`html
+<jb-credit data-position="fixed"></jb-credit>
+\`\`\`
+
+Force dark theme:
+\`\`\`html
+<jb-credit data-theme="dark"></jb-credit>
+\`\`\`
+
+---
+
+## Features
+
+- Shadow DOM isolated (never conflicts with your CSS)
+- Auto theme detection (light/dark)
+- Responsive design
+- Under 5KB, no dependencies
+- WCAG accessible
+- Respects prefers-reduced-motion
+
+---
+
+Demo: https://jacobbarkin.com/embed/demo.html`;
 
   if (!mounted) return null;
 
@@ -69,30 +193,50 @@ useEffect(() => {
         </p>
       </div>
 
-      {/* Live Demo */}
+      {/* Live Demo - Variants */}
       <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" />
-          Live Preview
+          Style Variants
+          <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">Hover me!</span>
         </h2>
-        <div className="grid gap-6">
-          <div className="border rounded-lg p-4 bg-background">
-            <p className="text-sm text-muted-foreground mb-2">Minimal (default)</p>
-            {typeof window !== 'undefined' && (
-              <jb-credit data-variant="minimal"></jb-credit>
-            )}
+        <div className="grid gap-4">
+          <div className="border rounded-lg p-4 bg-gradient-to-br from-background to-muted/30">
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-sm font-medium text-foreground">💎 Chip</p>
+              <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full">Default</span>
+            </div>
+            {typeof window !== 'undefined' && <jb-credit data-variant="chip"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Full-featured: Logo, animated gradient border, pulse ring, mouse-follow glow</p>
           </div>
           <div className="border rounded-lg p-4 bg-background">
-            <p className="text-sm text-muted-foreground mb-2">Standard</p>
-            {typeof window !== 'undefined' && (
-              <jb-credit data-variant="standard"></jb-credit>
-            )}
+            <p className="text-sm font-medium text-foreground mb-2">✨ Minimal</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="minimal"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Text only, chip appears on hover - good for footers</p>
           </div>
           <div className="border rounded-lg p-4 bg-background">
-            <p className="text-sm text-muted-foreground mb-2">Prominent</p>
-            {typeof window !== 'undefined' && (
-              <jb-credit data-variant="prominent"></jb-credit>
-            )}
+            <p className="text-sm font-medium text-foreground mb-2">📝 Text</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="text"></jb-credit>}
+            <p className="text-xs text-muted-foreground mt-2">Ultra low-profile - just text with gradient name, subtle underline on hover</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Sizes */}
+      <Card className="p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">📐 Sizes</h2>
+        <div className="grid gap-4">
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm text-muted-foreground mb-2">Small</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="chip" data-size="small"></jb-credit>}
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm text-muted-foreground mb-2">Default</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="chip" data-size="default"></jb-credit>}
+          </div>
+          <div className="border rounded-lg p-4 bg-background">
+            <p className="text-sm text-muted-foreground mb-2">Large</p>
+            {typeof window !== 'undefined' && <jb-credit data-variant="chip" data-size="large"></jb-credit>}
           </div>
         </div>
       </Card>
@@ -134,45 +278,34 @@ useEffect(() => {
       <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Layout className="w-5 h-5 text-primary" />
-          Configuration Options
+          All Options
         </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 pr-4">Attribute</th>
-                <th className="text-left py-2 pr-4">Values</th>
-                <th className="text-left py-2">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b">
-                <td className="py-2 pr-4"><code className="bg-muted px-1.5 py-0.5 rounded">data-theme</code></td>
-                <td className="py-2 pr-4"><code>auto</code>, <code>light</code>, <code>dark</code></td>
-                <td className="py-2 text-muted-foreground">Theme mode (default: auto-detect)</td>
-              </tr>
-              <tr className="border-b">
-                <td className="py-2 pr-4"><code className="bg-muted px-1.5 py-0.5 rounded">data-variant</code></td>
-                <td className="py-2 pr-4"><code>minimal</code>, <code>standard</code>, <code>prominent</code></td>
-                <td className="py-2 text-muted-foreground">Style variant (default: minimal)</td>
-              </tr>
-              <tr className="border-b">
-                <td className="py-2 pr-4"><code className="bg-muted px-1.5 py-0.5 rounded">data-align</code></td>
-                <td className="py-2 pr-4"><code>center</code>, <code>left</code>, <code>right</code></td>
-                <td className="py-2 text-muted-foreground">Text alignment (default: center)</td>
-              </tr>
-              <tr>
-                <td className="py-2 pr-4"><code className="bg-muted px-1.5 py-0.5 rounded">data-position</code></td>
-                <td className="py-2 pr-4"><code>inline</code>, <code>fixed</code></td>
-                <td className="py-2 text-muted-foreground">Position mode (default: inline)</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="grid gap-4">
+          <div className="border rounded-lg p-4">
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-variant</code>
+            <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">chip</strong> (default) | minimal | text</p>
+          </div>
+          <div className="border rounded-lg p-4">
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-size</code>
+            <p className="text-sm text-muted-foreground mt-1">small | <strong className="text-foreground">default</strong> | large</p>
+          </div>
+          <div className="border rounded-lg p-4">
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-align</code>
+            <p className="text-sm text-muted-foreground mt-1">left | <strong className="text-foreground">center</strong> | right</p>
+          </div>
+          <div className="border rounded-lg p-4">
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-theme</code>
+            <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">auto</strong> (detects from page) | light | dark</p>
+          </div>
+          <div className="border rounded-lg p-4">
+            <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-position</code>
+            <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">inline</strong> | fixed (sticky footer bar)</p>
+          </div>
         </div>
       </Card>
 
       {/* Features */}
-      <Card className="p-6">
+      <Card className="p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Features</h2>
         <ul className="grid gap-2 text-muted-foreground">
           <li className="flex items-start gap-2">
@@ -201,6 +334,31 @@ useEffect(() => {
           </li>
         </ul>
       </Card>
+
+      {/* Instructions for AI */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          Instructions for AI Agents
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Copy this and paste it into your AI assistant when developing a site:
+        </p>
+        <div className="relative">
+          <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs max-h-80 overflow-y-auto">
+            <code>{instructionsText}</code>
+          </pre>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="absolute top-2 right-2"
+            onClick={() => copyToClipboard(instructionsText, 'instructions')}
+          >
+            {copied === 'instructions' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span className="ml-1">{copied === 'instructions' ? 'Copied!' : 'Copy All'}</span>
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -210,9 +368,10 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       'jb-credit': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
-        'data-theme'?: 'auto' | 'light' | 'dark';
-        'data-variant'?: 'minimal' | 'standard' | 'prominent';
+        'data-variant'?: 'chip' | 'minimal' | 'text';
+        'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'center' | 'left' | 'right';
+        'data-theme'?: 'auto' | 'light' | 'dark';
         'data-position'?: 'inline' | 'fixed';
       }, HTMLElement>;
     }

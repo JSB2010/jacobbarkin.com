@@ -3,130 +3,458 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jacob Barkin Credit - Embed Demo</title>
+  <title>Designer Credit Embed - Jacob Barkin</title>
+  <meta name="description" content="Add a beautiful 'Designed by Jacob Barkin' credit to any website with one line of code.">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f8fafc;
+      --bg-alt: #e2e8f0;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --primary: #3b82f6;
+      --primary-light: rgba(59, 130, 246, 0.1);
+      --secondary: #8b5cf6;
+      --success: #10b981;
+      --border: #e2e8f0;
+      --code-bg: #1e293b;
+      --code-text: #e2e8f0;
+    }
+
+    html.dark {
+      --bg: #0f172a;
+      --bg-alt: #1e293b;
+      --card: #1e293b;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --border: #334155;
+      --code-bg: #0f172a;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.6;
-      background: #f8fafc;
-      color: #1e293b;
+      background: linear-gradient(135deg, var(--bg) 0%, var(--bg-alt) 100%);
+      color: var(--text);
       min-height: 100vh;
     }
-    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
-    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-    .subtitle { color: #64748b; margin-bottom: 2rem; }
-    .demo-section { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .demo-section h2 { font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .demo-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
-    .demo-box p { font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; }
-    pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.875rem; }
-    code { font-family: 'SF Mono', Menlo, Monaco, monospace; }
-    .copy-btn {
-      background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem;
-      border-radius: 6px; cursor: pointer; font-size: 0.875rem; float: right; margin-top: -2.5rem;
+
+    .container { max-width: 800px; margin: 0 auto; padding: 3rem 1.5rem; }
+
+    /* Hero */
+    .hero { text-align: center; margin-bottom: 2.5rem; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 1rem; border-radius: 9999px;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;
     }
-    .copy-btn:hover { background: #2563eb; }
-    .theme-toggle { margin-bottom: 1rem; }
+    .hero h1 {
+      font-size: 2.5rem; font-weight: 700; margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p { color: var(--text-muted); font-size: 1.125rem; max-width: 600px; margin: 0 auto; }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;
+    }
     .theme-toggle button {
-      padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 6px;
-      background: white; cursor: pointer; margin-right: 0.5rem;
+      padding: 0.625rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--card); color: var(--text); cursor: pointer;
+      font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease;
     }
-    .theme-toggle button.active { background: #3b82f6; color: white; border-color: #3b82f6; }
-    
-    /* Dark mode */
-    html.dark body { background: #0f172a; color: #e2e8f0; }
-    html.dark .demo-section { background: #1e293b; }
-    html.dark .demo-box { border-color: #334155; }
-    html.dark .demo-box p { color: #94a3b8; }
-    html.dark .theme-toggle button { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-    html.dark .theme-toggle button.active { background: #3b82f6; border-color: #3b82f6; }
+    .theme-toggle button:hover { border-color: var(--primary); }
+    .theme-toggle button.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white; border-color: transparent;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .card h2 {
+      font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    /* Demo boxes */
+    .demo-grid { display: grid; gap: 1rem; }
+    .demo-item {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; background: var(--bg); transition: all 0.2s ease;
+    }
+    .demo-item:hover { border-color: var(--primary); }
+    .demo-label {
+      font-size: 0.875rem; font-weight: 500; color: var(--text);
+      margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .demo-hint { font-size: 0.75rem; color: var(--text-subtle); margin-top: 0.5rem; }
+
+    /* Badges */
+    .badge {
+      display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px;
+      font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em;
+    }
+    .badge-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+    .badge-success { background: linear-gradient(135deg, var(--success), #34d399); color: white; }
+
+    /* Code blocks */
+    .code-block { position: relative; margin-top: 0.75rem; }
+    pre {
+      background: var(--code-bg); color: var(--code-text);
+      padding: 1rem; border-radius: 8px; overflow-x: auto;
+      font-size: 0.8125rem; line-height: 1.6;
+    }
+    code { font-family: 'SF Mono', Menlo, Monaco, 'Courier New', monospace; }
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1); color: var(--code-text);
+      border: none; padding: 0.375rem 0.75rem; border-radius: 6px;
+      cursor: pointer; font-size: 0.75rem; transition: all 0.2s ease;
+    }
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.2); }
+    .copy-btn.copied { background: var(--success); color: white; }
+
+    /* Options grid */
+    .options-grid { display: grid; gap: 0.75rem; }
+    .option-item {
+      display: flex; flex-direction: column; gap: 0.25rem;
+      padding: 1rem; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--bg);
+    }
+    .option-item code {
+      background: var(--primary-light); color: var(--primary);
+      padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.8125rem;
+      width: fit-content;
+    }
+    .option-item span { font-size: 0.8125rem; color: var(--text-muted); }
+    .option-item strong { color: var(--text); }
+
+    /* Features list */
+    .features-list { display: grid; gap: 0.5rem; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      font-size: 0.875rem; color: var(--text-muted);
+    }
+    .feature-check {
+      width: 1.25rem; height: 1.25rem; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--success), #34d399);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 0.75rem; margin-top: 0.125rem;
+    }
+    .feature-item strong { color: var(--text); }
+
+    /* Instructions */
+    .instructions-block {
+      background: var(--code-bg); border-radius: 8px;
+      padding: 1rem; max-height: 300px; overflow-y: auto;
+    }
+    .instructions-block pre {
+      background: transparent; padding: 0; margin: 0;
+      white-space: pre-wrap; word-wrap: break-word;
+    }
+
+    /* Helper classes */
+    .card-intro {
+      font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem;
+    }
+    .inline-code {
+      background: var(--primary-light); color: var(--primary);
+      padding: 0.125rem 0.375rem; border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎨 Jacob Barkin Credit Embed</h1>
-    <p class="subtitle">Add a consistent designer credit to any website with just one line of code.</p>
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">✨ Embeddable Credit Component</div>
+      <h1>Designer Credit Embed</h1>
+      <p>Add a consistent "Designed by Jacob Barkin" credit to any website with just one line of code. Works everywhere.</p>
+    </div>
 
     <!-- Theme Toggle -->
     <div class="theme-toggle">
-      <button id="light-btn" class="active" onclick="setTheme('light')">☀️ Light</button>
-      <button id="dark-btn" onclick="setTheme('dark')">🌙 Dark</button>
+      <button type="button" id="light-btn" class="active" onclick="setTheme('light')">☀️ Light</button>
+      <button type="button" id="dark-btn" onclick="setTheme('dark')">🌙 Dark</button>
     </div>
 
-    <!-- Live Demo -->
-    <div class="demo-section">
-      <h2>✨ Live Preview</h2>
-      <div class="demo-box">
-        <p>Minimal (default)</p>
-        <jb-credit data-variant="minimal"></jb-credit>
+    <!-- Style Variants -->
+    <div class="card">
+      <h2>🎨 Style Variants <span class="badge badge-success">Hover me!</span></h2>
+      <div class="demo-grid">
+        <div class="demo-item">
+          <div class="demo-label">💎 Chip <span class="badge badge-primary">Default</span></div>
+          <jb-credit data-variant="chip"></jb-credit>
+          <div class="demo-hint">Full-featured with logo, animated gradient border, pulse ring, mouse-follow glow</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">✨ Minimal</div>
+          <jb-credit data-variant="minimal"></jb-credit>
+          <div class="demo-hint">Text only, chip appears on hover - great for footers</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">📝 Text</div>
+          <jb-credit data-variant="text"></jb-credit>
+          <div class="demo-hint">Ultra low-profile - just text with gradient name, subtle underline on hover</div>
+        </div>
       </div>
-      <div class="demo-box">
-        <p>Standard</p>
-        <jb-credit data-variant="standard"></jb-credit>
-      </div>
-      <div class="demo-box">
-        <p>Prominent</p>
-        <jb-credit data-variant="prominent"></jb-credit>
-      </div>
-      <div class="demo-box">
-        <p>Left Aligned</p>
-        <jb-credit data-variant="standard" data-align="left"></jb-credit>
+    </div>
+
+    <!-- Sizes -->
+    <div class="card">
+      <h2>📐 Sizes</h2>
+      <div class="demo-grid">
+        <div class="demo-item">
+          <div class="demo-label">Small</div>
+          <jb-credit data-variant="chip" data-size="small"></jb-credit>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">Default</div>
+          <jb-credit data-variant="chip" data-size="default"></jb-credit>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">Large</div>
+          <jb-credit data-variant="chip" data-size="large"></jb-credit>
+        </div>
       </div>
     </div>
 
     <!-- Quick Start -->
-    <div class="demo-section">
+    <div class="card">
       <h2>🚀 Quick Start</h2>
-      <p style="margin-bottom: 1rem; color: #64748b;">Copy and paste this into your HTML:</p>
-      <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js"&gt;&lt;/script&gt;
+      <p class="card-intro">Copy and paste into your HTML:</p>
+      <div class="code-block">
+        <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js"&gt;&lt;/script&gt;
 &lt;jb-credit&gt;&lt;/jb-credit&gt;</code></pre>
-      <button class="copy-btn" onclick="copyCode(this, '&lt;script src=&quot;https://jacobbarkin.com/embed/credit.js&quot;&gt;&lt;/script&gt;\n&lt;jb-credit&gt;&lt;/jb-credit&gt;')">Copy</button>
+        <button type="button" class="copy-btn" onclick="copyCode(this, 'basic')">Copy</button>
+      </div>
     </div>
 
-    <!-- Auto Inject -->
-    <div class="demo-section">
+    <!-- Auto-Inject -->
+    <div class="card">
       <h2>🤖 Auto-Inject Mode</h2>
-      <p style="margin-bottom: 1rem; color: #64748b;">Add <code>data-auto</code> to automatically insert at the bottom:</p>
-      <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js" data-auto&gt;&lt;/script&gt;</code></pre>
-      <button class="copy-btn" onclick="copyCode(this, '&lt;script src=&quot;https://jacobbarkin.com/embed/credit.js&quot; data-auto&gt;&lt;/script&gt;')">Copy</button>
+      <p class="card-intro">Add <code class="inline-code">data-auto</code> to automatically insert at the bottom of your page:</p>
+      <div class="code-block">
+        <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js" data-auto&gt;&lt;/script&gt;</code></pre>
+        <button type="button" class="copy-btn" onclick="copyCode(this, 'auto')">Copy</button>
+      </div>
     </div>
 
-    <!-- Options -->
-    <div class="demo-section">
-      <h2>⚙️ Options</h2>
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-          <th style="text-align: left; padding: 0.75rem 0;">Attribute</th>
-          <th style="text-align: left; padding: 0.75rem 0;">Values</th>
-          <th style="text-align: left; padding: 0.75rem 0;">Default</th>
-        </tr>
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 0.75rem 0;"><code>data-theme</code></td>
-          <td style="padding: 0.75rem 0;">auto, light, dark</td>
-          <td style="padding: 0.75rem 0;">auto</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 0.75rem 0;"><code>data-variant</code></td>
-          <td style="padding: 0.75rem 0;">minimal, standard, prominent</td>
-          <td style="padding: 0.75rem 0;">minimal</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 0.75rem 0;"><code>data-align</code></td>
-          <td style="padding: 0.75rem 0;">center, left, right</td>
-          <td style="padding: 0.75rem 0;">center</td>
-        </tr>
-        <tr>
-          <td style="padding: 0.75rem 0;"><code>data-position</code></td>
-          <td style="padding: 0.75rem 0;">inline, fixed</td>
-          <td style="padding: 0.75rem 0;">inline</td>
-        </tr>
-      </table>
+    <!-- All Options -->
+    <div class="card">
+      <h2>⚙️ All Options</h2>
+      <div class="options-grid">
+        <div class="option-item">
+          <code>data-variant</code>
+          <span><strong>chip</strong> (default) | minimal | text</span>
+        </div>
+        <div class="option-item">
+          <code>data-size</code>
+          <span>small | <strong>default</strong> | large</span>
+        </div>
+        <div class="option-item">
+          <code>data-align</code>
+          <span>left | <strong>center</strong> | right</span>
+        </div>
+        <div class="option-item">
+          <code>data-theme</code>
+          <span><strong>auto</strong> (detects from page) | light | dark</span>
+        </div>
+        <div class="option-item">
+          <code>data-position</code>
+          <span><strong>inline</strong> | fixed (sticky footer bar)</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Features -->
+    <div class="card">
+      <h2>✅ Features</h2>
+      <div class="features-list">
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Universal compatibility</strong> — Works with React, Vue, Angular, vanilla HTML, WordPress, Webflow, etc.</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Shadow DOM isolation</strong> — Styles never conflict with your site's CSS</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Auto theme detection</strong> — Adapts to light/dark mode automatically</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Responsive</strong> — Looks great on all screen sizes</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Lightweight</strong> — Under 5KB, no dependencies</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-check">✓</div>
+          <span><strong>Accessible</strong> — WCAG compliant, respects prefers-reduced-motion</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Instructions -->
+    <div class="card">
+      <h2>🤖 Instructions for AI Agents</h2>
+      <p class="card-intro">Copy this and paste it into your AI assistant when developing a site:</p>
+      <div class="code-block">
+        <div class="instructions-block">
+          <pre id="instructions-text"># Jacob Barkin Credit Embed
+
+A lightweight embeddable "Designed by Jacob Barkin" credit component.
+Works everywhere: React, Vue, Angular, vanilla HTML, WordPress, Webflow, etc.
+
+---
+
+## Implementation
+
+### Option 1: Manual Placement
+```html
+&lt;script src="https://jacobbarkin.com/embed/credit.js"&gt;&lt;/script&gt;
+&lt;jb-credit&gt;&lt;/jb-credit&gt;
+```
+
+### Option 2: Auto-Inject
+Automatically inserts at the bottom of the page:
+```html
+&lt;script src="https://jacobbarkin.com/embed/credit.js" data-auto&gt;&lt;/script&gt;
+```
+
+### Option 3: React / Next.js
+```jsx
+import { useEffect } from 'react';
+
+useEffect(() =&gt; {
+  const script = document.createElement('script');
+  script.src = 'https://jacobbarkin.com/embed/credit.js';
+  document.head.appendChild(script);
+}, []);
+
+// In your JSX:
+&lt;jb-credit&gt;&lt;/jb-credit&gt;
+```
+
+### Option 4: Vue
+```vue
+&lt;script setup&gt;
+import { onMounted } from 'vue';
+
+onMounted(() =&gt; {
+  const script = document.createElement('script');
+  script.src = 'https://jacobbarkin.com/embed/credit.js';
+  document.head.appendChild(script);
+});
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;jb-credit&gt;&lt;/jb-credit&gt;
+&lt;/template&gt;
+```
+
+---
+
+## Configuration Options
+
+All options are optional. Set via data-* attributes:
+
+| Attribute        | Values                      | Default   | Description                                     |
+|------------------|-----------------------------|-----------|-------------------------------------------------|
+| `data-variant`   | `chip`, `minimal`, `text`   | `chip`    | Visual style variant                            |
+| `data-size`      | `small`, `default`, `large` | `default` | Component size                                  |
+| `data-align`     | `left`, `center`, `right`   | `center`  | Horizontal alignment within container           |
+| `data-theme`     | `auto`, `light`, `dark`     | `auto`    | Color theme (auto detects from page)            |
+| `data-position`  | `inline`, `fixed`           | `inline`  | inline = normal flow, fixed = sticky footer bar |
+
+---
+
+## Variants
+
+**chip** — Full-featured with logo icon, animated gradient border, pulse ring, mouse-follow glow
+**minimal** — Text only by default, chip background appears on hover
+**text** — Ultra low-profile, just text with gradient name, subtle underline on hover
+
+---
+
+## Examples
+
+Default:
+```html
+&lt;jb-credit&gt;&lt;/jb-credit&gt;
+```
+
+Minimal, small, left-aligned:
+```html
+&lt;jb-credit data-variant="minimal" data-size="small" data-align="left"&gt;&lt;/jb-credit&gt;
+```
+
+Text-only:
+```html
+&lt;jb-credit data-variant="text"&gt;&lt;/jb-credit&gt;
+```
+
+Large, right-aligned:
+```html
+&lt;jb-credit data-size="large" data-align="right"&gt;&lt;/jb-credit&gt;
+```
+
+Fixed footer bar:
+```html
+&lt;jb-credit data-position="fixed"&gt;&lt;/jb-credit&gt;
+```
+
+Force dark theme:
+```html
+&lt;jb-credit data-theme="dark"&gt;&lt;/jb-credit&gt;
+```
+
+---
+
+## Features
+
+- Shadow DOM isolated (never conflicts with your CSS)
+- Auto theme detection (light/dark)
+- Responsive design
+- Under 5KB, no dependencies
+- WCAG accessible
+- Respects prefers-reduced-motion
+
+---
+
+Demo: https://jacobbarkin.com/embed/demo.html</pre>
+        </div>
+        <button type="button" class="copy-btn" onclick="copyCode(this, 'instructions')">Copy All</button>
+      </div>
+    </div>
+
   </div>
 
   <script src="credit.js"></script>
   <script>
+    const codeSnippets = {
+      basic: `<script src="https://jacobbarkin.com/embed/credit.js"><\/script>\n<jb-credit></jb-credit>`,
+      auto: `<script src="https://jacobbarkin.com/embed/credit.js" data-auto><\/script>`,
+      instructions: document.getElementById('instructions-text').textContent
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    };
+
     function setTheme(theme) {
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -138,13 +466,16 @@
         document.getElementById('dark-btn').classList.remove('active');
       }
     }
-    
-    function copyCode(btn, code) {
-      const decoded = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
-      navigator.clipboard.writeText(decoded);
-      const orig = btn.textContent;
+
+    function copyCode(btn, key) {
+      const text = codeSnippets[key];
+      navigator.clipboard.writeText(text);
       btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = orig, 2000);
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = key === 'instructions' ? 'Copy All' : 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
     }
   </script>
 </body>

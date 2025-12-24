@@ -1,20 +1,21 @@
 /**
  * Jacob Barkin Credit - Embeddable Web Component
- * 
+ *
  * Usage:
  *   <script src="https://jacobbarkin.com/embed/credit.js"></script>
  *   <jb-credit></jb-credit>
- * 
+ *
  * Or auto-inject at bottom of page:
  *   <script src="https://jacobbarkin.com/embed/credit.js" data-auto></script>
- * 
+ *
  * Attributes:
- *   data-theme="auto|light|dark" - Force a theme (default: auto)
+ *   data-variant="chip|minimal|text" - Style variant (default: chip)
+ *   data-theme="auto|light|dark" - Color theme (default: auto-detects)
+ *   data-align="center|left|right" - Alignment (default: center)
+ *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
- *   data-align="center|left|right" - Text alignment (default: center)
- *   data-variant="minimal|standard|prominent" - Style variant (default: minimal)
- * 
- * @version 1.0.0
+ *
+ * @version 2.1.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -22,9 +23,8 @@
 (function() {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '2.1.0';
   const SITE_URL = 'https://jacobbarkin.com';
-  const CREDIT_TEXT = 'Designed by Jacob Barkin';
 
   // Detect if we should auto-inject
   const currentScript = document.currentScript;
@@ -34,106 +34,148 @@
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
+      this.animationFrame = null;
+      this.gradientPosition = { x: 0, y: 0 };
+      this.isHovered = false;
     }
 
     static get observedAttributes() {
-      return ['data-theme', 'data-position', 'data-align', 'data-variant'];
+      return ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size'];
     }
 
     connectedCallback() {
       this.render();
       this.setupThemeObserver();
+      this.setupInteractivity();
     }
 
     disconnectedCallback() {
       if (this.themeObserver) {
         this.themeObserver.disconnect();
       }
+      if (this.animationFrame) {
+        cancelAnimationFrame(this.animationFrame);
+      }
     }
 
     attributeChangedCallback() {
       this.render();
+      this.setupInteractivity();
     }
 
     getTheme() {
       const attr = this.getAttribute('data-theme');
       if (attr === 'light' || attr === 'dark') return attr;
-      
-      // Auto-detect from various sources
+
       const html = document.documentElement;
       const body = document.body;
-      
-      // Check common theme class patterns
+
       if (html.classList.contains('dark') || body.classList.contains('dark') ||
-          html.getAttribute('data-theme') === 'dark' || 
+          html.getAttribute('data-theme') === 'dark' ||
           body.getAttribute('data-theme') === 'dark' ||
           html.getAttribute('data-mode') === 'dark') {
         return 'dark';
       }
-      
-      // Check CSS custom properties
+
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background');
       if (bgColor) {
-        // If background is dark, use dark theme
         const rgb = bgColor.trim();
         if (rgb.includes('0 0%') || rgb.includes('oklch(0.')) {
           return 'dark';
         }
       }
-      
-      // Check system preference
+
       if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark';
       }
-      
+
       return 'light';
     }
 
     setupThemeObserver() {
-      // Watch for theme changes on html/body
       this.themeObserver = new MutationObserver(() => {
         this.render();
+        this.setupInteractivity();
       });
-      
+
       this.themeObserver.observe(document.documentElement, {
         attributes: true,
         attributeFilter: ['class', 'data-theme', 'data-mode']
       });
-      
-      // Also watch system preference changes
+
       if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
           if (this.getAttribute('data-theme') === 'auto' || !this.getAttribute('data-theme')) {
             this.render();
+            this.setupInteractivity();
           }
         });
       }
     }
 
-    getStyles(theme, position, align, variant) {
+    setupInteractivity() {
+      const chip = this.shadowRoot.querySelector('.jb-credit-chip');
+      const glowBg = this.shadowRoot.querySelector('.glow-bg');
+
+      if (!chip || !glowBg) return;
+
+      // Get theme for glow color
+      const isDark = this.getTheme() === 'dark';
+      const glowColor = isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(59, 130, 246, 0.35)';
+
+      // Mouse move for glow follow effect on the chip
+      chip.addEventListener('mousemove', (e) => {
+        const rect = chip.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Immediate update, no transition on the background itself
+        glowBg.style.background = `radial-gradient(80px circle at ${x}px ${y}px, ${glowColor}, transparent 70%)`;
+      });
+
+      chip.addEventListener('mouseleave', () => {
+        glowBg.style.background = 'transparent';
+      });
+    }
+
+    getStyles(theme, position, align, variant, size) {
       const isDark = theme === 'dark';
-      
-      // Color schemes
+
       const colors = {
         light: {
-          text: '#6b7280',       // gray-500
-          link: '#2563eb',       // blue-600
-          linkHover: '#1d4ed8',  // blue-700
-          border: '#e5e7eb',     // gray-200
-          bg: 'transparent'
+          text: '#6b7280',
+          textHover: '#374151',
+          primary: '#3b82f6',
+          primaryLight: '#60a5fa',
+          secondary: '#10b981',
+          accent: '#06b6d4',
+          border: '#e5e7eb',
+          bg: 'rgba(255, 255, 255, 0.95)',
+          chipBg: 'rgba(255, 255, 255, 0.95)'
         },
         dark: {
-          text: '#9ca3af',       // gray-400
-          link: '#60a5fa',       // blue-400
-          linkHover: '#93c5fd',  // blue-300
-          border: '#374151',     // gray-700
-          bg: 'transparent'
+          text: '#9ca3af',
+          textHover: '#e5e7eb',
+          primary: '#60a5fa',
+          primaryLight: '#93c5fd',
+          secondary: '#34d399',
+          accent: '#22d3ee',
+          border: '#374151',
+          bg: 'rgba(17, 24, 39, 0.95)',
+          chipBg: 'rgba(17, 24, 39, 0.95)'
         }
       };
-      
+
       const c = isDark ? colors.dark : colors.light;
-      
-      // Base styles
+
+      // Size configurations
+      const sizes = {
+        small: { font: '0.6875rem', padding: '0.25rem 0.5rem', gap: '0.25rem', logo: '12px' },
+        default: { font: '0.75rem', padding: '0.4rem 0.75rem', gap: '0.4rem', logo: '16px' },
+        large: { font: '0.875rem', padding: '0.5rem 1rem', gap: '0.5rem', logo: '20px' }
+      };
+      const s = sizes[size] || sizes.default;
+
       let styles = `
         :host {
           display: block;
@@ -141,65 +183,209 @@
           line-height: 1.5;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+          contain: content;
         }
-        
-        .jb-credit {
-          padding: 0.75rem 1rem;
-          text-align: ${align};
-          font-size: 0.875rem;
-          color: ${c.text};
+
+        *, *::before, *::after {
+          box-sizing: border-box;
+        }
+
+        /* Wrapper for alignment */
+        .jb-credit-wrapper {
+          display: flex;
+          justify-content: ${align};
+          padding: 0.25rem;
+        }
+
+        /* The chip element */
+        .jb-credit-chip {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: ${s.gap};
+          padding: ${s.padding};
+          border-radius: 9999px;
+          background: ${c.chipBg};
+          border: 1px solid ${c.border};
+          cursor: pointer;
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                      border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          text-decoration: none;
+          overflow: hidden;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        .jb-credit-chip:hover {
+          border-color: ${c.primary}60;
+          box-shadow: 0 0 12px ${c.primary}20, 0 2px 6px rgba(0, 0, 0, 0.06);
+          transform: translateY(-1px);
+        }
+
+        /* Mouse-follow glow */
+        .glow-bg {
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          pointer-events: none;
+          z-index: 0;
+          opacity: 0;
           transition: opacity 0.2s ease;
         }
-        
-        .jb-credit a {
-          color: ${c.link};
-          text-decoration: none;
-          transition: color 0.2s ease, text-decoration 0.2s ease;
-          font-weight: 500;
+
+        .jb-credit-chip:hover .glow-bg {
+          opacity: 1;
         }
-        
-        .jb-credit a:hover {
-          color: ${c.linkHover};
-          text-decoration: underline;
+
+        .jb-credit-chip:hover .glow-bg {
+          opacity: 1;
         }
-        
-        .jb-credit a:focus {
-          outline: 2px solid ${c.link};
-          outline-offset: 2px;
+
+        /* Animated gradient border on chip */
+        .animated-border {
+          position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          padding: 1.5px;
+          background: linear-gradient(90deg, ${c.primary}, ${c.secondary}, ${c.accent}, ${c.primary});
+          background-size: 300% 100%;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .jb-credit-chip:hover .animated-border {
+          opacity: 1;
+          animation: gradientFlow 2s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 300% 50%; }
+        }
+
+
+
+        /* Pulse ring for prominent */
+        .pulse-ring {
+          position: absolute;
+          inset: -3px;
+          border-radius: inherit;
+          border: 1.5px solid ${c.primary};
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .jb-credit-chip:hover .pulse-ring {
+          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 0; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.05); }
+        }
+
+        /* Logo icon */
+        .logo-icon {
+          position: relative;
+          z-index: 2;
+          width: ${s.logo};
+          height: ${s.logo};
+          object-fit: contain;
+          transition: transform 0.25s ease;
+          flex-shrink: 0;
           border-radius: 2px;
+        }
+
+        .jb-credit-chip:hover .logo-icon {
+          transform: scale(1.1);
+        }
+
+        /* Text */
+        .credit-text {
+          position: relative;
+          z-index: 2;
+          font-size: ${s.font};
+          color: ${c.text};
+          white-space: nowrap;
+          transition: color 0.25s ease;
+        }
+
+        .jb-credit-chip:hover .credit-text {
+          color: ${c.textHover};
+        }
+
+        .credit-name {
+          font-weight: 600;
+          background: linear-gradient(135deg, ${c.primary}, ${c.secondary});
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .jb-credit-chip:focus {
+          outline: 2px solid ${c.primary};
+          outline-offset: 2px;
         }
 `;
 
-      // Variant styles
-      if (variant === 'prominent') {
+      // Variant: "chip" (default) - logo + full effects
+      // Variant: "minimal" - no logo, chip appears on hover
+      // Variant: "text" - just text, no chip at all
+
+      if (variant === 'minimal') {
         styles += `
-        .jb-credit {
-          padding: 1rem 1.5rem;
-          border-top: 1px solid ${c.border};
-          font-size: 0.875rem;
+        .jb-credit-chip {
+          background: transparent;
+          border: none;
+          padding: 0.125rem 0.25rem;
         }
-`;
-      } else if (variant === 'standard') {
-        styles += `
-        .jb-credit {
-          padding: 0.5rem 1rem;
-          font-size: 0.75rem;
+        .jb-credit-chip:hover {
+          background: ${c.chipBg};
+          border: 1px solid ${c.border};
+          padding: ${s.padding};
         }
-`;
-      } else { // minimal
-        styles += `
-        .jb-credit {
-          padding: 0.5rem;
-          font-size: 0.75rem;
-          opacity: 0.8;
-        }
-        .jb-credit:hover {
-          opacity: 1;
-        }
+        .logo-icon { display: none; }
+        .animated-border { display: none; }
+        .pulse-ring { display: none; }
+        .glow-bg { display: none; }
 `;
       }
 
-      // Position styles
+      if (variant === 'text') {
+        styles += `
+        .jb-credit-chip {
+          background: transparent;
+          border: none;
+          padding: 0;
+          border-radius: 0;
+        }
+        .jb-credit-chip:hover {
+          transform: none;
+          box-shadow: none;
+        }
+        .credit-name {
+          text-decoration: underline;
+          text-decoration-color: ${c.primary}40;
+          text-underline-offset: 2px;
+          transition: text-decoration-color 0.2s ease;
+        }
+        .jb-credit-chip:hover .credit-name {
+          text-decoration-color: ${c.primary};
+        }
+        .logo-icon { display: none; }
+        .animated-border { display: none; }
+        .pulse-ring { display: none; }
+        .glow-bg { display: none; }
+`;
+      }
+
       if (position === 'fixed') {
         styles += `
         :host {
@@ -208,19 +394,23 @@
           left: 0;
           right: 0;
           z-index: 9999;
-          background: ${isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)'};
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+        }
+        .jb-credit-wrapper {
+          background: ${c.bg};
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-top: 1px solid ${c.border};
+          padding: 0.5rem;
         }
 `;
       }
 
-      // Responsive styles
       styles += `
-        @media (max-width: 640px) {
-          .jb-credit {
-            font-size: ${variant === 'prominent' ? '0.8125rem' : '0.6875rem'};
-            padding: ${variant === 'prominent' ? '0.75rem 1rem' : '0.375rem 0.5rem'};
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
           }
         }
 `;
@@ -232,13 +422,24 @@
       const theme = this.getTheme();
       const position = this.getAttribute('data-position') || 'inline';
       const align = this.getAttribute('data-align') || 'center';
-      const variant = this.getAttribute('data-variant') || 'minimal';
+      const variant = this.getAttribute('data-variant') || 'chip';
+      const size = this.getAttribute('data-size') || 'default';
+
+      // Show effects only for chip variant
+      const showEffects = variant === 'chip';
 
       this.shadowRoot.innerHTML = `
-        <style>${this.getStyles(theme, position, align, variant)}</style>
-        <div class="jb-credit" role="contentinfo">
-          <span>Designed by </span>
-          <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer">Jacob Barkin</a>
+        <style>${this.getStyles(theme, position, align, variant, size)}</style>
+        <div class="jb-credit-wrapper" role="contentinfo" aria-label="Site designed by Jacob Barkin">
+          <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer" class="jb-credit-chip" title="Visit Jacob Barkin's website">
+            ${showEffects ? '<div class="glow-bg"></div>' : ''}
+            ${showEffects ? '<div class="animated-border"></div>' : ''}
+            ${showEffects ? '<div class="pulse-ring"></div>' : ''}
+            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
+            <span class="credit-text">
+              Designed by <span class="credit-name">Jacob Barkin</span>
+            </span>
+          </a>
         </div>
       `;
     }
@@ -253,21 +454,15 @@
   if (autoInject) {
     document.addEventListener('DOMContentLoaded', () => {
       const credit = document.createElement('jb-credit');
-      
+
       // Copy attributes from script tag
-      if (currentScript.hasAttribute('data-theme')) {
-        credit.setAttribute('data-theme', currentScript.getAttribute('data-theme'));
-      }
-      if (currentScript.hasAttribute('data-position')) {
-        credit.setAttribute('data-position', currentScript.getAttribute('data-position'));
-      }
-      if (currentScript.hasAttribute('data-align')) {
-        credit.setAttribute('data-align', currentScript.getAttribute('data-align'));
-      }
-      if (currentScript.hasAttribute('data-variant')) {
-        credit.setAttribute('data-variant', currentScript.getAttribute('data-variant'));
-      }
-      
+      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size'];
+      attrs.forEach(attr => {
+        if (currentScript.hasAttribute(attr)) {
+          credit.setAttribute(attr, currentScript.getAttribute(attr));
+        }
+      });
+
       document.body.appendChild(credit);
     });
   }
