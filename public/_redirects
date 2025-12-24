@@ -11,6 +11,11 @@
 /service-worker.js  /service-worker.js 200
 /sw-register.js     /sw-register.js 200
 
+# Embed script and demo - allow cross-origin embedding
+/embed/credit.js    /embed/credit.js   200
+/embed/demo.html    /embed/demo.html   200
+/embed              /embed/index.html  200
+
 # Specific routes for SPA pages - list these before wildcards for performance
 /about              /about/index.html    200
 /projects           /projects/index.html 200

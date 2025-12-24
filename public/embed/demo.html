@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jacob Barkin Credit - Embed Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #64748b; margin-bottom: 2rem; }
+    .demo-section { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .demo-section h2 { font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .demo-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+    .demo-box p { font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.875rem; }
+    code { font-family: 'SF Mono', Menlo, Monaco, monospace; }
+    .copy-btn {
+      background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem;
+      border-radius: 6px; cursor: pointer; font-size: 0.875rem; float: right; margin-top: -2.5rem;
+    }
+    .copy-btn:hover { background: #2563eb; }
+    .theme-toggle { margin-bottom: 1rem; }
+    .theme-toggle button {
+      padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 6px;
+      background: white; cursor: pointer; margin-right: 0.5rem;
+    }
+    .theme-toggle button.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+    
+    /* Dark mode */
+    html.dark body { background: #0f172a; color: #e2e8f0; }
+    html.dark .demo-section { background: #1e293b; }
+    html.dark .demo-box { border-color: #334155; }
+    html.dark .demo-box p { color: #94a3b8; }
+    html.dark .theme-toggle button { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    html.dark .theme-toggle button.active { background: #3b82f6; border-color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Jacob Barkin Credit Embed</h1>
+    <p class="subtitle">Add a consistent designer credit to any website with just one line of code.</p>
+
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+      <button id="light-btn" class="active" onclick="setTheme('light')">☀️ Light</button>
+      <button id="dark-btn" onclick="setTheme('dark')">🌙 Dark</button>
+    </div>
+
+    <!-- Live Demo -->
+    <div class="demo-section">
+      <h2>✨ Live Preview</h2>
+      <div class="demo-box">
+        <p>Minimal (default)</p>
+        <jb-credit data-variant="minimal"></jb-credit>
+      </div>
+      <div class="demo-box">
+        <p>Standard</p>
+        <jb-credit data-variant="standard"></jb-credit>
+      </div>
+      <div class="demo-box">
+        <p>Prominent</p>
+        <jb-credit data-variant="prominent"></jb-credit>
+      </div>
+      <div class="demo-box">
+        <p>Left Aligned</p>
+        <jb-credit data-variant="standard" data-align="left"></jb-credit>
+      </div>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="demo-section">
+      <h2>🚀 Quick Start</h2>
+      <p style="margin-bottom: 1rem; color: #64748b;">Copy and paste this into your HTML:</p>
+      <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js"&gt;&lt;/script&gt;
+&lt;jb-credit&gt;&lt;/jb-credit&gt;</code></pre>
+      <button class="copy-btn" onclick="copyCode(this, '&lt;script src=&quot;https://jacobbarkin.com/embed/credit.js&quot;&gt;&lt;/script&gt;\n&lt;jb-credit&gt;&lt;/jb-credit&gt;')">Copy</button>
+    </div>
+
+    <!-- Auto Inject -->
+    <div class="demo-section">
+      <h2>🤖 Auto-Inject Mode</h2>
+      <p style="margin-bottom: 1rem; color: #64748b;">Add <code>data-auto</code> to automatically insert at the bottom:</p>
+      <pre><code>&lt;script src="https://jacobbarkin.com/embed/credit.js" data-auto&gt;&lt;/script&gt;</code></pre>
+      <button class="copy-btn" onclick="copyCode(this, '&lt;script src=&quot;https://jacobbarkin.com/embed/credit.js&quot; data-auto&gt;&lt;/script&gt;')">Copy</button>
+    </div>
+
+    <!-- Options -->
+    <div class="demo-section">
+      <h2>⚙️ Options</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <th style="text-align: left; padding: 0.75rem 0;">Attribute</th>
+          <th style="text-align: left; padding: 0.75rem 0;">Values</th>
+          <th style="text-align: left; padding: 0.75rem 0;">Default</th>
+        </tr>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 0.75rem 0;"><code>data-theme</code></td>
+          <td style="padding: 0.75rem 0;">auto, light, dark</td>
+          <td style="padding: 0.75rem 0;">auto</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 0.75rem 0;"><code>data-variant</code></td>
+          <td style="padding: 0.75rem 0;">minimal, standard, prominent</td>
+          <td style="padding: 0.75rem 0;">minimal</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 0.75rem 0;"><code>data-align</code></td>
+          <td style="padding: 0.75rem 0;">center, left, right</td>
+          <td style="padding: 0.75rem 0;">center</td>
+        </tr>
+        <tr>
+          <td style="padding: 0.75rem 0;"><code>data-position</code></td>
+          <td style="padding: 0.75rem 0;">inline, fixed</td>
+          <td style="padding: 0.75rem 0;">inline</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <script src="credit.js"></script>
+  <script>
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('dark-btn').classList.add('active');
+        document.getElementById('light-btn').classList.remove('active');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('light-btn').classList.add('active');
+        document.getElementById('dark-btn').classList.remove('active');
+      }
+    }
+    
+    function copyCode(btn, code) {
+      const decoded = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+      navigator.clipboard.writeText(decoded);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>
+
