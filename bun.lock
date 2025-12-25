@@ -77,9 +77,13 @@
         "typescript-eslint": "^8.50.1",
         "wrangler": "^4.54.0",
       },
+      "optionalDependencies": {
+        "@ast-grep/napi-linux-x64-gnu": "^0.40.0",
+      },
     },
   },
   "trustedDependencies": [
+    "@ast-grep/napi",
     "@swc/core",
     "unrs-resolver",
   ],
@@ -96,6 +100,8 @@
     "@ast-grep/napi": ["@ast-grep/napi@0.40.0", "", { "optionalDependencies": { "@ast-grep/napi-darwin-arm64": "0.40.0" } }, ""],
 
     "@ast-grep/napi-darwin-arm64": ["@ast-grep/napi-darwin-arm64@0.40.0", "", { "os": "darwin", "cpu": "arm64" }, ""],
+
+    "@ast-grep/napi-linux-x64-gnu": ["@ast-grep/napi-linux-x64-gnu@0.40.3", "", { "os": "linux", "cpu": "x64" }, "sha512-3W1I9hKREFR/Wpu443C7RCR7s3kIP61eBDaevpJcO3Xi99+t2UNas6p765oqv08M7DOxJoTbC4OpI9GybD0aUA=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, ""],
 

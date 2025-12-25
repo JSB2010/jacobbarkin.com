@@ -8,6 +8,7 @@
     "clean": "rm -rf .next .open-next out",
     "build": "next build",
     "build:worker": "opennextjs-cloudflare build",
+    "build:cf": "bun add @ast-grep/napi-linux-x64-gnu || true && opennextjs-cloudflare build",
     "start": "next start",
     "preview": "bun run build:worker && opennextjs-cloudflare preview",
     "deploy": "bun run build:worker && opennextjs-cloudflare deploy",
@@ -118,6 +119,10 @@
   },
   "trustedDependencies": [
     "@swc/core",
-    "unrs-resolver"
-  ]
+    "unrs-resolver",
+    "@ast-grep/napi"
+  ],
+  "optionalDependencies": {
+    "@ast-grep/napi-linux-x64-gnu": "^0.40.0"
+  }
 }
