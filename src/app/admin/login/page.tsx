@@ -1,77 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/components/admin/auth-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, AlertCircle, Lock, Clock } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Loader2, AlertCircle, Lock } from "lucide-react";
 import { PageHero } from "@/components/ui/page-hero";
-import { useFormPersistence } from "@/hooks/use-form-persistence";
-import { useToast } from "@/components/ui/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { user, loading, error, signIn, clearError } = useAdminAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const { toast } = useToast();
+  const hasRedirected = useRef(false);
 
-  // Initial form values
-  const initialValues = {
-    email: "",
-    password: ""
-  };
-
-  // Use form persistence hook with a shorter expiry time for security
-  const {
-    formData,
-    updateFormData,
-    resetFormData,
-    lastSaved,
-    getTimeRemaining
-  } = useFormPersistence(
-    'admin-login-form',
-    initialValues,
-    {
-      expiryMinutes: 30, // Shorter expiry for security
-      saveOnUnload: true,
-      confirmOnUnload: false, // No confirmation needed for login form
-      onRestore: (data) => {
-        if (data.email) {
-          toast({
-            title: 'Email Restored',
-            description: 'Your email has been restored from your last session.',
-            variant: 'default',
-          });
-        }
-      }
-    }
-  );
-
-  // Destructure form values for easier access
-  const { email, password } = formData;
-
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only once)
   useEffect(() => {
-    if (user) {
-      // Clear saved form data when user is authenticated
-      try {
-        resetFormData();
-      } catch (err) {
-        console.error("Error resetting form data:", err);
-      }
+    if (!loading && user && !hasRedirected.current) {
+      hasRedirected.current = true;
       router.push("/admin/dashboard");
     }
-  }, [user, router, resetFormData]);
-
-  // Update form data when inputs change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    updateFormData({ [name]: value });
-  };
+  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,12 +40,8 @@ export default function AdminLoginPage() {
       const success = await signIn(email, password);
 
       if (success) {
-        // Clear saved form data on successful login
-        try {
-          resetFormData();
-        } catch (err) {
-          console.error("Error resetting form data:", err);
-        }
+        // Navigate to dashboard on successful login
+        hasRedirected.current = true;
         router.push("/admin/dashboard");
       }
     } catch (err) {
@@ -101,6 +50,16 @@ export default function AdminLoginPage() {
       setIsProcessing(false);
     }
   };
+
+  // Show loading while redirecting
+  if (!loading && user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+        <span className="ml-4 text-muted-foreground">Redirecting to dashboard...</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -112,32 +71,11 @@ export default function AdminLoginPage() {
 
       <div className="container max-w-md py-12">
         <Card>
-          <CardHeader className="pb-0">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Admin Login</CardTitle>
-                <CardDescription>
-                  Sign in to access the contact form submissions dashboard
-                </CardDescription>
-              </div>
-
-              {/* Show last saved time if available */}
-              {lastSaved && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {getTimeRemaining() && `${getTimeRemaining()?.minutes}m remaining`}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Email will be remembered for {getTimeRemaining()?.minutes} minutes</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
+          <CardHeader>
+            <CardTitle>Admin Login</CardTitle>
+            <CardDescription>
+              Sign in to access the contact form submissions dashboard
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,9 +89,10 @@ export default function AdminLoginPage() {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
-                  onChange={handleChange}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isProcessing || loading}
+                  autoComplete="email"
                 />
               </div>
 
@@ -167,41 +106,25 @@ export default function AdminLoginPage() {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={handleChange}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isProcessing || loading}
+                  autoComplete="current-password"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Note: For security, your password is not saved between sessions
-                </p>
               </div>
 
               {error && (
                 <div className="p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-800 dark:text-red-300 text-sm flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                   {error}
                 </div>
               )}
 
-              <div className="flex justify-between pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    try {
-                      resetFormData();
-                    } catch (err) {
-                      console.error("Error resetting form data:", err);
-                    }
-                  }}
-                  disabled={isProcessing || loading}
-                >
-                  Clear
-                </Button>
-
+              <div className="flex justify-end pt-2">
                 <Button
                   type="submit"
                   disabled={isProcessing || loading || !email || !password}
+                  className="w-full sm:w-auto"
                 >
                   {isProcessing || loading ? (
                     <>

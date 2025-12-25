@@ -1,8 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { authService, AuthUser } from "@/lib/appwrite/auth";
-import { directAuthService } from "@/lib/appwrite/direct-auth";
 
 // Define the authentication context type
 interface AdminAuthContextType {
@@ -12,7 +11,6 @@ interface AdminAuthContextType {
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<boolean>;
   clearError: () => void;
-  checkSession: () => Promise<void>;
 }
 
 // Create the context with default values
@@ -23,7 +21,6 @@ const AdminAuthContext = createContext<AdminAuthContextType>({
   signIn: async () => false,
   signOut: async () => false,
   clearError: () => {},
-  checkSession: async () => {},
 });
 
 // Custom hook to use the auth context
@@ -34,46 +31,29 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [sessionChecked, setSessionChecked] = useState<boolean>(false);
+  const initialCheckDone = useRef(false);
 
-  // Function to check authentication status
-  const checkSession = useCallback(async () => {
-    if (sessionChecked) return;
-
-    setLoading(true);
+  // Function to check authentication status on mount
+  const checkAuthStatus = useCallback(async () => {
+    // Only check once on mount
+    if (initialCheckDone.current) return;
+    initialCheckDone.current = true;
 
     try {
-      // Try with direct auth first (which includes session restoration)
-      try {
-        const currentUser = await directAuthService.getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-          setSessionChecked(true);
-          setLoading(false);
-          return;
-        }
-      } catch (directErr) {
-        console.warn("Direct auth failed, falling back to original auth:", directErr);
-      }
-
-      // Fall back to original auth if direct auth fails
       const currentUser = await authService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        setSessionChecked(true);
-      }
+      setUser(currentUser);
     } catch (err) {
       console.error("Error checking authentication:", err);
+      setUser(null);
     } finally {
       setLoading(false);
-      setSessionChecked(true);
     }
-  }, [sessionChecked]);
+  }, []);
 
   // Check if user is authenticated on mount
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   // Sign in function
   const signIn = async (email: string, password: string): Promise<boolean> => {
@@ -81,24 +61,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      // Try with direct auth first
-      try {
-        const result = await directAuthService.signIn(email, password);
-
-        if ('type' in result) {
-          // This is an error
-          setError(result.message);
-          return false;
-        } else {
-          // This is a user
-          setUser(result);
-          return true;
-        }
-      } catch (directErr) {
-        console.warn("Direct auth failed, falling back to original auth:", directErr);
-      }
-
-      // Fall back to original auth if direct auth fails
       const result = await authService.signIn(email, password);
 
       if ('type' in result) {
@@ -122,28 +84,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out function
   const signOut = async (): Promise<boolean> => {
     setLoading(true);
+    setError(null);
 
     try {
-      // Try with direct auth first
-      try {
-        const success = await directAuthService.signOut();
-        if (success) {
-          setUser(null);
-          return success;
-        }
-      } catch (directErr) {
-        console.warn("Direct auth failed, falling back to original auth:", directErr);
-      }
-
-      // Fall back to original auth if direct auth fails
       const success = await authService.signOut();
-      if (success) {
-        setUser(null);
-      }
+      // Always clear user state on sign out, even if server call fails
+      setUser(null);
       return success;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred during sign out";
       setError(errorMessage);
+      // Clear user state anyway for security
+      setUser(null);
       return false;
     } finally {
       setLoading(false);
@@ -163,7 +115,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     clearError,
-    checkSession,
   };
 
   return (

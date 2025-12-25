@@ -6,20 +6,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminLoginPage from '../page';
 import { useAdminAuth } from '@/components/admin/auth-context';
-import { useFormPersistence } from '@/hooks/use-form-persistence';
-import { useToast } from '@/components/ui/use-toast';
 
 // Mock the hooks
 jest.mock('@/components/admin/auth-context', () => ({
   useAdminAuth: jest.fn(),
-}));
-
-jest.mock('@/hooks/use-form-persistence', () => ({
-  useFormPersistence: jest.fn(),
-}));
-
-jest.mock('@/components/ui/use-toast', () => ({
-  useToast: jest.fn(),
 }));
 
 // Mock next/navigation
@@ -40,23 +30,6 @@ describe('AdminLoginPage', () => {
       signIn: jest.fn().mockResolvedValue(false),
       clearError: jest.fn(),
     });
-    
-    // Mock useFormPersistence hook
-    (useFormPersistence as jest.Mock).mockReturnValue({
-      formData: {
-        email: '',
-        password: '',
-      },
-      updateFormData: jest.fn(),
-      resetFormData: jest.fn(),
-      lastSaved: null,
-      getTimeRemaining: jest.fn().mockReturnValue(null),
-    });
-    
-    // Mock useToast hook
-    (useToast as jest.Mock).mockReturnValue({
-      toast: jest.fn(),
-    });
   });
   
   // Clear mocks after each test
@@ -71,30 +44,17 @@ describe('AdminLoginPage', () => {
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
   });
   
   it('updates form data when fields change', () => {
-    const mockUpdateFormData = jest.fn();
-    (useFormPersistence as jest.Mock).mockReturnValue({
-      formData: {
-        email: '',
-        password: '',
-      },
-      updateFormData: mockUpdateFormData,
-      resetFormData: jest.fn(),
-      lastSaved: null,
-      getTimeRemaining: jest.fn().mockReturnValue(null),
-    });
-    
     render(<AdminLoginPage />);
     
     // Fill out the email field
-    const emailInput = screen.getByLabelText(/email address/i);
-    fireEvent.change(emailInput, { target: { name: 'email', value: 'admin@example.com' } });
+    const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement;
+    fireEvent.change(emailInput, { target: { value: 'admin@example.com' } });
     
-    // Check that updateFormData was called with the correct value
-    expect(mockUpdateFormData).toHaveBeenCalledWith({ email: 'admin@example.com' });
+    // Check that the value was updated
+    expect(emailInput.value).toBe('admin@example.com');
   });
   
   it('calls signIn when form is submitted', async () => {
@@ -107,18 +67,13 @@ describe('AdminLoginPage', () => {
       clearError: jest.fn(),
     });
     
-    (useFormPersistence as jest.Mock).mockReturnValue({
-      formData: {
-        email: 'admin@example.com',
-        password: 'password123',
-      },
-      updateFormData: jest.fn(),
-      resetFormData: jest.fn(),
-      lastSaved: null,
-      getTimeRemaining: jest.fn().mockReturnValue(null),
-    });
-    
     render(<AdminLoginPage />);
+    
+    // Fill out the form
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    fireEvent.change(emailInput, { target: { value: 'admin@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
     
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /sign in/i });
@@ -130,26 +85,18 @@ describe('AdminLoginPage', () => {
     });
   });
   
-  it('resets form data when clear button is clicked', () => {
-    const mockResetFormData = jest.fn();
-    (useFormPersistence as jest.Mock).mockReturnValue({
-      formData: {
-        email: 'admin@example.com',
-        password: 'password123',
-      },
-      updateFormData: jest.fn(),
-      resetFormData: mockResetFormData,
-      lastSaved: null,
-      getTimeRemaining: jest.fn().mockReturnValue(null),
+  it('displays error message when authentication fails', () => {
+    (useAdminAuth as jest.Mock).mockReturnValue({
+      user: null,
+      loading: false,
+      error: 'Invalid email or password',
+      signIn: jest.fn().mockResolvedValue(false),
+      clearError: jest.fn(),
     });
     
     render(<AdminLoginPage />);
     
-    // Click the clear button
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    fireEvent.click(clearButton);
-    
-    // Check that resetFormData was called
-    expect(mockResetFormData).toHaveBeenCalled();
+    // Check that the error message is displayed
+    expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
   });
 });
