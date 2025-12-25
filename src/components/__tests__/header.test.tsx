@@ -14,11 +14,11 @@ jest.mock('@/components/theme-toggle', () => ({
 // Mock next/image
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean }) => {
     // Ensure alt is always present and convert boolean props to strings
     const imgProps = { ...props };
     if (imgProps.priority === true) {
-      imgProps.priority = "true";
+      (imgProps as Record<string, unknown>).priority = "true";
     }
     return <img alt={props.alt ?? ''} {...imgProps} />;
   },

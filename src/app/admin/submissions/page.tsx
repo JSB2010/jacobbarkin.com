@@ -103,12 +103,12 @@ export default function AdminSubmissionsPage() {
       // Update state with results
       setSubmissions(result.submissions);
       setTotalSubmissions(result.total);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError('An error occurred while fetching submissions');
       console.error('Fetch error:', error);
 
       // If there's an authentication error, redirect to login
-      if (error.code === 401) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
         router.push('/admin/login');
       }
     } finally {

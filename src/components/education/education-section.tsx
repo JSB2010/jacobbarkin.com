@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { TextRevealCard } from "@/components/ui/aceternity/text-reveal-card";
 import { AcademicYear, Class, Sport, ExtraCurricular } from "./academic-year";
-import { FaNewspaper, FaUsers, FaRunning, FaGraduationCap, FaSchool } from "react-icons/fa";
+import { FaNewspaper, FaUsers, FaRunning } from "react-icons/fa";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function EducationSection() {

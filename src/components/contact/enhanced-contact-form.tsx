@@ -46,7 +46,6 @@ export function EnhancedContactForm() {
     formState: { errors },
     reset,
     setValue,
-    getValues,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: formData,

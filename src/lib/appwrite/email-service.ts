@@ -1,5 +1,4 @@
 // Email service for contact form submissions
-import { ID } from 'appwrite';
 
 // Types for email service
 interface EmailData {

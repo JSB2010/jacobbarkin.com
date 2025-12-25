@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PersistentContactForm } from '../persistent-contact-form';
 import { useFormPersistence } from '@/hooks/use-form-persistence';
 import { useToast } from '@/components/ui/use-toast';

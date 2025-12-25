@@ -5,7 +5,7 @@ import '@testing-library/jest-dom';
 // Mock next/image
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
     return <img alt={props.alt} {...props} />;
   },
 }));

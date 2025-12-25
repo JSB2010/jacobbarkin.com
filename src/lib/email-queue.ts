@@ -1,4 +1,4 @@
-import { EmailData, sendContactFormEmail, sendEmailWithRetry } from './email-service';
+import { EmailData, sendContactFormEmail } from './email-service';
 import { EmailTemplateType } from './email-templates';
 import { logger } from '@/lib/appwrite';
 

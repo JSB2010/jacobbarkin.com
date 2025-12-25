@@ -118,7 +118,7 @@ export function ContactFormNew() {
         if (!result.success) {
           setErrorMessage(result.message);
         }
-      } catch (error) {
+      } catch {
         setErrorMessage('Failed to open email client. Please try the direct link below.');
       } finally {
         setIsSubmitting(false);

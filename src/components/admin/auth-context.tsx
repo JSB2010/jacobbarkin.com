@@ -1,9 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { authService, AuthUser, AuthError } from "@/lib/appwrite/auth";
+import { authService, AuthUser } from "@/lib/appwrite/auth";
 import { directAuthService } from "@/lib/appwrite/direct-auth";
-import { sessionConfig } from "@/lib/appwrite/client";
 
 // Define the authentication context type
 interface AdminAuthContextType {
@@ -111,8 +110,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         setUser(result);
         return true;
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred during sign in");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during sign in";
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -141,8 +141,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
       }
       return success;
-    } catch (err: any) {
-      setError(err.message || "An error occurred during sign out");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during sign out";
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);

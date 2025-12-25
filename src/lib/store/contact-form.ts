@@ -225,7 +225,7 @@ export const useContactFormStore = create<ContactFormState>((set, get) => ({
 
           // Reset success state after 5 seconds
           setTimeout(() => {
-            set(state => ({
+            set(() => ({
               isSuccess: false,
             }));
           }, 5000);
@@ -265,7 +265,7 @@ export const useContactFormStore = create<ContactFormState>((set, get) => ({
         addDebugLog(`Error type: ${typeof error}`);
         try {
           addDebugLog(`Error details: ${JSON.stringify(error)}`);
-        } catch (e) {
+        } catch {
           addDebugLog(`Error cannot be stringified`);
         }
       }

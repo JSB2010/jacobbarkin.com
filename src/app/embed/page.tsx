@@ -364,8 +364,9 @@ Demo: https://jacobbarkin.com/embed/demo.html`;
   );
 }
 
-// TypeScript declaration for the custom element
+// TypeScript declaration for the custom jb-credit element
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       'jb-credit': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {

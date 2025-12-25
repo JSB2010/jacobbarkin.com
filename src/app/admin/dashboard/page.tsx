@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/components/admin/auth-context";
 import { ProtectedRoute } from "@/components/admin/protected-route";
@@ -11,7 +11,7 @@ import { LogOut, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
-  const { user, signOut } = useAdminAuth();
+  const { signOut } = useAdminAuth();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 

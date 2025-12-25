@@ -19,14 +19,10 @@ import { SocialIcons } from "@/components/ui/social-icons";
 import { BackgroundGradient } from "@/components/ui/aceternity/background-gradient";
 import { MovingBorder } from "@/components/ui/aceternity/moving-border";
 import { TextRevealCard } from "@/components/ui/aceternity/text-reveal-card";
-import { StaticTextCard } from "@/components/ui/aceternity/static-text-card";
 import { OptimizedBackgroundImage } from "@/components/ui/optimized-background-image";
-import { ResponsiveImage } from "@/components/ui/responsive-image";
 import { LazyLoad } from "@/components/ui/lazy-load";
 import { EqualHeightGrid } from "@/components/ui/equal-height-grid";
 import Image from "next/image";
-
-import { BasicImage } from "@/components/ui/basic-image";
 
 export default function Home() {
   // State to store the current greeting - start with null to avoid hydration mismatch

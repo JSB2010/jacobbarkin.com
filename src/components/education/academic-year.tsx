@@ -15,18 +15,14 @@ import {
   FaBook,
   FaRunning,
   FaUsers,
-  FaNewspaper,
   FaChalkboardTeacher,
   FaCode,
   FaLanguage,
   FaCalculator,
   FaFlask,
-  FaGlobe,
-  FaHistory,
   FaCamera,
   FaBalanceScale
 } from "react-icons/fa";
-import { ThreeDCard } from "@/components/ui/aceternity/3d-card";
 
 // Types for the component props
 export interface Class {

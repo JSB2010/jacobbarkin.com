@@ -55,7 +55,7 @@ export function PersistentContactForm() {
       saveOnUnload: true,
       confirmOnUnload: true,
       confirmationMessage: "You have unsaved changes in your contact form. Are you sure you want to leave?",
-      onRestore: (data) => {
+      onRestore: () => {
         toast({
           title: 'Form Restored',
           description: 'Your previously saved form data has been restored.',
@@ -69,7 +69,7 @@ export function PersistentContactForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid, isDirty: formIsDirty },
+    formState: { errors, isValid },
     reset,
     setValue,
     trigger,

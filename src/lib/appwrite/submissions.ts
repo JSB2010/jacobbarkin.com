@@ -1,5 +1,5 @@
 // Contact form submissions service
-import { Client, Databases, ID, Query, Models } from 'appwrite';
+import { Client, Databases, Query } from 'appwrite';
 import { createClient } from './client';
 
 // Types

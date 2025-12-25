@@ -4,8 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ContactFormZustand } from "@/components/contact/contact-form-zustand";
 import { Mail, Github, Linkedin } from "lucide-react";
-import { SocialIcons } from "@/components/ui/social-icons";
-import { OptimizedBackgroundImage } from "@/components/ui/optimized-background-image";
 import { LazyLoad } from "@/components/ui/lazy-load";
 import { PageHero } from "@/components/ui/page-hero";
 

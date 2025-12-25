@@ -71,12 +71,12 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
       // Update state with the result
       setSubmission(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError('An error occurred while fetching the submission');
       console.error('Fetch error:', error);
 
       // If there's an authentication error, redirect to login
-      if (error.code === 401) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
         router.push('/admin/login');
       }
     } finally {
@@ -149,12 +149,12 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
       // Refetch the submission to get the latest data
       fetchSubmission();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError('An error occurred while updating the submission');
       console.error('Update error:', error);
 
       // If there's an authentication error, redirect to login
-      if (error.code === 401) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
         router.push('/admin/login');
       }
     } finally {
