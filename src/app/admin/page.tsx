@@ -1,45 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAdminAuth } from '@/components/admin/auth-context';
 
 /**
  * Admin page that redirects to the appropriate page based on authentication status
- * This page handles persistent sessions and redirects accordingly
  */
 export default function AdminRedirectPage() {
   const router = useRouter();
-  const { user, loading, checkSession } = useAdminAuth();
+  const { user, loading } = useAdminAuth();
+  const hasRedirected = useRef(false);
 
-  // Check for persistent session and redirect based on authentication status
+  // Redirect based on authentication status (only once)
   useEffect(() => {
-    // Remove any stored API key from localStorage (legacy cleanup)
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminApiKey');
-    }
-
-    // Force a session check to ensure we have the latest auth state
-    const verifySession = async () => {
-      await checkSession();
-
-      // Only redirect after auth state is determined
-      if (!loading) {
-        if (user) {
-          // If user is authenticated, redirect to dashboard
-          router.push('/admin/dashboard');
-        } else {
-          // If user is not authenticated, redirect to login
-          router.push('/admin/login');
-        }
+    if (!loading && !hasRedirected.current) {
+      hasRedirected.current = true;
+      if (user) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/admin/login');
       }
-    };
+    }
+  }, [router, user, loading]);
 
-    verifySession();
-  }, [router, user, loading, checkSession]);
-
-  // Show loading spinner while redirecting
+  // Show loading spinner while checking auth status
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <LoadingSpinner size="lg" />

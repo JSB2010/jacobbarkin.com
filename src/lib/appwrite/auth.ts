@@ -1,7 +1,6 @@
 // Appwrite authentication service
-import { Client, Account, ID, Models } from 'appwrite';
+import { Client, Account, ID } from 'appwrite';
 import { createClient } from './client';
-import { storeSession, clearSession, getStoredSessionId } from './session-manager';
 
 // Types
 export interface AuthUser {
@@ -29,6 +28,7 @@ export interface AuthError {
 
 /**
  * Authentication service for Appwrite
+ * Simplified and reliable authentication without complex session management
  */
 export class AuthService {
   private client: Client;
@@ -47,7 +47,6 @@ export class AuthService {
    */
   async createAccount(email: string, password: string, name?: string): Promise<AuthUser | AuthError> {
     try {
-      // In Appwrite v14, the create method has a different signature
       const user = await this.account.create(
         ID.unique(),
         email,
@@ -68,12 +67,10 @@ export class AuthService {
    */
   async signIn(email: string, password: string): Promise<AuthUser | AuthError> {
     try {
-      // In Appwrite v14, we use createEmailPasswordSession
-      const session = await this.account.createEmailPasswordSession(email, password);
+      // Create session
+      await this.account.createEmailPasswordSession(email, password);
 
-      // Store session information using the session manager
-      storeSession(session.$id);
-
+      // Get user data
       const user = await this.account.get();
 
       return this.mapUser(user);
@@ -87,46 +84,26 @@ export class AuthService {
    */
   async signOut(): Promise<boolean> {
     try {
-      // In Appwrite v14, we use deleteSession
+      // Delete current session
       await this.account.deleteSession('current');
-
-      // Clear session data using the session manager
-      clearSession();
-
       return true;
     } catch (error) {
       console.error('Error signing out:', error);
-      return false;
+      // Return true anyway to allow cleanup on client side
+      return true;
     }
   }
 
   /**
    * Get the current user
+   * Returns null if not authenticated
    */
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
-      // Try to get the current user directly
       const user = await this.account.get();
       return this.mapUser(user);
     } catch (error) {
-      // If that fails, try to restore the session from localStorage
-      const sessionId = getStoredSessionId();
-
-      if (sessionId) {
-        try {
-          // Try to get the session using the stored ID
-          await this.account.getSession(sessionId);
-
-          // If successful, try to get the user again
-          const user = await this.account.get();
-          return this.mapUser(user);
-        } catch (sessionError) {
-          // If session restoration fails, clean up localStorage
-          console.warn('Failed to restore session:', sessionError);
-          clearSession();
-        }
-      }
-
+      // Not authenticated or session expired
       return null;
     }
   }
