@@ -89,8 +89,7 @@ export class AuthService {
       return true;
     } catch (error) {
       console.error('Error signing out:', error);
-      // Return true anyway to allow cleanup on client side
-      return true;
+      return false;
     }
   }
 

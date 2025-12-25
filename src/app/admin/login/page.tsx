@@ -6,6 +6,7 @@ import { useAdminAuth } from "@/components/admin/auth-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Loader2, AlertCircle, Lock } from "lucide-react";
 import { PageHero } from "@/components/ui/page-hero";
 
@@ -50,9 +51,14 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Don't render form if already authenticated
+  // Show loading while redirecting
   if (!loading && user) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+        <span className="ml-4 text-muted-foreground">Redirecting to dashboard...</span>
+      </div>
+    );
   }
 
   return (

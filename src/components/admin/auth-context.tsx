@@ -66,19 +66,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       if ('type' in result) {
         // This is an error
         setError(result.message);
-        setLoading(false);
         return false;
       } else {
         // This is a user
         setUser(result);
-        setLoading(false);
         return true;
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred during sign in";
       setError(errorMessage);
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,14 +88,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const success = await authService.signOut();
+      // Always clear user state on sign out, even if server call fails
       setUser(null);
-      setLoading(false);
       return success;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred during sign out";
       setError(errorMessage);
-      setLoading(false);
+      // Clear user state anyway for security
+      setUser(null);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
