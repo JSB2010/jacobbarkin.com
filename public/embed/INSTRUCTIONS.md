@@ -59,20 +59,30 @@ onMounted(() => {
 
 All options are optional. Set via `data-*` attributes on the `<jb-credit>` element:
 
-| Attribute        | Values                    | Default   | Description                                      |
-|------------------|---------------------------|-----------|--------------------------------------------------|
-| `data-variant`   | `chip`, `minimal`, `text` | `chip`    | Visual style variant                             |
-| `data-size`      | `small`, `default`, `large` | `default` | Component size                                   |
-| `data-align`     | `left`, `center`, `right` | `center`  | Horizontal alignment within container            |
-| `data-theme`     | `auto`, `light`, `dark`   | `auto`    | Color theme (auto detects from page)             |
-| `data-position`  | `inline`, `fixed`         | `inline`  | inline = normal flow, fixed = sticky footer bar  |
+| Attribute        | Values                                                    | Default   | Description                                      |
+|------------------|-----------------------------------------------------------|-----------|--------------------------------------------------|
+| `data-variant`   | `chip`, `prominent`, `badge`, `logo`, `minimal`, `text`   | `chip`    | Visual style variant                             |
+| `data-size`      | `small`, `default`, `large`                               | `default` | Component size                                   |
+| `data-align`     | `left`, `center`, `right`                                 | `center`  | Horizontal alignment within container            |
+| `data-theme`     | `auto`, `light`, `dark`                                   | `auto`    | Color theme (auto detects from page)             |
+| `data-position`  | `inline`, `fixed`                                         | `inline`  | inline = normal flow, fixed = sticky footer bar  |
+| `data-no-track`  | (boolean)                                                 | false     | Disable analytics tracking for this embed        |
 
 ---
 
 ## Variants
 
-### chip
-Full-featured chip with logo icon, animated gradient border on hover, pulse ring effect, and mouse-follow glow.
+### chip (default)
+Full-featured chip with 16px logo icon, animated gradient border on hover, pulse ring effect, and mouse-follow glow.
+
+### prominent ⭐ NEW
+Larger inline layout with 28px logo - JSB initials clearly visible. Great for more visible credit placement.
+
+### badge ⭐ NEW
+Stacked vertical layout with large 40px logo at top, text below. Perfect for sidebars or prominent footer placement.
+
+### logo ⭐ NEW
+Just the logo (36px) with no text - minimalist and elegant. The logo links to jacobbarkin.com on click.
 
 ### minimal
 Text only by default. On hover, a chip background appears. Good for footers or subtle placement.

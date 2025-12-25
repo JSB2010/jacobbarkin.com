@@ -75,10 +75,11 @@ export async function submitContactForm(
   } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      logger.error('Validation error', { error: error.errors });
+      const zodError = error as z.ZodError<Record<string, unknown>>;
+      logger.error('Validation error', { error: zodError.issues });
       return {
         success: false,
-        message: 'Invalid form data: ' + error.errors.map(e => e.message).join(', '),
+        message: 'Invalid form data: ' + zodError.issues.map(e => e.message).join(', '),
         error,
       };
     }
@@ -118,8 +119,8 @@ async function submitViaAPI(
       },
       body: JSON.stringify({
         ...data,
-        timestamp: data.timestamp || new Date().toISOString(),
-        source: data.source || 'unified_api',
+        timestamp: new Date().toISOString(),
+        source: 'unified_api',
         method: 'api', // Explicitly set method for the unified API
       }),
       signal: controller.signal,
@@ -148,7 +149,7 @@ async function submitViaAPI(
     logger.error('Error submitting via API', error);
 
     // Handle specific error types
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       return {
         success: false,
         message: 'Request timed out. Please try again.',

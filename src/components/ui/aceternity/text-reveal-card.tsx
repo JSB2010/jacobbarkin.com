@@ -49,7 +49,9 @@ export const TextRevealCard = ({
 
   const maskImageSpring = useTransform(
     [xSpring, ySpring],
-    ([xVal, yVal]) => {
+    (values: number[]) => {
+      const xVal = values[0] ?? 0;
+      const yVal = values[1] ?? 0;
       const xOffset = (xVal * 100).toFixed(2);
       const yOffset = (yVal * 100).toFixed(2);
       return `radial-gradient(

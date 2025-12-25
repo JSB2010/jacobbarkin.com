@@ -38,7 +38,8 @@ export const GradientSkillsContainer = ({
     const normalizedY = actualRows > 1 ? row / (actualRows - 1) : 0.5;
 
     // Pass gradient position to child
-    return React.cloneElement(child, {
+    // Use type assertion to pass custom props to child components
+    return React.cloneElement(child as React.ReactElement<{ gradientPosition?: { x: number; y: number }; index?: number; totalItems?: number }>, {
       gradientPosition: { x: normalizedX, y: normalizedY },
       index,
       totalItems: totalChildren,

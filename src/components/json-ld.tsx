@@ -101,6 +101,7 @@ export default function JsonLd() {
 
   // BreadcrumbList schema - dynamic based on current path
   const getBreadcrumbList = () => {
+    if (!pathname) return null;
     const pathSegments = pathname.split('/').filter(Boolean);
 
     // If we're on the homepage, don't show breadcrumbs
@@ -143,7 +144,7 @@ export default function JsonLd() {
 
   // WebPage schema - dynamic based on current path
   const getWebPageSchema = () => {
-    const pathSegments = pathname.split('/').filter(Boolean);
+    const pathSegments = (pathname || '').split('/').filter(Boolean);
     let pageType = 'WebPage';
     let pageName = 'Jacob Barkin Portfolio';
     let pageDescription = 'Jacob Barkin - Developer, financial education advocate, and technology enthusiast.';

@@ -48,15 +48,13 @@ export function ContactFormNew() {
 
     try {
       // Submit form data using the unified API with Appwrite as the submission method
+      // Only pass the fields that are part of the contactFormSchema
       const result = await submitContactForm(
         {
           name: data.name,
           email: data.email,
           subject: data.subject,
-          message: data.message,
-          timestamp: new Date().toISOString(),
-          source: 'contact_page_form',
-          userAgent: navigator.userAgent
+          message: data.message
         },
         { method: SubmissionMethod.APPWRITE }
       );
@@ -106,14 +104,13 @@ export function ContactFormNew() {
       setIsSubmitting(true);
       try {
         // Use the unified API with EMAIL method
+        // Only pass the fields that are part of the contactFormSchema
         const result = await submitContactForm(
           {
             name: watch('name'),
             email: watch('email'),
             subject: watch('subject') || 'Contact Form Submission',
-            message: watch('message'),
-            timestamp: new Date().toISOString(),
-            source: 'contact_page_email_fallback'
+            message: watch('message')
           },
           { method: SubmissionMethod.EMAIL }
         );

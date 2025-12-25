@@ -118,6 +118,7 @@ All options are optional. Set via data-* attributes:
 | \`data-align\`     | \`left\`, \`center\`, \`right\`   | \`center\`  | Horizontal alignment within container           |
 | \`data-theme\`     | \`auto\`, \`light\`, \`dark\`     | \`auto\`    | Color theme (auto detects from page)            |
 | \`data-position\`  | \`inline\`, \`fixed\`           | \`inline\`  | inline = normal flow, fixed = sticky footer bar |
+| \`data-no-track\`  | (boolean)                   | false     | Disable analytics tracking                      |
 
 ---
 

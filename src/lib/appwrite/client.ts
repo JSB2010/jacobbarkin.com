@@ -30,18 +30,20 @@ export function createClient(): Client {
 
   // Set response format to 1.0.0 for better compatibility
   try {
-    if (typeof client.setHeader === 'function') {
-      client.setHeader('X-Appwrite-Response-Format', '1.0.0');
+    // Use type assertion to access setHeader if it exists on the client
+    const clientWithHeaders = client as unknown as { setHeader?: (key: string, value: string) => void };
+    if (typeof clientWithHeaders.setHeader === 'function') {
+      clientWithHeaders.setHeader('X-Appwrite-Response-Format', '1.0.0');
 
       // Add SameSite=None and Secure to cookies for cross-domain support
-      client.setHeader('Cookie-SameSite', 'None');
-      client.setHeader('Cookie-Secure', 'true');
+      clientWithHeaders.setHeader('Cookie-SameSite', 'None');
+      clientWithHeaders.setHeader('Cookie-Secure', 'true');
 
       // Set session duration for persistent sessions
       if (sessionConfig.persistentSessions) {
         // Convert days to seconds for the cookie max-age
         const maxAge = sessionConfig.sessionDuration * 24 * 60 * 60;
-        client.setHeader('Cookie-Max-Age', maxAge.toString());
+        clientWithHeaders.setHeader('Cookie-Max-Age', maxAge.toString());
       }
     }
   } catch (error) {

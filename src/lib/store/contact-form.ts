@@ -108,8 +108,9 @@ export const useContactFormStore = create<ContactFormState>((set, get) => ({
       if (error instanceof z.ZodError) {
         // Extract and format validation errors
         const formattedErrors: Record<string, string> = {};
+        const zodError = error as z.ZodError<unknown>;
 
-        error.errors.forEach(err => {
+        zodError.issues.forEach(err => {
           const field = err.path[0] as string;
           formattedErrors[field] = err.message;
         });
@@ -230,7 +231,7 @@ export const useContactFormStore = create<ContactFormState>((set, get) => ({
           }, 5000);
         } else {
           addDebugLog(`Form submission failed: ${result.message}`);
-          if (result.error) {
+          if ('error' in result && result.error) {
             addDebugLog(`Error details: ${JSON.stringify(result.error)}`);
           }
 

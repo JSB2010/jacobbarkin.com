@@ -149,8 +149,10 @@ function createClient() {
 
   // Set response format to 1.0.0 for better compatibility
   try {
-    if (typeof client.setHeader === 'function') {
-      client.setHeader('X-Appwrite-Response-Format', '1.0.0');
+    // Use type assertion to access setHeader if it exists on the client
+    const clientWithHeaders = client as unknown as { setHeader?: (key: string, value: string) => void };
+    if (typeof clientWithHeaders.setHeader === 'function') {
+      clientWithHeaders.setHeader('X-Appwrite-Response-Format', '1.0.0');
     }
   } catch (error) {
     console.warn('Error setting Appwrite headers:', error);
@@ -205,7 +207,8 @@ export async function submitContactForm(
     });
 
     // If this is just a test, don't actually create the document
-    if (testOnly || data.source === 'connectivity_test_do_not_save') {
+    // Check for test mode using testOnly parameter only (source is not in the schema)
+    if (testOnly) {
       logger.info('Test mode: Skipping actual document creation');
       return {
         success: true,
@@ -364,7 +367,7 @@ export async function updateSubmissionStatus(
       throw new Error(`Document not found: ${id}`);
     }
 
-    const currentStatus = currentDoc.submission.status || 'new';
+    const currentStatus = currentDoc.submission?.status || 'new';
 
     // If status hasn't changed, don't update
     if (currentStatus === status) {
@@ -388,7 +391,7 @@ export async function updateSubmissionStatus(
     };
 
     // Get existing status log or initialize a new one
-    const existingStatusLog = currentDoc.submission.statusLog || [];
+    const existingStatusLog = currentDoc.submission?.statusLog || [];
 
     // Update the document with new status and append to status log
     const document = await databases.updateDocument(

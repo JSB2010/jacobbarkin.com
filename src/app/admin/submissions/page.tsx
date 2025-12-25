@@ -38,27 +38,11 @@ const priorityLabels: Record<number, string> = {
   5: 'Lowest'
 };
 
-// Submission type
-interface Submission {
-  $id: string;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  timestamp: string;
-  status: 'new' | 'read' | 'replied' | 'archived';
-  priority: number;
-  tags?: string[];
-  statusLog?: Array<{
-    previousStatus?: string;
-    newStatus: string;
-    timestamp: string;
-    updatedBy: string;
-  }>;
-  lastUpdated?: string;
-  $createdAt: string;
-  $updatedAt: string;
-}
+// Import the ContactSubmission type from the service
+import type { ContactSubmission } from '@/lib/appwrite/submissions';
+
+// Use ContactSubmission as Submission for this page
+type Submission = ContactSubmission;
 
 export default function AdminSubmissionsPage() {
   const router = useRouter();
@@ -160,21 +144,23 @@ export default function AdminSubmissionsPage() {
   };
 
   // Render status badge
-  const renderStatusBadge = (status: string) => {
-    const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800';
+  const renderStatusBadge = (status?: string) => {
+    const statusValue = status || 'new';
+    const colorClass = statusColors[statusValue] || 'bg-gray-100 text-gray-800';
     return (
       <Badge className={colorClass}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusValue.charAt(0).toUpperCase() + statusValue.slice(1)}
       </Badge>
     );
   };
 
   // Render priority badge
-  const renderPriorityBadge = (priority: number) => {
-    const colorClass = priorityColors[priority] || 'bg-gray-100 text-gray-800';
+  const renderPriorityBadge = (priority?: number) => {
+    const priorityValue = priority || 3;
+    const colorClass = priorityColors[priorityValue] || 'bg-gray-100 text-gray-800';
     return (
       <Badge className={colorClass}>
-        {priorityLabels[priority] || priority}
+        {priorityLabels[priorityValue] || priorityValue}
       </Badge>
     );
   };
@@ -206,13 +192,13 @@ export default function AdminSubmissionsPage() {
         <CardContent>
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="flex-1">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name or email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9"
-                prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+                className="h-9 pl-9"
               />
             </div>
 

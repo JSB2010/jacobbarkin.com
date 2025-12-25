@@ -10,20 +10,21 @@ const MotionDiv = dynamic(
   { ssr: false, loading: () => <div className="motion-loading"></div> }
 );
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type MotionProps = {
   children: React.ReactNode;
   className?: string;
-  initial?: Record<string, any>;
-  animate?: Record<string, any>;
-  exit?: Record<string, any>;
-  transition?: Record<string, any>;
-  whileHover?: Record<string, any>;
-  whileTap?: Record<string, any>;
-  whileInView?: Record<string, any>;
-  viewport?: Record<string, any>;
-  variants?: Record<string, any>;
+  initial?: any;
+  animate?: any;
+  exit?: any;
+  transition?: any;
+  whileHover?: any;
+  whileTap?: any;
+  whileInView?: any;
+  viewport?: any;
+  variants?: any;
   layoutId?: string;
-  layout?: boolean | string;
+  layout?: boolean | "size" | "position" | "preserve-aspect";
 };
 
 /**

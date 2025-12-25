@@ -436,9 +436,9 @@ export function ContactFormApi() {
                 </button>
                 <a
                   href={`mailto:Jacobsamuelbarkin@gmail.com?subject=${encodeURIComponent(
-                    `Contact Form: ${document.getElementById('subject')?.value ?? 'Message from website'}`
+                    `Contact Form: ${(document.getElementById('subject') as HTMLInputElement | null)?.value ?? 'Message from website'}`
                   )}&body=${encodeURIComponent(
-                    `Name: ${document.getElementById('name')?.value ?? ''}\nEmail: ${document.getElementById('email')?.value ?? ''}\n\nMessage:\n${document.getElementById('message')?.value ?? ''}`
+                    `Name: ${(document.getElementById('name') as HTMLInputElement | null)?.value ?? ''}\nEmail: ${(document.getElementById('email') as HTMLInputElement | null)?.value ?? ''}\n\nMessage:\n${(document.getElementById('message') as HTMLTextAreaElement | null)?.value ?? ''}`
                   )}`}
                   className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800/30 transition-colors"
                 >

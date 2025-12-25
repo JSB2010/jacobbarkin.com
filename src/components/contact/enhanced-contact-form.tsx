@@ -37,7 +37,7 @@ export function EnhancedContactForm() {
   const { formData, updateFormData, resetFormData } = useFormPersistence<FormValues>(
     'contact-form',
     initialValues,
-    60 // Expire after 60 minutes
+    { expiryMinutes: 60 } // Expire after 60 minutes
   );
   
   // React Hook Form setup

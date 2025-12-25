@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ID } from 'appwrite';
+import { ID, Query } from 'appwrite';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -73,13 +73,9 @@ export function ContactFormAppwrite() {
         [
           // Add a filter that will likely return no results but still test the connection
           // This avoids exposing actual submissions
-          {
-            key: 'name',
-            value: 'connection_test_' + Date.now(),
-            operator: 'equal'
-          }
-        ],
-        1
+          Query.equal('name', 'connection_test_' + Date.now()),
+          Query.limit(1)
+        ]
       );
 
       addDebugLog('✅ Appwrite connection successful!');

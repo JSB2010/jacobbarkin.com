@@ -61,12 +61,13 @@ const processClientEnv = () => {
     return clientEnvSchema.parse(clientEnv);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors
-        .filter(err => err.code === 'invalid_type' && err.received === 'undefined')
+      const zodError = error as z.ZodError<unknown>;
+      const missingVars = zodError.issues
+        .filter(err => err.code === 'invalid_type' && (err as { received?: string }).received === 'undefined')
         .map(err => err.path.join('.'));
-      
-      const invalidVars = error.errors
-        .filter(err => err.code !== 'invalid_type' || err.received !== 'undefined')
+
+      const invalidVars = zodError.issues
+        .filter(err => err.code !== 'invalid_type' || (err as { received?: string }).received !== 'undefined')
         .map(err => `${err.path.join('.')}: ${err.message}`);
       
       console.error('❌ Invalid client environment variables:');
@@ -108,14 +109,15 @@ const processServerEnv = () => {
     return serverEnvSchema.parse(serverEnv);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors
-        .filter(err => err.code === 'invalid_type' && err.received === 'undefined')
+      const zodError = error as z.ZodError<unknown>;
+      const missingVars = zodError.issues
+        .filter(err => err.code === 'invalid_type' && (err as { received?: string }).received === 'undefined')
         .map(err => err.path.join('.'));
-      
-      const invalidVars = error.errors
-        .filter(err => err.code !== 'invalid_type' || err.received !== 'undefined')
+
+      const invalidVars = zodError.issues
+        .filter(err => err.code !== 'invalid_type' || (err as { received?: string }).received !== 'undefined')
         .map(err => `${err.path.join('.')}: ${err.message}`);
-      
+
       console.error('❌ Invalid server environment variables:');
       if (missingVars.length > 0) {
         console.error('Missing variables:', missingVars.join(', '));

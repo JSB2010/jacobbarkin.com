@@ -18,6 +18,7 @@ describe('SubmissionRow', () => {
     subject: 'Test Subject',
     message: 'Test Message',
     $createdAt: new Date().toISOString(),
+    $updatedAt: new Date().toISOString(),
   };
   
   it('renders correctly with all props', () => {

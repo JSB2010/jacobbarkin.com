@@ -43,7 +43,7 @@ const SocialIcon = ({
       aria-label={label}
     >
       <div className="flex items-center justify-center">
-        {React.cloneElement(icon as React.ReactElement, { 
+        {React.cloneElement(icon as React.ReactElement<{ className?: string; 'aria-hidden'?: string }>, {
           className: iconSizes[size],
           'aria-hidden': 'true'
         })}
@@ -53,30 +53,32 @@ const SocialIcon = ({
   );
 };
 
-export const GitHubIcon = (props: Omit<SocialIconProps, 'icon' | 'label'>) => (
+type SpecificIconProps = Omit<SocialIconProps, 'icon' | 'label' | 'href'> & { href?: string };
+
+export const GitHubIcon = ({ href, ...props }: SpecificIconProps) => (
   <SocialIcon
-    href={props.href || "https://github.com/JSB2010"}
+    href={href || "https://github.com/JSB2010"}
     icon={<Github />}
     label="GitHub"
     {...props}
   />
 );
 
-export const LinkedInIcon = (props: Omit<SocialIconProps, 'icon' | 'label'>) => (
+export const LinkedInIcon = ({ href, ...props }: SpecificIconProps) => (
   <SocialIcon
-    href={props.href || "https://www.linkedin.com/in/jacob-barkin/"}
+    href={href || "https://www.linkedin.com/in/jacob-barkin/"}
     icon={<Linkedin />}
     label="LinkedIn"
     {...props}
   />
 );
 
-export const EmailIcon = (props: Omit<SocialIconProps, 'icon' | 'label'>) => (
+export const EmailIcon = ({ href, external, ...props }: SpecificIconProps) => (
   <SocialIcon
-    href={props.href || "/contact"}
+    href={href || "/contact"}
     icon={<Mail />}
     label="Contact"
-    external={false}
+    external={external ?? false}
     {...props}
   />
 );

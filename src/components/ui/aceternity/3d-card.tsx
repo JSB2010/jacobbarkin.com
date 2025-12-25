@@ -104,7 +104,8 @@ export const ThreeDCard = ({
   // Pass props to children
   const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      return React.cloneElement(child, {
+      // Use type assertion to pass custom props to child components
+      return React.cloneElement(child as React.ReactElement<{ gradientPosition?: { x: number; y: number }; index?: number }>, {
         gradientPosition,
         index,
         // Don't pass totalItems to avoid React DOM prop warning

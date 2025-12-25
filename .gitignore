@@ -16,6 +16,12 @@
 .next
 out
 node_modules
+
+# Cloudflare Workers / OpenNext
+/.open-next/
+.open-next
+.wrangler
+cloudflare-env.d.ts
 **/.next/**/*.pack
 **/.next/cache/**
 **/node_modules/**
@@ -27,10 +33,6 @@ node_modules
 **/.next/static/**
 **/.next/trace
 **/.next/types/**
-
-# API routes (not compatible with static export)
-/src/app/api/
-src/app/api/
 
 # Specific large files
 node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node

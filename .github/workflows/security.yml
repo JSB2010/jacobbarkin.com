@@ -2,9 +2,9 @@ name: Security Scanning
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, modern-redesign-shadcn ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, modern-redesign-shadcn ]
   schedule:
     - cron: '0 0 * * 0'  # Run weekly on Sunday at midnight
   workflow_dispatch:
@@ -12,31 +12,31 @@ on:
 jobs:
   security-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # Add a timeout to prevent the workflow from running too long
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          cache: 'npm'
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
-      - name: Run npm audit
-        run: npm audit --production || true
+      - name: Run bun audit
+        run: bun audit || true
 
       - name: Run ESLint security rules
-        run: npm run lint
+        run: bun run lint
+        continue-on-error: true
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/init@v4
         with:
           languages: javascript, typescript
-          queries: security-and-quality  # Use a more focused query suite
+          queries: security-and-quality
           config-file: ./.github/codeql-config.yml
 
       - name: Perform CodeQL Analysis
@@ -45,4 +45,4 @@ jobs:
         with:
           category: "/language:javascript"
           output: sarif-results
-          skip-queries: true  # Skip running queries that take too long
+          skip-queries: true

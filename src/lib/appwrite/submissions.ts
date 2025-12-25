@@ -15,7 +15,17 @@ export interface ContactSubmission {
   userAgent?: string;
   source?: string;
   ipAddress?: string;
-  // isRead field removed
+  // Admin management fields (optional)
+  status?: 'new' | 'read' | 'replied' | 'archived';
+  priority?: number;
+  tags?: string[];
+  statusLog?: Array<{
+    previousStatus?: string;
+    newStatus: string;
+    timestamp: string;
+    updatedBy: string;
+  }>;
+  lastUpdated?: string;
 }
 
 export interface SubmissionListResponse {

@@ -27,7 +27,7 @@ const DynamicMeteors = dynamic(
 );
 
 const DynamicCardHoverEffect = dynamic(
-  () => import('./card-hover-effect').then(mod => ({ default: mod.CardHoverEffect })),
+  () => import('./card-hover-effect').then(mod => ({ default: mod.HoverEffect })),
   {
     ssr: true
   }

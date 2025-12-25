@@ -24,7 +24,7 @@ describe('RateLimiter', () => {
 
   beforeEach(() => {
     // Reset the Date.now mock before each test
-    let currentTime = 1620000000000; // May 3, 2021
+    const currentTime = 1620000000000; // May 3, 2021
     Date.now = jest.fn(() => currentTime);
     
     // Clear any existing rate limiter instances

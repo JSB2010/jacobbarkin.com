@@ -35,9 +35,10 @@ const createClient = () => {
 
   // Set response format to 1.0.0 for better compatibility
   try {
-    // Check if setHeader method exists before calling it
-    if (typeof client.setHeader === 'function') {
-      client.setHeader('X-Appwrite-Response-Format', '1.0.0');
+    // Use type assertion to access setHeader if it exists on the client
+    const clientWithHeaders = client as unknown as { setHeader?: (key: string, value: string) => void };
+    if (typeof clientWithHeaders.setHeader === 'function') {
+      clientWithHeaders.setHeader('X-Appwrite-Response-Format', '1.0.0');
     } else {
       console.warn('Appwrite client.setHeader method not available - skipping custom headers');
     }

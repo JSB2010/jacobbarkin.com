@@ -9,13 +9,20 @@
  *   <script src="https://jacobbarkin.com/embed/credit.js" data-auto></script>
  *
  * Attributes:
- *   data-variant="chip|minimal|text" - Style variant (default: chip)
+ *   data-variant - Style variant (default: chip)
+ *     - chip: Default compact design with logo and text
+ *     - prominent: Larger inline logo (28px), bigger text
+ *     - badge: Stacked vertical layout with large logo (40px)
+ *     - logo: Logo only, no text (36px)
+ *     - minimal: Text only, chip appears on hover
+ *     - text: Plain text link, no chip
  *   data-theme="auto|light|dark" - Color theme (default: auto-detects)
  *   data-align="center|left|right" - Alignment (default: center)
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
+ *   data-no-track - Disable analytics tracking
  *
- * @version 2.1.0
+ * @version 2.4.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -23,8 +30,149 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.1.0';
+  const VERSION = '2.4.0';
   const SITE_URL = 'https://jacobbarkin.com';
+
+  // Appwrite configuration for direct writes (no API route needed)
+  const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
+  const APPWRITE_PROJECT_ID = '6816ef35001da24d113d';
+  const APPWRITE_DATABASE_ID = 'contact-form-db';
+  const APPWRITE_COLLECTION_ID = 'embed-analytics';
+
+  // Session storage key for deduplication
+  const SESSION_KEY = 'jb-credit-session';
+
+  // Get or create session ID (persists across page navigations in same session)
+  function getSessionId() {
+    try {
+      let id = sessionStorage.getItem(SESSION_KEY);
+      if (!id) {
+        id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        sessionStorage.setItem(SESSION_KEY, id);
+      }
+      return id;
+    } catch {
+      return 'no-storage';
+    }
+  }
+
+  // Detect device type from user agent
+  function getDeviceType() {
+    const ua = navigator.userAgent;
+    if (/Mobi|Android/i.test(ua) && !/Tablet|iPad/i.test(ua)) return 'mobile';
+    if (/Tablet|iPad/i.test(ua)) return 'tablet';
+    return 'desktop';
+  }
+
+  // Get browser name
+  function getBrowserName() {
+    const ua = navigator.userAgent;
+    if (ua.includes('Firefox')) return 'Firefox';
+    if (ua.includes('Edg')) return 'Edge';
+    if (ua.includes('Chrome')) return 'Chrome';
+    if (ua.includes('Safari')) return 'Safari';
+    if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+    return 'Other';
+  }
+
+  // Analytics tracking with rich data
+  const Analytics = {
+    tracked: new Set(), // Avoid duplicate impressions per page load
+    sessionId: null,
+
+    getSessionId() {
+      if (!this.sessionId) {
+        this.sessionId = getSessionId();
+      }
+      return this.sessionId;
+    },
+
+    send(eventType, element) {
+      // Skip if tracking disabled
+      if (element?.hasAttribute('data-no-track')) return;
+
+      // Skip localhost/development
+      const host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1' || host.includes('.local')) return;
+
+      // Skip if already tracked this element for impressions (per page load)
+      const trackKey = `${eventType}-${element?.id || 'default'}`;
+      if (eventType === 'impression' && this.tracked.has(trackKey)) return;
+      this.tracked.add(trackKey);
+
+      // Also deduplicate impressions per page per session
+      if (eventType === 'impression') {
+        try {
+          const pageKey = `jb-imp-${window.location.pathname}`;
+          if (sessionStorage.getItem(pageKey)) return;
+          sessionStorage.setItem(pageKey, '1');
+        } catch {
+          // sessionStorage not available, continue anyway
+        }
+      }
+
+      // Extract domain from referrer URL
+      const url = window.location.href;
+      let referrerDomain = '';
+      try {
+        referrerDomain = new URL(url).hostname;
+      } catch {
+        referrerDomain = window.location.hostname || 'unknown';
+      }
+
+      // Build Appwrite document data
+      const documentData = {
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        referrer_url: url.substring(0, 2048),
+        referrer_domain: referrerDomain.substring(0, 255),
+        page_path: (window.location.pathname || '/').substring(0, 500),
+        page_title: (document.title || '').substring(0, 200),
+        variant: element?.getAttribute('data-variant') || 'chip',
+        size: element?.getAttribute('data-size') || 'default',
+        session_id: this.getSessionId(),
+        device_type: getDeviceType(),
+        browser: getBrowserName(),
+        user_agent: (navigator.userAgent || '').substring(0, 512),
+        country: '', // Will be empty from client-side, could be enriched server-side
+        city: '',
+        region: '',
+        screen_width: window.screen?.width || 0,
+        screen_height: window.screen?.height || 0,
+        viewport_width: window.innerWidth || 0,
+        viewport_height: window.innerHeight || 0,
+        language: (navigator.language || '').substring(0, 10),
+        timezone: (Intl?.DateTimeFormat?.()?.resolvedOptions?.()?.timeZone || '').substring(0, 50),
+      };
+
+      // Write directly to Appwrite REST API (no proxy needed)
+      const appwriteUrl = `${APPWRITE_ENDPOINT}/databases/${APPWRITE_DATABASE_ID}/collections/${APPWRITE_COLLECTION_ID}/documents`;
+
+      const requestBody = JSON.stringify({
+        documentId: 'unique()',
+        data: documentData,
+      });
+
+      // Send using fetch with keepalive (works better than sendBeacon for JSON)
+      try {
+        fetch(appwriteUrl, {
+          method: 'POST',
+          body: requestBody,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+          },
+          keepalive: true,
+          mode: 'cors',
+        }).catch(() => {}); // Silently fail - tracking should never break the embed
+      } catch {
+        // Silently fail
+      }
+    },
+
+    impression(element) { this.send('impression', element); },
+    click(element) { this.send('click', element); },
+  };
 
   // Detect if we should auto-inject
   const currentScript = document.currentScript;
@@ -47,6 +195,36 @@
       this.render();
       this.setupThemeObserver();
       this.setupInteractivity();
+      this.setupTracking();
+    }
+
+    setupTracking() {
+      // Track impression when component becomes visible
+      if (!this.hasAttribute('data-no-track')) {
+        // Use IntersectionObserver to track when actually visible
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                Analytics.impression(this);
+                observer.disconnect();
+              }
+            });
+          }, { threshold: 0.5 });
+          observer.observe(this);
+        } else {
+          // Fallback: track immediately
+          Analytics.impression(this);
+        }
+      }
+
+      // Track clicks
+      const chip = this.shadowRoot?.querySelector('.jb-credit-chip');
+      if (chip) {
+        chip.addEventListener('click', () => {
+          Analytics.click(this);
+        });
+      }
     }
 
     disconnectedCallback() {
@@ -386,6 +564,73 @@
 `;
       }
 
+      // Variant: "badge" - larger prominent logo with stacked text
+      if (variant === 'badge') {
+        styles += `
+        .jb-credit-chip {
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          border-radius: 12px;
+        }
+        .logo-icon {
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .jb-credit-chip:hover .logo-icon {
+          transform: scale(1.08) rotate(2deg);
+        }
+        .credit-text {
+          font-size: 0.6875rem;
+          text-align: center;
+        }
+`;
+      }
+
+      // Variant: "logo" - just the logo, larger and prominent
+      if (variant === 'logo') {
+        styles += `
+        .jb-credit-chip {
+          padding: 0.5rem;
+          border-radius: 10px;
+        }
+        .logo-icon {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 6px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .jb-credit-chip:hover .logo-icon {
+          transform: scale(1.1) rotate(3deg);
+        }
+        .credit-text { display: none; }
+`;
+      }
+
+      // Variant: "prominent" - inline but with larger logo
+      if (variant === 'prominent') {
+        styles += `
+        .jb-credit-chip {
+          gap: 0.6rem;
+          padding: 0.5rem 0.875rem;
+        }
+        .logo-icon {
+          width: 28px !important;
+          height: 28px !important;
+          border-radius: 5px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .jb-credit-chip:hover .logo-icon {
+          transform: scale(1.12);
+        }
+        .credit-text {
+          font-size: 0.8125rem;
+        }
+`;
+      }
+
       if (position === 'fixed') {
         styles += `
         :host {
@@ -425,8 +670,12 @@
       const variant = this.getAttribute('data-variant') || 'chip';
       const size = this.getAttribute('data-size') || 'default';
 
-      // Show effects only for chip variant
-      const showEffects = variant === 'chip';
+      // Show effects for chip and new prominent variants
+      const effectVariants = ['chip', 'badge', 'logo', 'prominent'];
+      const showEffects = effectVariants.includes(variant);
+
+      // Show text for most variants (not logo-only)
+      const showText = variant !== 'logo';
 
       this.shadowRoot.innerHTML = `
         <style>${this.getStyles(theme, position, align, variant, size)}</style>
@@ -435,10 +684,10 @@
             ${showEffects ? '<div class="glow-bg"></div>' : ''}
             ${showEffects ? '<div class="animated-border"></div>' : ''}
             ${showEffects ? '<div class="pulse-ring"></div>' : ''}
-            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="" width="16" height="16" loading="lazy" decoding="async" />
-            <span class="credit-text">
+            <img class="logo-icon" src="${SITE_URL}/images/Updated%20logo.png" alt="JSB" loading="lazy" decoding="async" />
+            ${showText ? `<span class="credit-text">
               Designed by <span class="credit-name">Jacob Barkin</span>
-            </span>
+            </span>` : ''}
           </a>
         </div>
       `;

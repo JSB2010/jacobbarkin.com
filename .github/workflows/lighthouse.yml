@@ -2,9 +2,9 @@ name: Lighthouse CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, modern-redesign-shadcn ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, modern-redesign-shadcn ]
   workflow_dispatch:
 
 jobs:
@@ -12,19 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          cache: 'npm'
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build project
-        run: npm run build
+        run: bun run build
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
@@ -40,7 +39,7 @@ jobs:
         continue-on-error: true
 
       - name: Save Lighthouse report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: lighthouse-results
           path: '.lighthouseci'

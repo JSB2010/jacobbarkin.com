@@ -14,16 +14,16 @@ import { ProtectedRoute } from '@/components/admin/protected-route';
 
 
 
-// Submission type
+// Submission type - extends ContactSubmission with optional admin fields
 interface Submission {
   $id: string;
   name: string;
   email: string;
   subject: string;
   message: string;
-  timestamp: string;
-  status: 'new' | 'read' | 'replied' | 'archived';
-  priority: number;
+  timestamp?: string;
+  status?: 'new' | 'read' | 'replied' | 'archived';
+  priority?: number;
   tags?: string[];
   statusLog?: Array<{
     previousStatus?: string;
@@ -32,6 +32,9 @@ interface Submission {
     updatedBy: string;
   }>;
   lastUpdated?: string;
+  userAgent?: string;
+  source?: string;
+  ipAddress?: string;
   $createdAt: string;
   $updatedAt: string;
 }
@@ -116,11 +119,11 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
       } = {};
 
       // Only include fields that have changed
-      if (status !== submission.status) {
+      if (status !== (submission.status || 'new')) {
         updateData.status = status;
       }
 
-      if (priority !== submission.priority) {
+      if (priority !== (submission.priority || 3)) {
         updateData.priority = priority;
       }
 

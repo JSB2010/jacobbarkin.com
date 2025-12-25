@@ -1,6 +1,0 @@
-# Cloudflare Pages configuration
-name = "jacob-barkin-portfolio"
-compatibility_date = "2023-10-30"
-
-# This is the only required field for Pages
-pages_build_output_dir = "out"

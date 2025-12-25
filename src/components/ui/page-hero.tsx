@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-interface PageHeroProps {
+export interface PageHeroProps {
   title: string;
   description: string;
   backgroundImage?: string;
@@ -29,6 +29,8 @@ interface PageHeroProps {
   };
   tags?: string[];
   className?: string;
+  /** Custom actions to render instead of cta/secondaryCta buttons */
+  actions?: React.ReactNode;
 }
 
 export function PageHero({
@@ -41,6 +43,7 @@ export function PageHero({
   secondaryCta,
   tags,
   className,
+  actions,
 }: PageHeroProps) {
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -165,8 +168,15 @@ export function PageHero({
             </div>
           )}
 
-          {/* Call to Action Buttons */}
-          {(cta || secondaryCta) && (
+          {/* Custom Actions (if provided) */}
+          {actions && (
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+              {actions}
+            </div>
+          )}
+
+          {/* Call to Action Buttons (if no custom actions) */}
+          {!actions && (cta || secondaryCta) && (
             <div className={`flex ${isMobile ? 'flex-col' : 'flex-wrap'} gap-2 sm:gap-3 justify-center ${isMobile ? 'w-full max-w-xs mx-auto' : ''}`}>
               {cta && (
                 <Button
@@ -181,10 +191,10 @@ export function PageHero({
                   >
                     <span className="truncate">{cta.text}</span>
                     {cta.icon || (
-                      <ArrowRight className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1 flex-shrink-0" />
+                      <ArrowRight className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1 shrink-0" />
                     )}
                     {cta.external && (
-                      <ExternalLink className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <ExternalLink className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                     )}
                   </Link>
                 </Button>
@@ -204,9 +214,9 @@ export function PageHero({
                     <span className="truncate">{secondaryCta.text}</span>
                     {secondaryCta.icon || (
                       secondaryCta.external ? (
-                        <ExternalLink className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <ExternalLink className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                       ) : (
-                        <ArrowRight className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1 flex-shrink-0" />
+                        <ArrowRight className="ml-1 sm:ml-2 h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1 shrink-0" />
                       )
                     )}
                   </Link>

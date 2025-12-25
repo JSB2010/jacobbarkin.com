@@ -9,7 +9,6 @@ export interface MovingBorderProps extends React.HTMLAttributes<HTMLDivElement> 
   className?: string;
   containerClassName?: string;
   borderClassName?: string;
-  as?: keyof JSX.IntrinsicElements;
 }
 
 export const MovingBorder = ({
@@ -18,7 +17,6 @@ export const MovingBorder = ({
   className,
   containerClassName,
   borderClassName,
-  as: Tag = "div",
   ...otherProps
 }: MovingBorderProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +46,7 @@ export const MovingBorder = ({
   }, [duration, isHovered]);
 
   return (
-    <Tag
+    <div
       ref={containerRef}
       className={cn(
         "relative rounded-xl overflow-hidden p-[1px]",
@@ -76,6 +74,6 @@ export const MovingBorder = ({
       >
         {children}
       </div>
-    </Tag>
+    </div>
   );
 };

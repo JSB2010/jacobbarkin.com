@@ -1,7 +1,7 @@
-import { ViewportConfig } from 'next';
+import type { Viewport } from 'next';
 
 // Enhanced viewport configuration for the home page
-export const viewport: ViewportConfig = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

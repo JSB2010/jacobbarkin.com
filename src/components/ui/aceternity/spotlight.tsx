@@ -6,10 +6,11 @@ import { useRef, useState, useEffect } from "react";
 interface SpotlightProps {
   className?: string;
   children?: React.ReactNode;
+  fill?: string;
 }
 
-export const Spotlight = ({ children, className = "" }: SpotlightProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+export const Spotlight = ({ children, className = "", fill }: SpotlightProps) => {
+  const containerRef = useRef<HTMLButtonElement>(null);
   const mousePosition = useRef({ x: 0, y: 0 });
   const mouse = useRef({ x: 0, y: 0 });
   const containerSize = useRef({ w: 0, h: 0 });
@@ -83,7 +84,9 @@ export const Spotlight = ({ children, className = "" }: SpotlightProps) => {
       <div
         className="pointer-events-none absolute -inset-px z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
-          background: `radial-gradient(600px circle at var(--x) var(--y), rgba(var(--primary-rgb), 0.15), transparent 40%)`,
+          background: fill
+            ? `radial-gradient(600px circle at var(--x) var(--y), ${fill}, transparent 40%)`
+            : `radial-gradient(600px circle at var(--x) var(--y), rgba(var(--primary-rgb), 0.15), transparent 40%)`,
         }}
       />
       {children}

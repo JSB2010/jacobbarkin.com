@@ -34,9 +34,10 @@ export function StructuredData({
     ...(datePublished && { datePublished }),
     ...(dateModified && { dateModified: dateModified || datePublished }),
   };
-  
+
   // Additional data based on type
-  let structuredData = { ...baseData };
+  // Use Record type to allow additional properties
+  let structuredData: Record<string, unknown> = { ...baseData };
   
   if (type === 'Person') {
     structuredData = {

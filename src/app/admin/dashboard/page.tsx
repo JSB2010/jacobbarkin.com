@@ -7,7 +7,8 @@ import { ProtectedRoute } from "@/components/admin/protected-route";
 import { SubmissionsDashboard } from "@/components/admin/submissions-dashboard";
 import { PageHero } from "@/components/ui/page-hero";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, BarChart3 } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboardPage() {
   const { user, signOut } = useAdminAuth();
@@ -35,14 +36,22 @@ export default function AdminDashboardPage() {
         description="Manage contact form submissions"
         backgroundImage="/images/code-bg.jpg"
         actions={
-          <Button 
-            variant="outline" 
-            onClick={handleSignOut}
-            disabled={isSigningOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/admin/embed-analytics">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Embed Analytics
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         }
       />
 

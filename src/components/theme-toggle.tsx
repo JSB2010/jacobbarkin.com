@@ -43,7 +43,8 @@ export function ThemeToggle() {
         </span>
       );
     }
-    return <span>{theme.charAt(0).toUpperCase() + theme.slice(1)}</span>;
+    const themeValue = theme || 'system';
+    return <span>{themeValue.charAt(0).toUpperCase() + themeValue.slice(1)}</span>;
   };
 
   return (

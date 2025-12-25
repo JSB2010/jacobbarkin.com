@@ -5,9 +5,9 @@ import { MotionWrapper, fadeIn, slideUp, staggerChildren } from '@/components/ui
 jest.mock('next/dynamic', () => {
   // Return a div with motion-mock class to confirm the mock is working
   return jest.fn(() => {
-    return ({ children, className, ...props }) => (
-      <div 
-        data-testid="motion-div-mock" 
+    return ({ children, className, ...props }: { children?: React.ReactNode; className?: string; [key: string]: unknown }) => (
+      <div
+        data-testid="motion-div-mock"
         className={`motion-mock ${className || ''}`}
         {...props}
       >

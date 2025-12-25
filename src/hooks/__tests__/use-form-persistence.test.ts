@@ -44,11 +44,13 @@ describe('useFormPersistence', () => {
 
     // Simpler approach to mocking Date
     const MockDate = class extends originalDate {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       constructor(...args: any[]) {
         if (args.length === 0) {
           super(fixedTime);
         } else {
-          super(...args);
+           
+          super(...(args as [string | number | Date]));
         }
       }
 
@@ -57,6 +59,7 @@ describe('useFormPersistence', () => {
       }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     global.Date = MockDate as any;
 
     // Mock window event listeners
