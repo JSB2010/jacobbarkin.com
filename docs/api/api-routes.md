@@ -83,6 +83,27 @@ The website uses Next.js API routes for server-side functionality. These routes 
   "uptime": 123456789,
   "responseTime": 100,
   "version": "0.1.0",
+  "environment": {
+    "runtime": "Cloudflare Workers",
+    "nodeVersion": "v20.0.0",
+    "platform": "linux"
+  },
+  "checks": {
+    "database": {
+      "status": "failed",
+      "message": "Database connection failed",
+      "responseTime": 100
+    }
+  },
+  "metrics": {
+    "memoryUsage": {
+      "rss": 12345678,
+      "heapTotal": 8765432,
+      "heapUsed": 6543210,
+      "external": 123456,
+      "arrayBuffers": 12345
+    }
+  },
   "error": "Critical error message"
 }
 ```
