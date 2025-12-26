@@ -126,7 +126,7 @@ async function testHealthEndpoint() {
     console.error(`Error: ${error.message}`);
     
     if (error.code === 'ECONNREFUSED') {
-      console.error('\nIs the server running? Try: npm run dev');
+      console.error('\nIs the server running? Try: bun run dev');
     }
     
     process.exit(1);
