@@ -23,8 +23,8 @@
     "check-a11y": "bunx @axe-core/cli http://localhost:3000 --exit",
     "check-a11y-all": "bun scripts/check-accessibility.js",
     "test-site": "bun scripts/test-site.js",
-    "test:health": "node scripts/test-health-endpoint.js",
-    "test:health:prod": "node scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz",
+    "test:health": "bun scripts/test-health-endpoint.js",
+    "test:health:prod": "bun scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz",
     "optimize-dependencies": "bun scripts/optimize-dependencies.js",
     "security-scan": "bun audit && bun run lint",
     "analyze-bundle": "ANALYZE=true bun run build"

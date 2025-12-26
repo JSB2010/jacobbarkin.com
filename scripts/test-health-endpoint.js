@@ -1,15 +1,15 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * Simple test script to verify the /api/healthz endpoint is working
  * 
  * Usage:
- *   node scripts/test-health-endpoint.js [url]
+ *   bun scripts/test-health-endpoint.js [url]
  * 
  * Examples:
- *   node scripts/test-health-endpoint.js
- *   node scripts/test-health-endpoint.js http://localhost:3000/api/healthz
- *   node scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz
+ *   bun scripts/test-health-endpoint.js
+ *   bun scripts/test-health-endpoint.js http://localhost:3000/api/healthz
+ *   bun scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz
  */
 
 // Default URL - can be overridden via command line argument or environment variable

@@ -370,10 +370,10 @@ The site includes a dedicated health check endpoint at `/api/healthz` for monito
 
 ```bash
 # Test locally
-npm run test:health
+bun run test:health
 
 # Test production
-npm run test:health:prod
+bun run test:health:prod
 ```
 
 Perfect for use with:
