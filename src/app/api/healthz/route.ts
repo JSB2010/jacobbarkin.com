@@ -19,26 +19,24 @@ interface CloudflareEnv {
 // Store start time when module is loaded
 const START_TIME = Date.now();
 
-/**
- * Health check endpoint for monitoring
- * 
- * This endpoint provides a fast, lightweight health check that:
- * - Returns 200 status when the service is healthy
- * - Includes minimal diagnostics to avoid false positives
- * - Tests critical dependencies (database)
- * - Provides useful debugging information
- * 
- * Perfect for use with Uptime Kuma or other monitoring tools
- */
-export async function GET() {
-  const startTime = Date.now();
-  
-  // Initialize health check response
-  const health: {
-    status: "healthy" | "degraded" | "unhealthy";
+// CORS headers for cross-origin requests
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// Health check result type
+type HealthStatus = "healthy" | "degraded" | "unhealthy";
+
+interface HealthCheckResult {
+  status: HealthStatus;
+  statusCode: number;
+  data: {
+    status: HealthStatus;
     timestamp: string;
     uptime: number;
-    responseTime?: number;
+    responseTime: number;
     version: string;
     environment: {
       runtime: string;
@@ -55,10 +53,23 @@ export async function GET() {
     metrics?: {
       memoryUsage?: NodeJS.MemoryUsage;
     };
-  } = {
+    error?: string;
+  };
+}
+
+/**
+ * Perform health check and return result with status code
+ * This shared logic ensures GET and HEAD return consistent status codes
+ */
+async function performHealthCheck(): Promise<HealthCheckResult> {
+  const startTime = Date.now();
+  
+  // Initialize health check response
+  const health: HealthCheckResult["data"] = {
     status: "healthy",
     timestamp: new Date().toISOString(),
     uptime: Date.now() - START_TIME,
+    responseTime: 0,
     version: process.env.npm_package_version || "unknown",
     environment: {
       runtime: "Cloudflare Workers",
@@ -118,62 +129,67 @@ export async function GET() {
     // Return appropriate status code based on health
     const statusCode = health.status === "unhealthy" ? 503 : 200;
 
-    return NextResponse.json(health, {
-      status: statusCode,
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Content-Type": "application/json",
-      },
-    });
+    return {
+      status: health.status,
+      statusCode,
+      data: health,
+    };
   } catch (error) {
     // If we hit a critical error, return unhealthy status
     health.status = "unhealthy";
     health.responseTime = Date.now() - startTime;
+    health.error = error instanceof Error ? error.message : "Health check failed";
     
-    return NextResponse.json(
-      {
-        ...health,
-        error: error instanceof Error ? error.message : "Health check failed",
-      },
-      {
-        status: 503,
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return {
+      status: "unhealthy",
+      statusCode: 503,
+      data: health,
+    };
   }
 }
 
+/**
+ * Health check endpoint for monitoring
+ * 
+ * This endpoint provides a fast, lightweight health check that:
+ * - Returns 200 status when the service is healthy
+ * - Includes minimal diagnostics to avoid false positives
+ * - Tests critical dependencies (database)
+ * - Provides useful debugging information
+ * 
+ * Perfect for use with Uptime Kuma or other monitoring tools
+ */
+export async function GET() {
+  const result = await performHealthCheck();
+  
+  return NextResponse.json(result.data, {
+    status: result.statusCode,
+    headers: {
+      ...CORS_HEADERS,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 // Handle HEAD requests (some monitoring tools use HEAD for efficiency)
+// Uses the same health check logic as GET to ensure consistent status codes
 export async function HEAD() {
-  try {
-    // Quick check - just verify we can respond
-    return new NextResponse(null, {
-      status: 200,
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-      },
-    });
-  } catch {
-    return new NextResponse(null, {
-      status: 503,
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-      },
-    });
-  }
+  const result = await performHealthCheck();
+  
+  return new NextResponse(null, {
+    status: result.statusCode,
+    headers: {
+      ...CORS_HEADERS,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
+  });
 }
 
 // Handle OPTIONS for CORS
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+    headers: CORS_HEADERS,
   });
 }
