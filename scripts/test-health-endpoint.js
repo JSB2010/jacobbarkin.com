@@ -111,7 +111,6 @@ async function testHealthEndpoint() {
     console.log(`  Response Time: ${getTime}ms`);
     console.log(`  Uptime: ${Math.floor(data.uptime / 1000)}s`);
     console.log(`  Database: ${data.checks?.database?.status || 'unknown'}`);
-    console.log(`  Config: ${data.checks?.config?.status || 'unknown'}`);
     
     if (data.status === 'degraded') {
       console.log('\n⚠ Service is degraded - check warnings above');
