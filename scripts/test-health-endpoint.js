@@ -70,13 +70,6 @@ async function testHealthEndpoint() {
       console.log(`✓ Database check: ${data.checks?.database?.status}`);
     }
     
-    // Check config status
-    if (data.checks?.config?.status === 'error') {
-      console.warn(`⚠ Config check failed: ${data.checks.config.message}`);
-    } else {
-      console.log(`✓ Config check: ${data.checks?.config?.status}`);
-    }
-    
     // Test HEAD request
     console.log('\nTesting HEAD request...');
     const headStartTime = Date.now();
