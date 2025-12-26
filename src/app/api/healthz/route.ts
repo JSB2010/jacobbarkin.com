@@ -70,12 +70,12 @@ async function performHealthCheck(): Promise<HealthCheckResult> {
     timestamp: new Date().toISOString(),
     uptime: Date.now() - START_TIME,
     responseTime: 0,
-    version: process.env.npm_package_version || "unknown",
+    version: (typeof process !== 'undefined' && process.env?.npm_package_version) || "unknown",
     environment: {
       runtime: "Cloudflare Workers",
       // These may not be available in all Workers environments
-      ...(process.version && { nodeVersion: process.version }),
-      ...(process.platform && { platform: process.platform }),
+      ...(typeof process !== 'undefined' && process.version && { nodeVersion: process.version }),
+      ...(typeof process !== 'undefined' && process.platform && { platform: process.platform }),
     },
     checks: {
       database: {
@@ -105,19 +105,21 @@ async function performHealthCheck(): Promise<HealthCheckResult> {
         health.checks.database.status = "ok";
         health.checks.database.responseTime = Date.now() - dbStartTime;
       } else {
+        // Database is critical infrastructure - mark as unhealthy if unavailable
         health.checks.database.status = "unavailable";
         health.checks.database.message = "Database binding not found";
-        health.status = "degraded";
+        health.status = "unhealthy";
       }
     } catch (dbError) {
+      // Database is critical infrastructure - mark as unhealthy on error
       health.checks.database.status = "error";
       health.checks.database.message = dbError instanceof Error ? dbError.message : "Database check failed";
       health.checks.database.responseTime = Date.now() - dbStartTime;
-      health.status = "degraded";
+      health.status = "unhealthy";
     }
 
     // Add memory usage if available
-    if (process.memoryUsage) {
+    if (typeof process !== 'undefined' && process.memoryUsage) {
       health.metrics = {
         memoryUsage: process.memoryUsage(),
       };

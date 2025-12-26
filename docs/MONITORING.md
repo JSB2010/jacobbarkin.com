@@ -44,8 +44,8 @@ The `/api/healthz` endpoint solves these issues by:
 
 **Status Values**:
 - `healthy`: All systems operational (HTTP 200)
-- `degraded`: Some non-critical issues detected (HTTP 200)
-- `unhealthy`: Critical failure (HTTP 503)
+- `degraded`: Reserved for future non-critical checks (HTTP 200)
+- `unhealthy`: Critical failure, including database issues (HTTP 503)
 
 ## Setting Up Uptime Kuma
 
@@ -159,8 +159,8 @@ Use a **multi-layer monitoring approach**:
 - **Cause**: Real outage or Cloudflare issue
 - **Action**: Check Cloudflare dashboard, Workers logs
 
-**Scenario 4: `/api/healthz` returns "degraded" status**
-- **Cause**: Database connectivity issues
+**Scenario 4: `/api/healthz` returns "unhealthy" status (503)**
+- **Cause**: Database connectivity issues (binding missing or query failed)
 - **Action**: Check D1 database status in Cloudflare dashboard
 
 ## Using Cloudflare Workers Logs
@@ -213,14 +213,14 @@ For diagnosing intermittent slowness:
 - Increase Kuma timeout if needed
 - Add external monitoring to confirm issues
 
-### Issue: Health endpoint shows "degraded" status
+### Issue: Health endpoint shows "unhealthy" status
 
 **Diagnosis**:
 1. Check the response body for specific error
 2. Review database status in Cloudflare
 
 **Solutions**:
-- If database issue: Check D1 binding in wrangler.jsonc
+- Database issue: Check D1 binding in wrangler.jsonc and verify database is accessible
 - If persistent: Review Workers logs for errors
 
 ### Issue: Different monitors show different results

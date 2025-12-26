@@ -67,15 +67,16 @@ The website uses Next.js API routes for server-side functionality. These routes 
   },
   "checks": {
     "database": {
-      "status": "unavailable",
-      "message": "Database binding not found",
-      "responseTime": 45
+      "status": "ok",
+      "responseTime": 23
     }
   }
 }
 ```
 
-**Response (Unhealthy)**:
+Note: Currently, the endpoint always returns "healthy" when the database is working. "Degraded" status is reserved for future non-critical checks.
+
+**Response (Unhealthy - Database Unavailable)**:
 ```json
 {
   "status": "unhealthy",
@@ -90,7 +91,39 @@ The website uses Next.js API routes for server-side functionality. These routes 
   },
   "checks": {
     "database": {
-      "status": "failed",
+      "status": "unavailable",
+      "message": "Database binding not found",
+      "responseTime": 45
+    }
+  },
+  "metrics": {
+    "memoryUsage": {
+      "rss": 12345678,
+      "heapTotal": 8765432,
+      "heapUsed": 6543210,
+      "external": 123456,
+      "arrayBuffers": 12345
+    }
+  }
+}
+```
+
+**Response (Unhealthy - Database Error)**:
+```json
+{
+  "status": "unhealthy",
+  "timestamp": "2024-12-26T19:30:00.000Z",
+  "uptime": 123456789,
+  "responseTime": 100,
+  "version": "0.1.0",
+  "environment": {
+    "runtime": "Cloudflare Workers",
+    "nodeVersion": "v20.0.0",
+    "platform": "linux"
+  },
+  "checks": {
+    "database": {
+      "status": "error",
       "message": "Database connection failed",
       "responseTime": 100
     }
