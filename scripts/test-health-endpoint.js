@@ -12,7 +12,9 @@
  *   node scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz
  */
 
-const url = process.argv[2] || 'http://localhost:3000/api/healthz';
+// Default URL - can be overridden via command line argument or environment variable
+const DEFAULT_URL = process.env.HEALTH_ENDPOINT_URL || 'http://localhost:3000/api/healthz';
+const url = process.argv[2] || DEFAULT_URL;
 
 console.log(`Testing health endpoint: ${url}\n`);
 

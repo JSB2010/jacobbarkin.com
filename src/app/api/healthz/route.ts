@@ -44,8 +44,8 @@ export async function GET() {
     version: string;
     environment: {
       runtime: string;
-      nodeVersion: string | undefined;
-      platform: string;
+      nodeVersion?: string;
+      platform?: string;
     };
     checks: {
       database: {
@@ -68,8 +68,9 @@ export async function GET() {
     version: process.env.npm_package_version || "unknown",
     environment: {
       runtime: "Cloudflare Workers",
-      nodeVersion: process.version,
-      platform: process.platform,
+      // These may not be available in all Workers environments
+      ...(process.version && { nodeVersion: process.version }),
+      ...(process.platform && { platform: process.platform }),
     },
     checks: {
       database: {
@@ -82,12 +83,20 @@ export async function GET() {
   };
 
   try {
+    // Get Cloudflare context once for all checks
+    let context;
+    let env: CloudflareEnv | undefined;
+    
+    try {
+      context = await getCloudflareContext({ async: true });
+      env = (context as unknown as { env: CloudflareEnv }).env;
+    } catch {
+      // Context not available - likely in development mode
+    }
+
     // Check database connectivity
     const dbStartTime = Date.now();
     try {
-      const context = await getCloudflareContext({ async: true });
-      const env = (context as unknown as { env: CloudflareEnv }).env;
-      
       if (env?.DB) {
         // Simple query to test database connectivity
         await env.DB.prepare("SELECT 1").first();
@@ -107,9 +116,6 @@ export async function GET() {
 
     // Check environment configuration
     try {
-      const context = await getCloudflareContext({ async: true });
-      const env = (context as unknown as { env: CloudflareEnv }).env;
-      
       const requiredVars = [
         "SITE_URL",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -139,8 +145,7 @@ export async function GET() {
     health.responseTime = Date.now() - startTime;
 
     // Return appropriate status code based on health
-    const statusCode = health.status === "healthy" ? 200 : 
-                       health.status === "degraded" ? 200 : 503;
+    const statusCode = health.status === "unhealthy" ? 503 : 200;
 
     return NextResponse.json(health, {
       status: statusCode,
