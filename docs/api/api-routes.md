@@ -38,9 +38,6 @@ The website uses Next.js API routes for server-side functionality. These routes 
     "database": {
       "status": "ok",
       "responseTime": 23
-    },
-    "config": {
-      "status": "ok"
     }
   },
   "metrics": {
@@ -73,10 +70,6 @@ The website uses Next.js API routes for server-side functionality. These routes 
       "status": "unavailable",
       "message": "Database binding not found",
       "responseTime": 45
-    },
-    "config": {
-      "status": "error",
-      "message": "Missing environment variables: SITE_URL"
     }
   }
 }
@@ -102,7 +95,6 @@ The website uses Next.js API routes for server-side functionality. These routes 
 - Ultra-lightweight endpoint with minimal dependencies
 - No SSR overhead - responds immediately
 - Tests database connectivity with a simple query
-- Validates environment configuration
 - Includes response time and uptime metrics
 - Supports HEAD requests for even faster checks
 - Includes CORS headers for external monitoring tools

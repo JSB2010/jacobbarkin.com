@@ -37,9 +37,6 @@ The `/api/healthz` endpoint solves these issues by:
     "database": {
       "status": "ok",
       "responseTime": 23
-    },
-    "config": {
-      "status": "ok"
     }
   }
 }
@@ -163,8 +160,8 @@ Use a **multi-layer monitoring approach**:
 - **Action**: Check Cloudflare dashboard, Workers logs
 
 **Scenario 4: `/api/healthz` returns "degraded" status**
-- **Cause**: Database connectivity issues or missing config
-- **Action**: Check D1 database status, verify environment variables
+- **Cause**: Database connectivity issues
+- **Action**: Check D1 database status in Cloudflare dashboard
 
 ## Using Cloudflare Workers Logs
 
@@ -221,11 +218,9 @@ For diagnosing intermittent slowness:
 **Diagnosis**:
 1. Check the response body for specific error
 2. Review database status in Cloudflare
-3. Verify environment variables
 
 **Solutions**:
 - If database issue: Check D1 binding in wrangler.jsonc
-- If config issue: Verify environment variables in Cloudflare dashboard
 - If persistent: Review Workers logs for errors
 
 ### Issue: Different monitors show different results

@@ -14,8 +14,6 @@ interface D1PreparedStatement {
 // Cloudflare env type
 interface CloudflareEnv {
   DB: D1Database;
-  SITE_URL?: string;
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string;
 }
 
 // Store start time when module is loaded
@@ -53,10 +51,6 @@ export async function GET() {
         message?: string;
         responseTime?: number;
       };
-      config: {
-        status: "ok" | "error";
-        message?: string;
-      };
     };
     metrics?: {
       memoryUsage?: NodeJS.MemoryUsage;
@@ -74,9 +68,6 @@ export async function GET() {
     },
     checks: {
       database: {
-        status: "ok",
-      },
-      config: {
         status: "ok",
       },
     },
@@ -111,26 +102,6 @@ export async function GET() {
       health.checks.database.status = "error";
       health.checks.database.message = dbError instanceof Error ? dbError.message : "Database check failed";
       health.checks.database.responseTime = Date.now() - dbStartTime;
-      health.status = "degraded";
-    }
-
-    // Check environment configuration
-    try {
-      const requiredVars = [
-        "SITE_URL",
-        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-      ];
-      
-      const missingVars = requiredVars.filter(varName => !env?.[varName as keyof CloudflareEnv]);
-      
-      if (missingVars.length > 0) {
-        health.checks.config.status = "error";
-        health.checks.config.message = `Missing environment variables: ${missingVars.join(", ")}`;
-        health.status = "degraded";
-      }
-    } catch (configError) {
-      health.checks.config.status = "error";
-      health.checks.config.message = configError instanceof Error ? configError.message : "Config check failed";
       health.status = "degraded";
     }
 
