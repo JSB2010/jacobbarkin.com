@@ -10,6 +10,127 @@ The website uses Next.js API routes for server-side functionality. These routes 
 
 ## Available API Routes
 
+### Health Check API
+
+#### Health Check Endpoint
+
+**Route**: `/api/healthz`
+**File**: `src/app/api/healthz/route.ts`
+**Methods**: GET, HEAD, OPTIONS
+**Description**: Provides a lightweight health check endpoint for monitoring the service status. Perfect for use with uptime monitoring tools like Uptime Kuma, Better Stack, UptimeRobot, or StatusCake.
+
+**Request**: No body required (GET request)
+
+**Response (Healthy)**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-12-26T19:30:00.000Z",
+  "uptime": 123456789,
+  "responseTime": 45,
+  "version": "0.1.0",
+  "environment": {
+    "runtime": "Cloudflare Workers",
+    "nodeVersion": "v20.0.0",
+    "platform": "linux"
+  },
+  "checks": {
+    "database": {
+      "status": "ok",
+      "responseTime": 23
+    },
+    "config": {
+      "status": "ok"
+    }
+  },
+  "metrics": {
+    "memoryUsage": {
+      "rss": 12345678,
+      "heapTotal": 8765432,
+      "heapUsed": 6543210,
+      "external": 123456,
+      "arrayBuffers": 12345
+    }
+  }
+}
+```
+
+**Response (Degraded)**:
+```json
+{
+  "status": "degraded",
+  "timestamp": "2024-12-26T19:30:00.000Z",
+  "uptime": 123456789,
+  "responseTime": 67,
+  "version": "0.1.0",
+  "environment": {
+    "runtime": "Cloudflare Workers",
+    "nodeVersion": "v20.0.0",
+    "platform": "linux"
+  },
+  "checks": {
+    "database": {
+      "status": "unavailable",
+      "message": "Database binding not found",
+      "responseTime": 45
+    },
+    "config": {
+      "status": "error",
+      "message": "Missing environment variables: SITE_URL"
+    }
+  }
+}
+```
+
+**Response (Unhealthy)**:
+```json
+{
+  "status": "unhealthy",
+  "timestamp": "2024-12-26T19:30:00.000Z",
+  "uptime": 123456789,
+  "responseTime": 100,
+  "version": "0.1.0",
+  "error": "Critical error message"
+}
+```
+
+**HTTP Status Codes**:
+- `200 OK`: Service is healthy or degraded (still operational)
+- `503 Service Unavailable`: Service is unhealthy
+
+**Implementation Details**:
+- Ultra-lightweight endpoint with minimal dependencies
+- No SSR overhead - responds immediately
+- Tests database connectivity with a simple query
+- Validates environment configuration
+- Includes response time and uptime metrics
+- Supports HEAD requests for even faster checks
+- Includes CORS headers for external monitoring tools
+- Cache-Control headers prevent caching of health status
+
+**Usage with Monitoring Tools**:
+
+For **Uptime Kuma**:
+1. Create a new monitor
+2. Monitor Type: HTTP(s)
+3. URL: `https://jacobbarkin.com/api/healthz`
+4. Heartbeat Interval: 60 seconds (or as preferred)
+5. Expected Status Code: 200
+
+For **Better Stack** / **UptimeRobot** / **StatusCake**:
+1. Add new monitor/check
+2. Type: HTTP/HTTPS
+3. URL: `https://jacobbarkin.com/api/healthz`
+4. Check interval: 1-5 minutes
+5. Expected status: 200
+
+**Advantages over monitoring the main page**:
+- Much faster response time (no SSR, no heavy assets)
+- No false positives from slow page loads
+- Can detect database issues specifically
+- Minimal resource usage
+- Won't be affected by Cloudflare challenges or WAF rules
+
 ### Contact Form API
 
 #### Unified Contact Form API
