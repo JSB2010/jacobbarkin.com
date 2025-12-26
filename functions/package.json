@@ -13,11 +13,10 @@
   "license": "ISC",
   "description": "Serverless Functions for Jacob Barkin's website",
   "dependencies": {
-    "nodemailer": "^6.10.1"
+    "resend": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "@types/nodemailer": "^6.4.17",
     "typescript": "^5.8.3"
   }
 }

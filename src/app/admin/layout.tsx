@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { AdminAuthProvider } from "@/components/admin/auth-context";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
@@ -11,15 +12,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { userId } = await auth();
+
+  // Redirect to sign-in if not authenticated
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   return (
-    <AdminAuthProvider>
+    <>
       {children}
       <Toaster />
-    </AdminAuthProvider>
+    </>
   );
 }

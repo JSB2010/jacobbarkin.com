@@ -1,6 +1,6 @@
 /**
  * Environment variable validation
- * 
+ *
  * This module provides a centralized way to validate and access environment variables.
  * It ensures that all required environment variables are present and correctly typed.
  */
@@ -9,51 +9,44 @@ import { z } from 'zod';
 
 // Schema for client-side environment variables (NEXT_PUBLIC_*)
 const clientEnvSchema = z.object({
-  // Appwrite configuration
-  NEXT_PUBLIC_APPWRITE_ENDPOINT: z.string().url().default('https://nyc.cloud.appwrite.io/v1'),
-  NEXT_PUBLIC_APPWRITE_PROJECT_ID: z.string().min(1).default('6816ef35001da24d113d'),
-  NEXT_PUBLIC_APPWRITE_DATABASE_ID: z.string().min(1).default('contact-form-db'),
-  NEXT_PUBLIC_APPWRITE_CONTACT_COLLECTION_ID: z.string().min(1).default('contact-submissions'),
-  
-  // Logging configuration
-  NEXT_PUBLIC_ENABLE_APPWRITE_LOGGING: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
-  NEXT_PUBLIC_APPWRITE_LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('error'),
-  
+  // Clerk authentication
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/sign-in'),
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/sign-up'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default('/admin/dashboard'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default('/admin/dashboard'),
+
+  // Site configuration
+  NEXT_PUBLIC_SITE_URL: z.string().url().default('http://localhost:3000'),
+
   // Node environment
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
 // Schema for server-side environment variables
 const serverEnvSchema = z.object({
-  // Appwrite server configuration
-  APPWRITE_ENDPOINT: z.string().url().default('https://nyc.cloud.appwrite.io/v1'),
-  APPWRITE_PROJECT_ID: z.string().min(1).default('6816ef35001da24d113d'),
-  APPWRITE_API_KEY: z.string().min(1).optional(),
-  APPWRITE_DATABASE_ID: z.string().min(1).default('contact-form-db'),
-  APPWRITE_CONTACT_COLLECTION_ID: z.string().min(1).default('contact-submissions'),
-  
-  // Email configuration
-  EMAIL_USER: z.string().email().default('jacobsamuelbarkin@gmail.com'),
-  EMAIL_PASSWORD: z.string().min(1).optional(),
-  
+  // Clerk authentication
+  CLERK_SECRET_KEY: z.string().optional(),
+
+  // Resend email configuration
+  RESEND_API_KEY: z.string().optional(),
+
   // Admin configuration
-  ADMIN_API_KEY: z.string().min(1).default('admin-secret-key'),
-  
+  ADMIN_EMAIL: z.string().email().default('jacobsamuelbarkin@gmail.com'),
+
   // GitHub configuration
-  GITHUB_TOKEN: z.string().min(1).optional(),
+  GITHUB_TOKEN: z.string().optional(),
 });
 
 // Process client-side environment variables
 const processClientEnv = () => {
-  // In server components, we can access process.env directly
-  // In client components, we can only access NEXT_PUBLIC_* variables
   const clientEnv = {
-    NEXT_PUBLIC_APPWRITE_ENDPOINT: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT,
-    NEXT_PUBLIC_APPWRITE_PROJECT_ID: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-    NEXT_PUBLIC_APPWRITE_DATABASE_ID: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-    NEXT_PUBLIC_APPWRITE_CONTACT_COLLECTION_ID: process.env.NEXT_PUBLIC_APPWRITE_CONTACT_COLLECTION_ID,
-    NEXT_PUBLIC_ENABLE_APPWRITE_LOGGING: process.env.NEXT_PUBLIC_ENABLE_APPWRITE_LOGGING,
-    NEXT_PUBLIC_APPWRITE_LOG_LEVEL: process.env.NEXT_PUBLIC_APPWRITE_LOG_LEVEL,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NODE_ENV: process.env.NODE_ENV,
   };
 
@@ -61,47 +54,22 @@ const processClientEnv = () => {
     return clientEnvSchema.parse(clientEnv);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const zodError = error as z.ZodError<unknown>;
-      const missingVars = zodError.issues
-        .filter(err => err.code === 'invalid_type' && (err as { received?: string }).received === 'undefined')
-        .map(err => err.path.join('.'));
-
-      const invalidVars = zodError.issues
-        .filter(err => err.code !== 'invalid_type' || (err as { received?: string }).received !== 'undefined')
-        .map(err => `${err.path.join('.')}: ${err.message}`);
-      
-      console.error('❌ Invalid client environment variables:');
-      if (missingVars.length > 0) {
-        console.error('Missing variables:', missingVars.join(', '));
-      }
-      if (invalidVars.length > 0) {
-        console.error('Invalid variables:', invalidVars.join(', '));
-      }
-    } else {
-      console.error('❌ Error validating client environment variables:', error);
+      console.error('❌ Invalid client environment variables:', error.issues);
     }
-    
-    // Return default values for client-side env vars
     return clientEnvSchema.parse({});
   }
 };
 
 // Process server-side environment variables
 const processServerEnv = () => {
-  // Only process server-side variables in a server context
   if (typeof window !== 'undefined') {
     return {} as z.infer<typeof serverEnvSchema>;
   }
-  
+
   const serverEnv = {
-    APPWRITE_ENDPOINT: process.env.APPWRITE_ENDPOINT,
-    APPWRITE_PROJECT_ID: process.env.APPWRITE_PROJECT_ID,
-    APPWRITE_API_KEY: process.env.APPWRITE_API_KEY,
-    APPWRITE_DATABASE_ID: process.env.APPWRITE_DATABASE_ID,
-    APPWRITE_CONTACT_COLLECTION_ID: process.env.APPWRITE_CONTACT_COLLECTION_ID,
-    EMAIL_USER: process.env.EMAIL_USER,
-    EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
-    ADMIN_API_KEY: process.env.ADMIN_API_KEY,
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
   };
 
@@ -109,27 +77,8 @@ const processServerEnv = () => {
     return serverEnvSchema.parse(serverEnv);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const zodError = error as z.ZodError<unknown>;
-      const missingVars = zodError.issues
-        .filter(err => err.code === 'invalid_type' && (err as { received?: string }).received === 'undefined')
-        .map(err => err.path.join('.'));
-
-      const invalidVars = zodError.issues
-        .filter(err => err.code !== 'invalid_type' || (err as { received?: string }).received !== 'undefined')
-        .map(err => `${err.path.join('.')}: ${err.message}`);
-
-      console.error('❌ Invalid server environment variables:');
-      if (missingVars.length > 0) {
-        console.error('Missing variables:', missingVars.join(', '));
-      }
-      if (invalidVars.length > 0) {
-        console.error('Invalid variables:', invalidVars.join(', '));
-      }
-    } else {
-      console.error('❌ Error validating server environment variables:', error);
+      console.error('❌ Invalid server environment variables:', error.issues);
     }
-    
-    // Return default values for server-side env vars
     return serverEnvSchema.parse({});
   }
 };

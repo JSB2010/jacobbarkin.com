@@ -1,4 +1,4 @@
-import { logger } from '@/lib/appwrite';
+import { logger } from '@/lib/logger';
 
 // Interface for spam detection result
 export interface SpamDetectionResult {

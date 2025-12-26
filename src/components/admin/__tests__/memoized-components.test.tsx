@@ -12,13 +12,18 @@ import { SearchForm } from '../search-form';
 
 describe('SubmissionRow', () => {
   const mockSubmission = {
-    $id: 'test-id',
+    id: 'test-id',
     name: 'Test User',
     email: 'test@example.com',
     subject: 'Test Subject',
     message: 'Test Message',
-    $createdAt: new Date().toISOString(),
-    $updatedAt: new Date().toISOString(),
+    status: 'new' as const,
+    priority: 3,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ip_address: null,
+    user_agent: null,
+    source: 'website',
   };
   
   it('renders correctly with all props', () => {

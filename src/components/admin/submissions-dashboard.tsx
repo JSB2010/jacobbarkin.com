@@ -40,8 +40,11 @@ import {
   User,
   Mail
 } from "lucide-react";
-import { submissionsService, ContactSubmission } from "@/lib/appwrite/submissions";
-import { Query } from "appwrite";
+import {
+  fetchSubmissions as apiFetchSubmissions,
+  deleteSubmission as apiDeleteSubmission,
+} from "@/lib/api/submissions";
+import type { ContactSubmission } from "@/lib/db/submissions";
 import { useToast } from "@/components/ui/use-toast";
 import { useFormPersistence } from "@/hooks/use-form-persistence";
 import { SubmissionRow } from "./submission-row";
@@ -66,7 +69,7 @@ export function SubmissionsDashboard() {
   const initialValues = {
     searchQuery: "",
     currentPage: 1,
-    sortField: "$createdAt",
+    sortField: "created_at",
     sortDirection: "desc" as "asc" | "desc",
     pageSize: 10
   };
@@ -106,11 +109,14 @@ export function SubmissionsDashboard() {
 
     try {
       // Fetch all submissions with a large limit
-      const response = await submissionsService.getSubmissions(1000, 0, [
-        Query.orderDesc('$createdAt')
-      ]);
+      const response = await apiFetchSubmissions({
+        limit: 1000,
+        offset: 0,
+        orderBy: 'created_at',
+        order: 'DESC'
+      });
 
-      setAllSubmissions(response.submissions);
+      setAllSubmissions(response.submissions as ContactSubmission[]);
     } catch (err: unknown) {
       console.error("Error fetching statistics:", err);
       // Don't show error for stats loading
@@ -119,36 +125,32 @@ export function SubmissionsDashboard() {
     }
   }, []);
 
-  // Fetch submissions from Appwrite with useCallback
+  // Fetch submissions from D1 API with useCallback
   const fetchSubmissions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const offset = (currentPage - 1) * pageSize;
-      let response;
 
-      // Create sort query based on current sort field and direction
-      const sortQuery = sortDirection === "asc"
-        ? Query.orderAsc(sortField)
-        : Query.orderDesc(sortField);
+      // Map sortField to D1 format
+      const orderByMap: Record<string, string> = {
+        'created_at': 'created_at',
+        'name': 'name',
+        'subject': 'subject',
+        'email': 'email',
+      };
+      const orderBy = orderByMap[sortField] || 'created_at';
 
-      if (searchQuery) {
-        response = await submissionsService.searchSubmissions(
-          searchQuery,
-          pageSize,
-          offset,
-          [sortQuery]
-        );
-      } else {
-        response = await submissionsService.getSubmissions(
-          pageSize,
-          offset,
-          [sortQuery]
-        );
-      }
+      const response = await apiFetchSubmissions({
+        limit: pageSize,
+        offset,
+        search: searchQuery || undefined,
+        orderBy,
+        order: sortDirection.toUpperCase() as 'ASC' | 'DESC'
+      });
 
-      setSubmissions(response.submissions);
+      setSubmissions(response.submissions as ContactSubmission[]);
       setTotalSubmissions(response.total);
     } catch (err: unknown) {
       console.error("Error fetching submissions:", err);
@@ -247,10 +249,10 @@ export function SubmissionsDashboard() {
     setIsDeleting(true);
 
     try {
-      await submissionsService.deleteSubmission(submission.$id);
+      await apiDeleteSubmission(submission.id);
 
       // Close dialog if the deleted submission is currently selected
-      if (selectedSubmission && selectedSubmission.$id === submission.$id) {
+      if (selectedSubmission && selectedSubmission.id === submission.id) {
         setIsDialogOpen(false);
         setSelectedSubmission(null);
       }
@@ -279,7 +281,7 @@ export function SubmissionsDashboard() {
     } finally {
       setIsDeleting(false);
     }
-  }, [toast, selectedSubmission, fetchSubmissions, fetchAllSubmissionsForStats, setError]);
+  }, [toast, selectedSubmission, fetchSubmissions, fetchAllSubmissionsForStats]);
 
   // Calculate total pages
   const totalPages = Math.ceil(totalSubmissions / pageSize);
@@ -308,9 +310,9 @@ export function SubmissionsDashboard() {
           submission.email,
           submission.subject,
           submission.message.replace(/"/g, '""'), // Escape quotes
-          new Date(submission.timestamp || submission.$createdAt).toISOString(),
+          new Date(submission.created_at).toISOString(),
           submission.source || "",
-          submission.ipAddress || ""
+          submission.ip_address || ""
         ];
         csvRows.push(row.map(cell => `"${cell}"`)); // Wrap in quotes to handle commas
       });
@@ -352,20 +354,20 @@ export function SubmissionsDashboard() {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const todayCount = allSubmissions.filter(s => {
-      const submissionDate = new Date(s.timestamp || s.$createdAt);
+      const submissionDate = new Date(s.created_at);
       return submissionDate >= todayStart;
     }).length;
 
     const thisWeekStart = new Date(today);
     thisWeekStart.setDate(today.getDate() - today.getDay());
     const thisWeekCount = allSubmissions.filter(s => {
-      const submissionDate = new Date(s.timestamp || s.$createdAt);
+      const submissionDate = new Date(s.created_at);
       return submissionDate >= thisWeekStart;
     }).length;
 
     const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const thisMonthCount = allSubmissions.filter(s => {
-      const submissionDate = new Date(s.timestamp || s.$createdAt);
+      const submissionDate = new Date(s.created_at);
       return submissionDate >= thisMonthStart;
     }).length;
 
@@ -522,16 +524,16 @@ export function SubmissionsDashboard() {
                     </TableHead>
                     <TableHead
                       className="hidden md:table-cell cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => handleSort("$createdAt")}
+                      onClick={() => handleSort("created_at")}
                     >
                       <div className="flex items-center gap-1">
                         Date
-                        {sortField === "$createdAt" && (
+                        {sortField === "created_at" && (
                           sortDirection === "asc" ?
                             <ArrowUp className="h-4 w-4" /> :
                             <ArrowDown className="h-4 w-4" />
                         )}
-                        {sortField !== "$createdAt" && <ArrowUpDown className="h-4 w-4 opacity-50" />}
+                        {sortField !== "created_at" && <ArrowUpDown className="h-4 w-4 opacity-50" />}
                       </div>
                     </TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -540,7 +542,7 @@ export function SubmissionsDashboard() {
                 <TableBody>
                   {submissions.map((submission) => (
                     <SubmissionRow
-                      key={submission.$id}
+                      key={submission.id}
                       submission={submission}
                       onView={handleViewSubmission}
                       onDelete={handleDeleteSubmission}
@@ -613,7 +615,7 @@ export function SubmissionsDashboard() {
                     <Calendar className="h-4 w-4 mr-2" />
                     Date:
                   </div>
-                  <div>{formatDate(selectedSubmission.timestamp || selectedSubmission.$createdAt)}</div>
+                  <div>{formatDate(selectedSubmission.created_at)}</div>
                 </div>
 
                 <div>
@@ -623,18 +625,18 @@ export function SubmissionsDashboard() {
                   </div>
                 </div>
 
-                {(selectedSubmission.userAgent || selectedSubmission.source || selectedSubmission.ipAddress) && (
+                {(selectedSubmission.user_agent || selectedSubmission.source || selectedSubmission.ip_address) && (
                   <div className="border-t pt-3">
                     <h4 className="text-sm font-medium mb-2">Additional Information:</h4>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       {selectedSubmission.source && (
                         <p>Source: {selectedSubmission.source}</p>
                       )}
-                      {selectedSubmission.ipAddress && (
-                        <p>IP Address: {selectedSubmission.ipAddress}</p>
+                      {selectedSubmission.ip_address && (
+                        <p>IP Address: {selectedSubmission.ip_address}</p>
                       )}
-                      {selectedSubmission.userAgent && (
-                        <p>User Agent: {selectedSubmission.userAgent}</p>
+                      {selectedSubmission.user_agent && (
+                        <p>User Agent: {selectedSubmission.user_agent}</p>
                       )}
                     </div>
                   </div>

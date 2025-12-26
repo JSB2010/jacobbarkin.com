@@ -188,7 +188,7 @@ export function ContactFormApi() {
       // Add origin information for debugging
       if (typeof window !== 'undefined') {
         addDebugLog(`Current origin: ${window.location.origin}`);
-        addDebugLog(`API endpoint: ${window.location.origin}/api/contact-unified`);
+        addDebugLog(`API endpoint: ${window.location.origin}/api/contact`);
       }
 
       // Submit to the API endpoint
@@ -203,7 +203,7 @@ export function ContactFormApi() {
 
       try {
         addDebugLog("Starting API request...");
-        const response = await fetch('/api/contact-unified', {
+        const response = await fetch('/api/contact', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

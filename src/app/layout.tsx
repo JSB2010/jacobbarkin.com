@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import JsonLd from "@/components/json-ld";
+
+// Check if Clerk is properly configured
+const isClerkConfigured = !!(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_your_publishable_key" &&
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_")
+);
 
 const inter = Inter({
   subsets: ["latin"],
@@ -91,11 +99,7 @@ export const metadata: Metadata = {
   referrer: "origin-when-cross-origin",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased min-h-screen bg-background`}>
@@ -114,5 +118,23 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  // If Clerk is not configured, render without it
+  if (!isClerkConfigured) {
+    console.warn("Clerk is not configured. Authentication features will be disabled.");
+    return <AppContent>{children}</AppContent>;
+  }
+
+  return (
+    <ClerkProvider>
+      <AppContent>{children}</AppContent>
+    </ClerkProvider>
   );
 }

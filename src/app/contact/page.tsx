@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ContactFormZustand } from "@/components/contact/contact-form-zustand";
+import { ContactFormCloudflare } from "@/components/contact/contact-form-cloudflare";
 import { Mail, Github, Linkedin } from "lucide-react";
 import { LazyLoad } from "@/components/ui/lazy-load";
 import { PageHero } from "@/components/ui/page-hero";
@@ -67,7 +67,7 @@ export default function ContactPage() {
                   Fill out the form below and I&apos;ll get back to you as soon as possible. I&apos;m always open to discussing new projects, creative ideas, or opportunities to be part of your vision.
                 </p>
 
-                <ContactFormZustand />
+                <ContactFormCloudflare />
               </div>
 
               <div className="mt-8 lg:mt-0">

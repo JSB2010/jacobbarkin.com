@@ -4,7 +4,7 @@ import React, { memo } from 'react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Eye, Trash2 } from "lucide-react";
-import { ContactSubmission } from "@/lib/appwrite/submissions";
+import type { ContactSubmission } from "@/lib/db/submissions";
 import { formatDistanceToNow } from "date-fns";
 
 interface SubmissionRowProps {
@@ -38,7 +38,7 @@ function SubmissionRowComponent({
       <TableCell className="font-medium">{submission.name}</TableCell>
       <TableCell>{submission.subject}</TableCell>
       <TableCell className="hidden md:table-cell">
-        {formatDate(submission.timestamp || submission.$createdAt)}
+        {formatDate(submission.created_at)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">

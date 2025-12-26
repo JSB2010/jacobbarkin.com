@@ -9,12 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, ArrowLeft, Save, Mail, Trash, Clock, AlertTriangle, Tag } from 'lucide-react';
-import { useAdminAuth } from '@/components/admin/auth-context';
-import { ProtectedRoute } from '@/components/admin/protected-route';
+import { useAuth } from '@clerk/nextjs';
 
 
 
-// Submission type - extends ContactSubmission with optional admin fields
+// Submission type for this page
 interface Submission {
   $id: string;
   name: string;
@@ -25,24 +24,12 @@ interface Submission {
   status?: 'new' | 'read' | 'replied' | 'archived';
   priority?: number;
   tags?: string[];
-  statusLog?: Array<{
-    previousStatus?: string;
-    newStatus: string;
-    timestamp: string;
-    updatedBy: string;
-  }>;
-  lastUpdated?: string;
-  userAgent?: string;
-  source?: string;
-  ipAddress?: string;
-  $createdAt: string;
-  $updatedAt: string;
 }
 
 export default function SubmissionDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { id } = params;
-  const { user } = useAdminAuth();
+  const { isSignedIn } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,7 +42,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
 
-  // Fetch submission directly from Appwrite
+  // Fetch submission from API
   const fetchSubmission = useCallback(async () => {
     if (!id) return;
 
@@ -63,33 +50,48 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
     setError(null);
 
     try {
-      // Import the submissions service
-      const { submissionsService } = await import('@/lib/appwrite/submissions');
+      const response = await fetch(`/api/admin/submissions?id=${encodeURIComponent(id)}`);
 
-      // Fetch the submission by ID
-      const result = await submissionsService.getSubmission(id);
-
-      // Update state with the result
-      setSubmission(result);
-    } catch (error: unknown) {
-      setError('An error occurred while fetching the submission');
-      console.error('Fetch error:', error);
-
-      // If there's an authentication error, redirect to login
-      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
-        router.push('/admin/login');
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/sign-in');
+          return;
+        }
+        throw new Error('Failed to fetch submission');
       }
+
+      const result = await response.json();
+      if (result.submissions && result.submissions.length > 0) {
+        const sub = result.submissions[0];
+        // Map D1 fields to component fields
+        setSubmission({
+          $id: sub.id,
+          name: sub.name,
+          email: sub.email,
+          subject: sub.subject,
+          message: sub.message,
+          timestamp: sub.created_at,
+          status: sub.status,
+          priority: sub.priority,
+          tags: [],
+        });
+      } else {
+        setError('Submission not found');
+      }
+    } catch (err: unknown) {
+      setError('An error occurred while fetching the submission');
+      console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);
     }
   }, [id, router]);
 
-  // Fetch submission when user and id are available
+  // Fetch submission when authenticated and id is available
   useEffect(() => {
-    if (user && id) {
+    if (isSignedIn && id) {
       fetchSubmission();
     }
-  }, [user, id, fetchSubmission]);
+  }, [isSignedIn, id, fetchSubmission]);
 
   // Update form state when submission changes
   useEffect(() => {
@@ -102,20 +104,16 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
   // Save changes to the submission
   const saveChanges = async () => {
-    if (!id || !submission || !user) return;
+    if (!id || !submission || !isSignedIn) return;
 
     setIsSaving(true);
     setError(null);
 
     try {
-      // Import the submissions service
-      const { submissionsService } = await import('@/lib/appwrite/submissions');
-
       // Prepare update data
       const updateData: {
         status?: 'new' | 'read' | 'replied' | 'archived';
         priority?: number;
-        tags?: string[];
       } = {};
 
       // Only include fields that have changed
@@ -127,36 +125,34 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
         updateData.priority = priority;
       }
 
-      // Compare tags arrays
-      const tagsChanged =
-        tags.length !== (submission.tags?.length || 0) ||
-        tags.some((tag, i) => tag !== (submission.tags || [])[i]);
-
-      if (tagsChanged) {
-        updateData.tags = tags;
-      }
-
       // If nothing has changed, don't make the API call
       if (Object.keys(updateData).length === 0) {
         setIsSaving(false);
         return;
       }
 
-      // Update the submission directly in Appwrite
-      // Note: This would require adding an updateSubmission method to the submissions service
-      // For now, we'll just refetch the submission
-      await submissionsService.updateSubmission(id, updateData);
+      // Update the submission via API
+      const response = await fetch(`/api/admin/submissions?id=${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/sign-in');
+          return;
+        }
+        throw new Error('Failed to update submission');
+      }
 
       // Refetch the submission to get the latest data
       fetchSubmission();
-    } catch (error: unknown) {
+    } catch (err: unknown) {
       setError('An error occurred while updating the submission');
-      console.error('Update error:', error);
-
-      // If there's an authentication error, redirect to login
-      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
-        router.push('/admin/login');
-      }
+      console.error('Update error:', err);
     } finally {
       setIsSaving(false);
     }
@@ -198,7 +194,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
     // Create mailto link
     const subject = `Re: ${submission.subject}`;
-    const body = `\n\n-------- Original Message --------\nFrom: ${submission.name}\nEmail: ${submission.email}\nDate: ${formatDate(submission.$createdAt)}\nSubject: ${submission.subject}\n\n${submission.message}`;
+    const body = `\n\n-------- Original Message --------\nFrom: ${submission.name}\nEmail: ${submission.email}\nDate: ${formatDate(submission.timestamp || '')}\nSubject: ${submission.subject}\n\n${submission.message}`;
 
     window.location.href = `mailto:${submission.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
@@ -210,8 +206,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
   };
 
   return (
-    <ProtectedRoute>
-      <div className="container py-8">
+    <div className="container py-8">
         <div className="mb-4">
           <Button
             variant="outline"
@@ -281,27 +276,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
                   </TabsContent>
 
                   <TabsContent value="history" className="pt-4">
-                    {submission.statusLog && submission.statusLog.length > 0 ? (
-                      <div className="space-y-4">
-                        {submission.statusLog.map((log, index) => (
-                          <div key={index} className="flex items-start gap-3 p-3 border rounded-md">
-                            <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div>
-                              <p className="text-sm">
-                                Status changed from <span className="font-medium">{log.previousStatus || 'none'}</span> to <span className="font-medium">{log.newStatus}</span>
-                              </p>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                <span>{formatDate(log.timestamp)}</span>
-                                <span>•</span>
-                                <span>By {log.updatedBy}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">No status change history available.</p>
-                    )}
+                    <p className="text-muted-foreground">No status change history available.</p>
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -406,24 +381,8 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Submitted:</span>
-                      <span>{formatDate(submission.$createdAt)}</span>
+                      <span>{formatDate(submission.timestamp || '')}</span>
                     </div>
-
-                    {submission.lastUpdated && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Last updated:</span>
-                        <span>{formatDate(submission.lastUpdated)}</span>
-                      </div>
-                    )}
-
-                    {submission.source && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Source:</span>
-                        <span>{submission.source}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Save button */}
@@ -451,6 +410,5 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
         </div>
       ) : null}
     </div>
-    </ProtectedRoute>
   );
 }

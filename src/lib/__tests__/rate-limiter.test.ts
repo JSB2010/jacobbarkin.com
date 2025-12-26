@@ -1,12 +1,3 @@
-// Mock the logger
-jest.mock('@/lib/appwrite', () => ({
-  logger: {
-    warn: jest.fn(),
-    info: jest.fn(),
-    error: jest.fn(),
-  }
-}));
-
 import { RateLimiter } from '@/lib/rate-limiter';
 
 describe('RateLimiter', () => {

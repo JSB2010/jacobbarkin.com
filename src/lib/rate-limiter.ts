@@ -1,4 +1,4 @@
-import { logger } from '@/lib/appwrite';
+import { logger } from '@/lib/logger';
 
 // Interface for rate limit entry
 interface RateLimitEntry {
@@ -206,7 +206,7 @@ export class RateLimiter {
       
       localStorage.setItem('rate_limits', JSON.stringify(limitsObj));
     } catch (error) {
-      logger.error('Error saving rate limits to localStorage', error);
+      logger.error('Error saving rate limits to localStorage', error as Record<string, unknown>);
     }
   }
   
@@ -231,7 +231,7 @@ export class RateLimiter {
         });
       }
     } catch (error) {
-      logger.error('Error loading rate limits from localStorage', error);
+      logger.error('Error loading rate limits from localStorage', error as Record<string, unknown>);
     }
   }
 }

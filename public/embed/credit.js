@@ -33,59 +33,12 @@
   const VERSION = '2.4.0';
   const SITE_URL = 'https://jacobbarkin.com';
 
-  // Appwrite configuration for direct writes (no API route needed)
-  const APPWRITE_ENDPOINT = 'https://nyc.cloud.appwrite.io/v1';
-  const APPWRITE_PROJECT_ID = '6816ef35001da24d113d';
-  const APPWRITE_DATABASE_ID = 'contact-form-db';
-  const APPWRITE_COLLECTION_ID = 'embed-analytics';
+  // Analytics API endpoint (uses Cloudflare D1)
+  const ANALYTICS_ENDPOINT = 'https://jacobbarkin.com/api/embed-analytics';
 
-  // Session storage key for deduplication
-  const SESSION_KEY = 'jb-credit-session';
-
-  // Get or create session ID (persists across page navigations in same session)
-  function getSessionId() {
-    try {
-      let id = sessionStorage.getItem(SESSION_KEY);
-      if (!id) {
-        id = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        sessionStorage.setItem(SESSION_KEY, id);
-      }
-      return id;
-    } catch {
-      return 'no-storage';
-    }
-  }
-
-  // Detect device type from user agent
-  function getDeviceType() {
-    const ua = navigator.userAgent;
-    if (/Mobi|Android/i.test(ua) && !/Tablet|iPad/i.test(ua)) return 'mobile';
-    if (/Tablet|iPad/i.test(ua)) return 'tablet';
-    return 'desktop';
-  }
-
-  // Get browser name
-  function getBrowserName() {
-    const ua = navigator.userAgent;
-    if (ua.includes('Firefox')) return 'Firefox';
-    if (ua.includes('Edg')) return 'Edge';
-    if (ua.includes('Chrome')) return 'Chrome';
-    if (ua.includes('Safari')) return 'Safari';
-    if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
-    return 'Other';
-  }
-
-  // Analytics tracking with rich data
+  // Analytics tracking (simplified for D1)
   const Analytics = {
     tracked: new Set(), // Avoid duplicate impressions per page load
-    sessionId: null,
-
-    getSessionId() {
-      if (!this.sessionId) {
-        this.sessionId = getSessionId();
-      }
-      return this.sessionId;
-    },
 
     send(eventType, element) {
       // Skip if tracking disabled
@@ -111,56 +64,20 @@
         }
       }
 
-      // Extract domain from referrer URL
-      const url = window.location.href;
-      let referrerDomain = '';
-      try {
-        referrerDomain = new URL(url).hostname;
-      } catch {
-        referrerDomain = window.location.hostname || 'unknown';
-      }
-
-      // Build Appwrite document data
-      const documentData = {
+      // Build analytics data for D1 (simplified schema)
+      const analyticsData = {
+        page_url: window.location.href.substring(0, 2048),
+        referrer: (document.referrer || '').substring(0, 2048),
         event_type: eventType,
-        timestamp: new Date().toISOString(),
-        referrer_url: url.substring(0, 2048),
-        referrer_domain: referrerDomain.substring(0, 255),
-        page_path: (window.location.pathname || '/').substring(0, 500),
-        page_title: (document.title || '').substring(0, 200),
-        variant: element?.getAttribute('data-variant') || 'chip',
-        size: element?.getAttribute('data-size') || 'default',
-        session_id: this.getSessionId(),
-        device_type: getDeviceType(),
-        browser: getBrowserName(),
-        user_agent: (navigator.userAgent || '').substring(0, 512),
-        country: '', // Will be empty from client-side, could be enriched server-side
-        city: '',
-        region: '',
-        screen_width: window.screen?.width || 0,
-        screen_height: window.screen?.height || 0,
-        viewport_width: window.innerWidth || 0,
-        viewport_height: window.innerHeight || 0,
-        language: (navigator.language || '').substring(0, 10),
-        timezone: (Intl?.DateTimeFormat?.()?.resolvedOptions?.()?.timeZone || '').substring(0, 50),
       };
 
-      // Write directly to Appwrite REST API (no proxy needed)
-      const appwriteUrl = `${APPWRITE_ENDPOINT}/databases/${APPWRITE_DATABASE_ID}/collections/${APPWRITE_COLLECTION_ID}/documents`;
-
-      const requestBody = JSON.stringify({
-        documentId: 'unique()',
-        data: documentData,
-      });
-
-      // Send using fetch with keepalive (works better than sendBeacon for JSON)
+      // Send to D1 via API endpoint
       try {
-        fetch(appwriteUrl, {
+        fetch(ANALYTICS_ENDPOINT, {
           method: 'POST',
-          body: requestBody,
+          body: JSON.stringify(analyticsData),
           headers: {
             'Content-Type': 'application/json',
-            'X-Appwrite-Project': APPWRITE_PROJECT_ID,
           },
           keepalive: true,
           mode: 'cors',

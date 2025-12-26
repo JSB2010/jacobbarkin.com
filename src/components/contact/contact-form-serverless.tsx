@@ -121,7 +121,7 @@ export function ContactFormServerless() {
       addDebugLog("Preparing to submit form to serverless function...");
 
       // Use the Pages API route
-      const apiEndpoint = '/api/contact-unified';
+      const apiEndpoint = '/api/contact';
       addDebugLog(`Submitting to API endpoint: ${apiEndpoint}`);
 
       // Set a timeout for the fetch operation

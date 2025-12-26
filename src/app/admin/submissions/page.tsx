@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Eye, Edit } from 'lucide-react';
-import { useAdminAuth } from '@/components/admin/auth-context';
-import { ProtectedRoute } from '@/components/admin/protected-route';
+import { useAuth } from '@clerk/nextjs';
+import type { ContactSubmission } from '@/lib/db/submissions';
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -38,15 +38,12 @@ const priorityLabels: Record<number, string> = {
   5: 'Lowest'
 };
 
-// Import the ContactSubmission type from the service
-import type { ContactSubmission } from '@/lib/appwrite/submissions';
-
 // Use ContactSubmission as Submission for this page
 type Submission = ContactSubmission;
 
 export default function AdminSubmissionsPage() {
   const router = useRouter();
-  const { user } = useAdminAuth();
+  const { isSignedIn } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -62,66 +59,50 @@ export default function AdminSubmissionsPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sorting state
-  const [orderBy] = useState('$createdAt');
-  const [orderType] = useState('desc');
-
-  // Fetch submissions directly from Appwrite
+  // Fetch submissions from API
   const fetchSubmissions = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Import the submissions service
-      const { submissionsService } = await import('@/lib/appwrite/submissions');
+      // Build query params
+      const params = new URLSearchParams();
+      params.set('limit', limit.toString());
+      params.set('offset', offset.toString());
+      if (statusFilter) params.set('status', statusFilter);
+      if (priorityFilter) params.set('priority', priorityFilter);
+      if (searchQuery) params.set('search', searchQuery);
 
-      // Build query array for Appwrite
-      const queries = [];
+      // Fetch submissions from API
+      const response = await fetch(`/api/admin/submissions?${params.toString()}`);
 
-      // Add status filter if selected
-      if (statusFilter) {
-        queries.push(`status="${statusFilter}"`);
-      }
-
-      // Add priority filter if selected
-      if (priorityFilter) {
-        queries.push(`priority=${priorityFilter}`);
-      }
-
-      // Add sorting
-      if (orderBy) {
-        if (orderType === 'desc') {
-          queries.push(`orderDesc("${orderBy}")`);
-        } else {
-          queries.push(`orderAsc("${orderBy}")`);
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/sign-in');
+          return;
         }
+        throw new Error('Failed to fetch submissions');
       }
 
-      // Fetch submissions from Appwrite
-      const result = await submissionsService.getSubmissions(limit, offset, queries);
+      const result = await response.json();
 
       // Update state with results
-      setSubmissions(result.submissions);
-      setTotalSubmissions(result.total);
-    } catch (error: unknown) {
+      setSubmissions(result.submissions || []);
+      setTotalSubmissions(result.total || 0);
+    } catch (err: unknown) {
       setError('An error occurred while fetching submissions');
-      console.error('Fetch error:', error);
-
-      // If there's an authentication error, redirect to login
-      if (error && typeof error === 'object' && 'code' in error && error.code === 401) {
-        router.push('/admin/login');
-      }
+      console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [limit, offset, statusFilter, priorityFilter, orderBy, orderType, router]);
+  }, [limit, offset, statusFilter, priorityFilter, searchQuery, router]);
 
   // Fetch submissions when filters, pagination, or sorting changes
   useEffect(() => {
-    if (user) {
+    if (isSignedIn) {
       fetchSubmissions();
     }
-  }, [user, fetchSubmissions]);
+  }, [isSignedIn, fetchSubmissions]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -166,8 +147,7 @@ export default function AdminSubmissionsPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="container py-8">
+    <div className="container py-8">
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -274,9 +254,9 @@ export default function AdminSubmissionsPage() {
                   </TableRow>
                 ) : (
                   submissions.map((submission) => (
-                    <TableRow key={submission.$id}>
+                    <TableRow key={submission.id}>
                       <TableCell className="font-mono text-xs">
-                        {formatDate(submission.$createdAt)}
+                        {formatDate(submission.created_at)}
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{submission.name}</div>
@@ -296,7 +276,7 @@ export default function AdminSubmissionsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleViewSubmission(submission.$id)}
+                            onClick={() => handleViewSubmission(submission.id)}
                             title="View details"
                           >
                             <Eye className="h-4 w-4" />
@@ -304,7 +284,7 @@ export default function AdminSubmissionsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleViewSubmission(submission.$id)}
+                            onClick={() => handleViewSubmission(submission.id)}
                             title="Edit submission"
                           >
                             <Edit className="h-4 w-4" />
@@ -351,6 +331,5 @@ export default function AdminSubmissionsPage() {
         </CardContent>
       </Card>
     </div>
-    </ProtectedRoute>
   );
 }

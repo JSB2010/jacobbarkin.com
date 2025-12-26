@@ -120,7 +120,7 @@ export function ContactFormCloudflare() {
       addDebugLog('Submitting to Cloudflare Pages Function...');
 
       // Set up the fetch request
-      const fetchPromise = fetch('/api/contact-unified', {
+      const fetchPromise = fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,37 +185,17 @@ export function ContactFormCloudflare() {
     }
   };
 
-  // Debug panel component
+  // Debug panel component - only shows in development
   const DebugPanel = () => {
-    // Show debug logs in both development and production for now to help diagnose issues
-    if (debugLogs.length === 0) return null;
+    // Only show in development mode
+    if (process.env.NODE_ENV !== 'development' || debugLogs.length === 0) return null;
 
     return (
-      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md text-xs font-mono mb-4 max-h-40 overflow-y-auto">
-        <div className="font-semibold mb-1">Debug Logs:</div>
+      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md text-xs font-mono mb-4 max-h-40 overflow-y-auto">
+        <div className="font-semibold mb-1 text-yellow-800 dark:text-yellow-300">Debug Logs (Development Only):</div>
         {debugLogs.map((log, i) => (
-          <div key={i} className="text-xs">{log}</div>
+          <div key={i} className="text-xs text-yellow-700 dark:text-yellow-400">{log}</div>
         ))}
-      </div>
-    );
-  };
-
-  // Direct email link component as a fallback
-  const DirectEmailLink = () => {
-    return (
-      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-          Send Message Directly via Email
-        </h3>
-        <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
-          If you're experiencing issues with the form, you can send me an email directly:
-        </p>
-        <a
-          href="mailto:Jacobsamuelbarkin@gmail.com"
-          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-700/50 transition-colors"
-        >
-          Email Me Directly
-        </a>
       </div>
     );
   };
@@ -236,7 +216,7 @@ export function ContactFormCloudflare() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {errorMessage && (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mr-3 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
                   Unable to Send Message
@@ -329,28 +309,23 @@ export function ContactFormCloudflare() {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              type="submit"
-              className="w-full sm:w-auto h-9 sm:h-10 text-sm"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Send Message
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Always show the direct email link as a fallback option */}
-          <DirectEmailLink />
+          <Button
+            type="submit"
+            className="w-full sm:w-auto h-9 sm:h-10 text-sm"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                Send Message
+              </>
+            )}
+          </Button>
         </form>
       )}
     </div>

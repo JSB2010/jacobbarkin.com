@@ -9,7 +9,7 @@
  * - Integration with the logging system
  */
 
-import { logger } from '@/lib/appwrite';
+import { logger } from '@/lib/logger';
 
 // Base application error class
 export class AppError extends Error {
