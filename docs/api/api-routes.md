@@ -96,8 +96,8 @@ The website uses Next.js API routes for server-side functionality. These routes 
 - No SSR overhead - responds immediately
 - Tests database connectivity with a simple query
 - Includes response time and uptime metrics
-- Supports HEAD requests for even faster checks
-- Includes CORS headers for external monitoring tools
+- Supports HEAD requests with actual health checks (returns same status code as GET)
+- Full CORS support on GET, HEAD, and OPTIONS for browser-based monitoring tools
 - Cache-Control headers prevent caching of health status
 
 **Usage with Monitoring Tools**:
