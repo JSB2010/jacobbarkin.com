@@ -5,15 +5,10 @@ paths:
   - functions
 paths-ignore:
   - node_modules
-  - '**/*.test.js'
-  - '**/*.test.tsx'
-  - '**/*.test.ts'
-  - '**/__tests__/**'
   - '**/dist/**'
   - '**/build/**'
   - '**/.next/**'
   - '**/out/**'
-  - '**/e2e/**'
   - '**/public/**'
 
 queries:
@@ -54,7 +49,7 @@ query-filters:
       reason: "False positives in Next.js applications"
   - exclude:
       id: js/hardcoded-credentials
-      reason: "False positives in test files"
+      reason: "False positives in configuration files"
 
 # Limit the number of results per query to prevent timeouts
 max-results-per-query: 100

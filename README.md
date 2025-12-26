@@ -111,10 +111,7 @@ If you encounter issues with the Appwrite setup:
 - `npm run start` - Start the production server
 - `npm run lint` - Run ESLint to check for code issues
 
-### Testing Scripts
-- `npm test` - Run Jest unit tests
-- `npm run test:watch` - Run Jest in watch mode
-- `npm run test:coverage` - Run Jest with coverage reporting
+### Accessibility Scripts
 - `npm run check-a11y` - Check for accessibility issues on the homepage
 - `npm run check-a11y-all` - Check accessibility on all pages
 - `npm run test-site` - Run comprehensive site tests
@@ -200,72 +197,6 @@ jacobbarkin.com/
 - **docs/**: Project documentation
 - **scripts/**: Utility scripts for development and deployment
 
-## 🧪 Testing
-
-This project uses Jest and React Testing Library for comprehensive testing of components, hooks, and utilities.
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode (for development)
-npm run test:watch
-
-# Run tests with coverage report
-npm run test:coverage
-
-# Run a specific test file
-npm test -- path/to/test-file.js
-
-# Run tests matching a specific pattern
-npm test -- -t "contact form"
-```
-
-### Test Structure
-
-The testing strategy follows a pyramid approach:
-
-1. **Unit Tests**: For individual functions, hooks, and small components
-   - Located in `__tests__` directories adjacent to the code being tested
-   - Naming convention: `[filename].test.ts(x)`
-
-2. **Component Tests**: For UI components with mocked dependencies
-   - Test rendering, user interactions, and state changes
-   - Use React Testing Library for DOM testing
-
-3. **Integration Tests**: For critical user flows across components
-   - Test form submissions, navigation, and data fetching
-   - Use MSW (Mock Service Worker) to mock API responses
-
-4. **Accessibility Tests**: Automated and manual tests for accessibility
-   - Run with `npm run check-a11y` or `npm run check-a11y-all`
-   - Tests against WCAG 2.1 AA standards
-
-### Custom Hooks Testing
-
-The project includes specialized tests for custom hooks:
-
-- **useFormPersistence**: Tests form data persistence with:
-  - Auto-save and recovery functionality
-  - Expiry management and cleanup
-  - Navigation warnings for unsaved changes
-  - Time remaining indicators
-
-- **useAppwrite**: Tests Appwrite client integration with:
-  - Authentication flows
-  - Database operations
-  - Error handling and retries
-
-### Test Utilities
-
-Reusable test utilities are available in `src/lib/test-utils.ts`:
-
-- Custom render functions with providers
-- Common test data fixtures
-- Mock implementations for complex dependencies
-
 ## 🚢 Deployment
 
 ### Cloudflare Pages Deployment
@@ -339,7 +270,6 @@ The project uses GitHub Actions for continuous integration and deployment:
 
 2. **Quality Checks**:
    - Linting and type checking
-   - Unit and integration tests
    - Accessibility checks
    - Performance monitoring
 
@@ -370,12 +300,10 @@ Contributions are welcome! This project follows standard open source practices f
 
 4. **Make Your Changes**:
    - Follow the code style and organization of the project
-   - Add or update tests as necessary
    - Update documentation for any changed functionality
 
-5. **Test Your Changes**:
+5. **Verify Your Changes**:
    ```bash
-   npm test
    npm run lint
    npm run check-a11y
    ```
@@ -434,7 +362,6 @@ For more detailed documentation, see the [docs](./docs) directory:
 - [API Documentation](./docs/api/)
 - [Performance Optimization Guide](./docs/performance-optimization-guide.md)
 - [Security Guide](./docs/security-guide.md)
-- [Testing Strategy](./docs/testing-strategy.md)
 
 ## 📞 Contact
 
