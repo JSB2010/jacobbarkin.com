@@ -61,27 +61,29 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 
 | Attribute        | Values                                                    | Default   | Description                                      |
 |------------------|-----------------------------------------------------------|-----------|--------------------------------------------------|
-| `data-variant`   | `chip`, `prominent`, `badge`, `logo`, `minimal`, `text`   | `chip`    | Visual style variant                             |
+| `data-variant`   | `prominent`, `chip`, `badge`, `logo`, `minimal`, `text`   | `prominent` | Visual style variant                           |
 | `data-size`      | `small`, `default`, `large`                               | `default` | Component size                                   |
 | `data-align`     | `left`, `center`, `right`                                 | `center`  | Horizontal alignment within container            |
 | `data-theme`     | `auto`, `light`, `dark`                                   | `auto`    | Color theme (auto detects from page)             |
 | `data-position`  | `inline`, `fixed`                                         | `inline`  | inline = normal flow, fixed = sticky footer bar  |
 | `data-no-track`  | (boolean)                                                 | false     | Disable analytics tracking for this embed        |
 
+Note: When using `data-auto`, you can set these `data-*` attributes (including `data-no-track`) on the `<script>` tag and they will be applied to the injected `<jb-credit>`.
+
 ---
 
 ## Variants
 
-### chip (default)
-Full-featured chip with 16px logo icon, animated gradient border on hover, pulse ring effect, and mouse-follow glow.
-
-### prominent ⭐ NEW
+### prominent (default)
 Larger inline layout with 28px logo - JSB initials clearly visible. Great for more visible credit placement.
 
-### badge ⭐ NEW
+### chip
+Full-featured chip with 16px logo icon, animated gradient border on hover, pulse ring effect, and mouse-follow glow.
+
+### badge
 Stacked vertical layout with large 40px logo at top, text below. Perfect for sidebars or prominent footer placement.
 
-### logo ⭐ NEW
+### logo
 Just the logo (36px) with no text - minimalist and elegant. The logo links to jacobbarkin.com on click.
 
 ### minimal
@@ -109,7 +111,7 @@ Ultra low-profile. Just the text "Designed by Jacob Barkin" with a gradient on t
 
 ## Examples
 
-Default (chip variant, centered):
+Default (prominent variant, centered):
 ```html
 <jb-credit></jb-credit>
 ```
@@ -141,7 +143,7 @@ Force dark theme:
 
 Auto-inject with options:
 ```html
-<script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small"></script>
+<script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small" data-no-track></script>
 ```
 
 ---
@@ -160,5 +162,4 @@ Auto-inject with options:
 
 ## Demo
 
-https://jacobbarkin.com/embed/demo.html
-
+https://jacobbarkin.com/embed

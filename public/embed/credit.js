@@ -9,9 +9,9 @@
  *   <script src="https://jacobbarkin.com/embed/credit.js" data-auto></script>
  *
  * Attributes:
- *   data-variant - Style variant (default: chip)
- *     - chip: Default compact design with logo and text
- *     - prominent: Larger inline logo (28px), bigger text
+ *   data-variant - Style variant (default: prominent)
+ *     - prominent: Default larger inline logo (28px), bigger text
+ *     - chip: Compact design with logo and text
  *     - badge: Stacked vertical layout with large logo (40px)
  *     - logo: Logo only, no text (36px)
  *     - minimal: Text only, chip appears on hover
@@ -22,7 +22,7 @@
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
  *
- * @version 2.4.0
+ * @version 2.4.1
  * @author Jacob Barkin
  * @license MIT
  */
@@ -30,7 +30,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.4.0';
+  const VERSION = '2.4.1';
   const SITE_URL = 'https://jacobbarkin.com';
 
   // Analytics API endpoint (uses Cloudflare D1)
@@ -333,10 +333,6 @@
           opacity: 1;
         }
 
-        .jb-credit-chip:hover .glow-bg {
-          opacity: 1;
-        }
-
         /* Animated gradient border on chip */
         .animated-border {
           position: absolute;
@@ -430,7 +426,7 @@
         }
 `;
 
-      // Variant: "chip" (default) - logo + full effects
+      // Variant: "chip" - compact chip with full effects
       // Variant: "minimal" - no logo, chip appears on hover
       // Variant: "text" - just text, no chip at all
 
@@ -584,7 +580,7 @@
       const theme = this.getTheme();
       const position = this.getAttribute('data-position') || 'inline';
       const align = this.getAttribute('data-align') || 'center';
-      const variant = this.getAttribute('data-variant') || 'chip';
+      const variant = this.getAttribute('data-variant') || 'prominent';
       const size = this.getAttribute('data-size') || 'default';
 
       // Show effects for chip and new prominent variants
@@ -622,7 +618,7 @@
       const credit = document.createElement('jb-credit');
 
       // Copy attributes from script tag
-      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size'];
+      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track'];
       attrs.forEach(attr => {
         if (currentScript.hasAttribute(attr)) {
           credit.setAttribute(attr, currentScript.getAttribute(attr));
@@ -640,4 +636,3 @@
   };
 
 })();
-

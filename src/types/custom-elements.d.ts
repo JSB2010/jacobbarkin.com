@@ -6,18 +6,15 @@ declare module 'react' {
     interface IntrinsicElements {
       'jb-credit': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement> & {
-          'data-variant'?: 'chip' | 'minimal' | 'badge' | 'text' | 'icon';
+          'data-variant'?: 'prominent' | 'chip' | 'badge' | 'logo' | 'minimal' | 'text';
           'data-theme'?: 'light' | 'dark' | 'auto';
-          'data-position'?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'inline' | 'fixed';
-          'data-size'?: 'small' | 'default' | 'large' | 'sm' | 'md' | 'lg';
+          'data-position'?: 'inline' | 'fixed';
+          'data-size'?: 'small' | 'default' | 'large';
           'data-align'?: 'left' | 'right' | 'center';
-          'data-no-glow'?: string;
-          'data-no-pulse'?: string;
-          'data-no-border'?: string;
+          'data-no-track'?: string | boolean;
         },
         HTMLElement
       >;
     }
   }
 }
-
