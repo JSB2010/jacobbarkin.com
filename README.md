@@ -360,8 +360,30 @@ For more detailed documentation, see the [docs](./docs) directory:
 
 - [Architecture Documentation](./docs/architecture/)
 - [API Documentation](./docs/api/)
+- [Monitoring Guide](./docs/MONITORING.md) - **Important for uptime monitoring setup**
 - [Performance Optimization Guide](./docs/performance-optimization-guide.md)
 - [Security Guide](./docs/security-guide.md)
+
+### Health Check Endpoint
+
+The site includes a dedicated health check endpoint at `/api/healthz` for monitoring:
+
+```bash
+# Test locally
+bun run test:health
+
+# Test production
+bun run test:health:prod
+```
+
+Perfect for use with:
+- Uptime Kuma
+- Better Stack
+- UptimeRobot
+- StatusCake
+- Any HTTP monitoring tool
+
+See the [Monitoring Guide](./docs/MONITORING.md) for complete setup instructions.
 
 ## 📞 Contact
 
