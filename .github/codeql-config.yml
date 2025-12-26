@@ -1,55 +1,46 @@
-name: "CodeQL Configuration"
+name: "CodeQL Configuration for Next.js Portfolio"
 
+# Paths to analyze
 paths:
   - src
-  - functions
+
+# Paths to exclude from analysis
 paths-ignore:
   - node_modules
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
   - '**/dist/**'
   - '**/build/**'
   - '**/.next/**'
   - '**/out/**'
+  - '**/.open-next/**'
   - '**/public/**'
-
-queries:
-  - name: Security and Quality
-    uses: security-and-quality
+  - '**/*.d.ts'
+  - 'scripts/**'
 
 query-filters:
-  # Exclude queries that commonly cause timeouts or false positives
+  # Exclude queries with high false positive rates in Next.js/React
   - exclude:
       id: js/xss-through-dom
-      reason: "False positives in Next.js applications"
   - exclude:
       id: js/incomplete-sanitization
-      reason: "False positives in React applications with proper escaping"
   - exclude:
       id: js/missing-rate-limiting
-      reason: "Rate limiting is implemented at the application level"
-  - exclude:
-      id: js/request-forgery
-      reason: "Takes too long to analyze"
-  - exclude:
-      id: js/regex/redos
-      reason: "Takes too long to analyze"
-  - exclude:
-      id: js/prototype-pollution
-      reason: "Takes too long to analyze"
   - exclude:
       id: js/insecure-randomness
-      reason: "False positives in modern applications"
+  # Exclude slow queries that cause timeouts
+  - exclude:
+      id: js/request-forgery
+  - exclude:
+      id: js/regex/redos
+  - exclude:
+      id: js/prototype-pollution
+  # Next.js specific exclusions
   - exclude:
       id: js/path-injection
-      reason: "False positives in Next.js applications"
   - exclude:
       id: js/client-side-unvalidated-url-redirection
-      reason: "False positives in Next.js applications"
   - exclude:
       id: js/server-side-unvalidated-url-redirection
-      reason: "False positives in Next.js applications"
-  - exclude:
-      id: js/hardcoded-credentials
-      reason: "False positives in configuration files"
-
-# Limit the number of results per query to prevent timeouts
-max-results-per-query: 100

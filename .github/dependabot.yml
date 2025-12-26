@@ -1,31 +1,83 @@
 version: 2
 updates:
-  # Enable version updates for npm
+  # Enable version updates for npm/bun
   - package-ecosystem: "npm"
-    # Look for `package.json` and `lock` files in the `root` directory
     directory: "/"
-    # Check for updates once a week
     schedule:
       interval: "weekly"
-    # Specify labels for npm pull requests
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     labels:
-      - "npm"
       - "dependencies"
-    # Set a limit on the number of open PRs Dependabot can have
+      - "npm"
     open-pull-requests-limit: 10
-    # Group all updates together
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Group updates to reduce PR noise
     groups:
-      development-dependencies:
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+        update-types:
+          - "minor"
+          - "patch"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+        update-types:
+          - "minor"
+          - "patch"
+      next-ecosystem:
+        patterns:
+          - "next"
+          - "next-*"
+          - "@next/*"
+          - "eslint-config-next"
+        update-types:
+          - "minor"
+          - "patch"
+      cloudflare:
+        patterns:
+          - "wrangler"
+          - "@opennextjs/cloudflare"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
         dependency-type: "development"
+        exclude-patterns:
+          - "@types/react*"
+          - "next*"
+          - "@next/*"
+          - "eslint-config-next"
+        update-types:
+          - "minor"
+          - "patch"
       production-dependencies:
         dependency-type: "production"
-    # Ignore major version updates for these packages
+        exclude-patterns:
+          - "react*"
+          - "@radix-ui/*"
+          - "next*"
+          - "@next/*"
+          - "wrangler"
+          - "@opennextjs/cloudflare"
+        update-types:
+          - "minor"
+          - "patch"
+    # Ignore major version updates for framework packages
     ignore:
-      - dependency-name: "framer-motion"
-        update-types: ["version-update:semver-major"]
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "framer-motion"
         update-types: ["version-update:semver-major"]
 
   # Enable version updates for GitHub Actions
@@ -33,6 +85,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
     labels:
-      - "github-actions"
       - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
