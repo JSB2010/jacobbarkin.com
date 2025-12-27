@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2, RefreshCw, ChevronLeft, ChevronRight, Eye, MousePointer, Globe, Users, Percent } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
 
 // Type for embed analytics entry
 interface EmbedAnalytics {
@@ -198,10 +198,9 @@ function BreakdownTable({
 
 export default function EmbedAnalyticsPage() {
   const router = useRouter();
-  const { isLoaded } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [authWarning, setAuthWarning] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<EmbedAnalytics[]>([]);
   const [stats, setStats] = useState<EmbedStats>({
     impressions: 0,
@@ -251,6 +250,15 @@ export default function EmbedAnalyticsPage() {
     setHeartbeatError(null);
 
     try {
+      const handleUnauthorized = () => {
+        toast({
+          title: 'Session expired',
+          description: 'Please sign in again to access analytics.',
+          variant: 'destructive',
+        });
+        router.push('/sign-in');
+      };
+
       const params = new URLSearchParams();
       params.set('limit', limit.toString());
       params.set('offset', offset.toString());
@@ -260,7 +268,7 @@ export default function EmbedAnalyticsPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          router.push('/sign-in');
+          handleUnauthorized();
           return;
         }
         throw new Error('Failed to fetch analytics');
@@ -286,7 +294,6 @@ export default function EmbedAnalyticsPage() {
       setTopCampaigns(result.top_campaigns || []);
       setTopVersions(result.top_versions || []);
       setTotalRecords(result.total || 0);
-      setAuthWarning(null);
 
       const heartbeatParams = new URLSearchParams();
       heartbeatParams.set('limit', heartbeatLimit.toString());
@@ -296,7 +303,7 @@ export default function EmbedAnalyticsPage() {
       const heartbeatResponse = await fetch(`/api/embed-heartbeat?${heartbeatParams.toString()}`);
       if (!heartbeatResponse.ok) {
         if (heartbeatResponse.status === 401) {
-          router.push('/sign-in');
+          handleUnauthorized();
           return;
         }
         setHeartbeatError('An error occurred while fetching heartbeat data');
@@ -319,20 +326,7 @@ export default function EmbedAnalyticsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [limit, offset, days, heartbeatLimit, router]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      setAuthWarning(null);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setAuthWarning('Authentication is taking longer than expected. In production, this usually means the client bundle is using a test Clerk publishable key. Rebuild with your live key and verify Clerk domain settings.');
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [isLoaded]);
+  }, [limit, offset, days, heartbeatLimit, router, toast]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -519,11 +513,6 @@ export default function EmbedAnalyticsPage() {
 
   return (
     <div className="container py-8">
-      {authWarning && (
-        <div className="p-3 mb-4 bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-300 text-sm">
-          {authWarning}
-        </div>
-      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <Card>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, ArrowLeft, Save, Mail, Trash, Clock, AlertTriangle, Tag } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { useToast } from '@/components/ui/use-toast';
 
 
 
@@ -28,8 +28,8 @@ interface Submission {
 
 export default function SubmissionDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { toast } = useToast();
   const { id } = params;
-  const { isSignedIn } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +54,11 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
       if (!response.ok) {
         if (response.status === 401) {
+          toast({
+            title: 'Session expired',
+            description: 'Please sign in again to access submissions.',
+            variant: 'destructive',
+          });
           router.push('/sign-in');
           return;
         }
@@ -84,14 +89,14 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
     } finally {
       setIsLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, toast]);
 
   // Fetch submission when authenticated and id is available
   useEffect(() => {
-    if (isSignedIn && id) {
+    if (id) {
       fetchSubmission();
     }
-  }, [isSignedIn, id, fetchSubmission]);
+  }, [id, fetchSubmission]);
 
   // Update form state when submission changes
   useEffect(() => {
@@ -104,7 +109,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
   // Save changes to the submission
   const saveChanges = async () => {
-    if (!id || !submission || !isSignedIn) return;
+    if (!id || !submission) return;
 
     setIsSaving(true);
     setError(null);
@@ -142,6 +147,11 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
 
       if (!response.ok) {
         if (response.status === 401) {
+          toast({
+            title: 'Session expired',
+            description: 'Please sign in again to access submissions.',
+            variant: 'destructive',
+          });
           router.push('/sign-in');
           return;
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
   Card,
@@ -44,6 +45,7 @@ import {
   fetchSubmissions as apiFetchSubmissions,
   deleteSubmission as apiDeleteSubmission,
 } from "@/lib/api/submissions";
+import { UnauthorizedError } from "@/lib/api/submissions";
 import type { ContactSubmission } from "@/lib/db/submissions";
 import { useToast } from "@/components/ui/use-toast";
 import { useFormPersistence } from "@/hooks/use-form-persistence";
@@ -54,6 +56,7 @@ import { PageSizeSelector } from "./page-size-selector";
 import { SearchForm } from "./search-form";
 
 export function SubmissionsDashboard() {
+  const router = useRouter();
   const { toast } = useToast();
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<ContactSubmission[]>([]);
@@ -104,6 +107,15 @@ export function SubmissionsDashboard() {
   // Use pageSize state instead of fixed limit
 
   // Fetch all submissions for statistics with useCallback
+  const handleUnauthorized = useCallback(() => {
+    toast({
+      title: "Session expired",
+      description: "Please sign in again to access submissions.",
+      variant: "destructive",
+    });
+    router.push("/sign-in");
+  }, [toast, router]);
+
   const fetchAllSubmissionsForStats = useCallback(async () => {
     setStatsLoading(true);
 
@@ -118,12 +130,16 @@ export function SubmissionsDashboard() {
 
       setAllSubmissions(response.submissions as ContactSubmission[]);
     } catch (err: unknown) {
+      if (err instanceof UnauthorizedError) {
+        handleUnauthorized();
+        return;
+      }
       console.error("Error fetching statistics:", err);
       // Don't show error for stats loading
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [handleUnauthorized]);
 
   // Fetch submissions from D1 API with useCallback
   const fetchSubmissions = useCallback(async () => {
@@ -153,12 +169,16 @@ export function SubmissionsDashboard() {
       setSubmissions(response.submissions as ContactSubmission[]);
       setTotalSubmissions(response.total);
     } catch (err: unknown) {
+      if (err instanceof UnauthorizedError) {
+        handleUnauthorized();
+        return;
+      }
       console.error("Error fetching submissions:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch submissions");
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, sortField, sortDirection, searchQuery]);
+  }, [currentPage, pageSize, sortField, sortDirection, searchQuery, handleUnauthorized]);
 
   // Fetch submissions and statistics on mount
   useEffect(() => {
@@ -269,6 +289,10 @@ export function SubmissionsDashboard() {
       // Also refresh statistics
       fetchAllSubmissionsForStats();
     } catch (err: unknown) {
+      if (err instanceof UnauthorizedError) {
+        handleUnauthorized();
+        return;
+      }
       console.error("Error deleting submission:", err);
       setError(err instanceof Error ? err.message : "Failed to delete submission");
 
@@ -281,7 +305,7 @@ export function SubmissionsDashboard() {
     } finally {
       setIsDeleting(false);
     }
-  }, [toast, selectedSubmission, fetchSubmissions, fetchAllSubmissionsForStats]);
+  }, [toast, selectedSubmission, fetchSubmissions, fetchAllSubmissionsForStats, handleUnauthorized]);
 
   // Calculate total pages
   const totalPages = Math.ceil(totalSubmissions / pageSize);

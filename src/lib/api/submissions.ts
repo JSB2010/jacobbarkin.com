@@ -37,6 +37,13 @@ interface SubmissionActionResponse {
   error?: string;
 }
 
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
 // Fetch options
 interface FetchSubmissionsOptions {
   limit?: number;
@@ -65,6 +72,9 @@ export async function fetchSubmissions(
   const response = await fetch(`/api/admin/submissions?${params.toString()}`);
   
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError();
+    }
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(error.error || `HTTP error ${response.status}`);
   }
@@ -81,6 +91,9 @@ export async function deleteSubmission(id: string): Promise<SubmissionActionResp
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError();
+    }
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(error.error || `HTTP error ${response.status}`);
   }
@@ -104,6 +117,9 @@ export async function updateSubmissionStatus(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError();
+    }
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(error.error || `HTTP error ${response.status}`);
   }
@@ -127,6 +143,9 @@ export async function updateSubmissionPriority(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError();
+    }
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(error.error || `HTTP error ${response.status}`);
   }
@@ -143,4 +162,3 @@ export async function searchSubmissions(
 ): Promise<SubmissionsResponse> {
   return fetchSubmissions({ ...options, search: query });
 }
-

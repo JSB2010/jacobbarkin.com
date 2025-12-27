@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Eye, Edit } from 'lucide-react';
-import { useAuth } from '@clerk/nextjs';
+import { useToast } from '@/components/ui/use-toast';
 import type { ContactSubmission } from '@/lib/db/submissions';
 
 // Status badge colors
@@ -43,7 +43,7 @@ type Submission = ContactSubmission;
 
 export default function AdminSubmissionsPage() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -78,6 +78,11 @@ export default function AdminSubmissionsPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
+          toast({
+            title: 'Session expired',
+            description: 'Please sign in again to access submissions.',
+            variant: 'destructive',
+          });
           router.push('/sign-in');
           return;
         }
@@ -95,14 +100,12 @@ export default function AdminSubmissionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [limit, offset, statusFilter, priorityFilter, searchQuery, router]);
+  }, [limit, offset, statusFilter, priorityFilter, searchQuery, router, toast]);
 
   // Fetch submissions when filters, pagination, or sorting changes
   useEffect(() => {
-    if (isSignedIn) {
-      fetchSubmissions();
-    }
-  }, [isSignedIn, fetchSubmissions]);
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
