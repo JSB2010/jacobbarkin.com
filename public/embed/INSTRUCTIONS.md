@@ -1,7 +1,7 @@
 # Jacob Barkin Credit Embed
 
 A lightweight embeddable "Designed by Jacob Barkin" credit component for websites.
-Works everywhere: React, Vue, Angular, vanilla HTML, WordPress, Webflow, Squarespace, etc.
+Works everywhere: React, Angular, vanilla HTML, WordPress, Webflow, Squarespace, etc.
 
 ---
 
@@ -36,22 +36,15 @@ useEffect(() => {
 <jb-credit></jb-credit>
 ```
 
-### Option 4: Vue
-```vue
-<script setup>
-import { onMounted } from 'vue';
+---
 
-onMounted(() => {
-  const script = document.createElement('script');
-  script.src = 'https://jacobbarkin.com/embed/credit.js';
-  document.head.appendChild(script);
-});
-</script>
+## Implementation Notes (for AI agents)
 
-<template>
-  <jb-credit></jb-credit>
-</template>
-```
+- Add the script tag once per page. You can render multiple `<jb-credit>` elements after the script is loaded.
+- `data-auto` injects the element automatically; if you use `data-auto`, do not also add `<jb-credit>`.
+- For React/Next.js, only inject the script on the client (e.g., `useEffect`) to avoid SSR issues.
+- If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src` and `connect-src` or set `data-no-track` to disable analytics/heartbeat.
+- `data-no-track` disables both analytics and heartbeat pings.
 
 ---
 
@@ -69,6 +62,19 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 | `data-no-track`  | (boolean)                                                 | false     | Disable analytics tracking for this embed        |
 
 Note: When using `data-auto`, you can set these `data-*` attributes (including `data-no-track`) on the `<script>` tag and they will be applied to the injected `<jb-credit>`.
+
+---
+
+## Analytics
+
+By default, the embed tracks **impressions** (when visible) and **clicks**. It also captures limited metadata to make the dashboard more useful:
+
+- Page URL + title, referrer, and UTM parameters
+- Embed configuration (variant, size, theme, position, alignment, version, auto vs manual)
+- Device context (viewport size, device type), language, and timezone offset
+- Heartbeat pings (about once per hour while the page is open/visible) to track active sites
+
+Disable analytics per-embed with `data-no-track`.
 
 ---
 
@@ -153,7 +159,7 @@ Auto-inject with options:
 - **Shadow DOM isolated** — Styles never conflict with your site's CSS
 - **Auto theme detection** — Detects light/dark mode from your page automatically
 - **Responsive** — Adapts to all screen sizes
-- **Lightweight** — Under 5KB, no dependencies
+- **Lightweight** — Minimal footprint, no dependencies
 - **Accessible** — WCAG compliant, proper ARIA attributes
 - **Reduced motion** — Respects `prefers-reduced-motion` setting
 - **Centrally updated** — Updates automatically when the component is improved

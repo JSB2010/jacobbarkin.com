@@ -111,36 +111,39 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
   const previewThemeAttr = previewTheme === "auto" ? undefined : previewTheme;
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+    <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 sm:py-12">
+      <div className="text-center mb-10 sm:mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-medium mb-4">
           <Sparkles className="w-4 h-4" />
           Embeddable Credit Component
         </div>
-        <h1 className="text-4xl font-bold mb-4">Designer Credit Embed</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">Designer Credit Embed</h1>
+        <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
           Add a consistent &quot;Designed by Jacob Barkin&quot; credit to any website with just one line of code.
           Works with React, Vue, vanilla HTML, WordPress, Webflow - anything.
         </p>
       </div>
 
-      <div className="grid gap-8">
-        <Card className="p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div className="flex items-center gap-2">
+      <div className="grid gap-6 sm:gap-8">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6">
+            <div className="flex flex-wrap items-center gap-2">
               <Palette className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-semibold">Style Variants</h2>
-              <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
+              <h2 className="text-lg sm:text-xl font-semibold">Style Variants</h2>
+              <span className="sm:ml-2 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
                 Hover me!
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {themeOptions.map((option) => (
                 <Button
                   key={option.value}
                   size="sm"
                   variant={previewTheme === option.value ? "default" : "outline"}
-                  className={cn("gap-1.5", previewTheme === option.value && "shadow-sm")}
+                  className={cn(
+                    "gap-1.5 flex-1 sm:flex-none",
+                    previewTheme === option.value && "shadow-sm"
+                  )}
                   onClick={() => setPreviewTheme(option.value)}
                 >
                   <option.icon className="w-4 h-4" />
@@ -153,7 +156,7 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
             {variantDemos.map((variant) => (
               <div
                 key={variant.id}
-                className="border rounded-lg p-4 bg-gradient-to-br from-background to-muted/40"
+                className="border rounded-lg p-4 sm:p-5 bg-gradient-to-br from-background to-muted/40"
               >
                 <div className="flex items-center gap-2 mb-3">
                   <p className="text-sm font-medium text-foreground">{variant.label}</p>
@@ -171,50 +174,50 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Sizes</h2>
+          <Card className="p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4">Sizes</h2>
             <div className="grid gap-4">
-              <div className="border rounded-lg p-4 bg-background">
+              <div className="border rounded-lg p-3 sm:p-4 bg-background">
                 <p className="text-sm text-muted-foreground mb-2">Small</p>
                 <jb-credit data-variant="chip" data-size="small" data-theme={previewThemeAttr}></jb-credit>
               </div>
-              <div className="border rounded-lg p-4 bg-background">
+              <div className="border rounded-lg p-3 sm:p-4 bg-background">
                 <p className="text-sm text-muted-foreground mb-2">Default</p>
                 <jb-credit data-variant="chip" data-size="default" data-theme={previewThemeAttr}></jb-credit>
               </div>
-              <div className="border rounded-lg p-4 bg-background">
+              <div className="border rounded-lg p-3 sm:p-4 bg-background">
                 <p className="text-sm text-muted-foreground mb-2">Large</p>
                 <jb-credit data-variant="chip" data-size="large" data-theme={previewThemeAttr}></jb-credit>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Key Options</h2>
-            <div className="grid gap-3">
-              <div className="border rounded-lg p-4">
+          <Card className="p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4">Key Options</h2>
+            <div className="grid gap-3 sm:gap-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-variant</code>
                 <p className="text-sm text-muted-foreground mt-1">
                   <strong className="text-foreground">prominent</strong> (default) | chip | badge | logo | minimal | text
                 </p>
               </div>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-size</code>
                 <p className="text-sm text-muted-foreground mt-1">small | <strong className="text-foreground">default</strong> | large</p>
               </div>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-align</code>
                 <p className="text-sm text-muted-foreground mt-1">left | <strong className="text-foreground">center</strong> | right</p>
               </div>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-theme</code>
                 <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">auto</strong> | light | dark</p>
               </div>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-position</code>
                 <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">inline</strong> | fixed (sticky footer bar)</p>
               </div>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-no-track</code>
                 <p className="text-sm text-muted-foreground mt-1">Disable analytics tracking for this embed</p>
               </div>
@@ -222,13 +225,13 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
           </Card>
         </div>
 
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
             <Code className="w-5 h-5 text-primary" />
             Quick Start
           </h2>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="basic">Basic</TabsTrigger>
               <TabsTrigger value="auto">Auto-Inject</TabsTrigger>
               <TabsTrigger value="react">React</TabsTrigger>
@@ -238,7 +241,7 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
             {Object.entries(codeExamples).map(([key, code]) => (
               <TabsContent key={key} value={key} className="mt-4">
                 <div className="relative">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+                  <pre className="bg-muted p-3 sm:p-4 rounded-lg overflow-x-auto text-xs sm:text-sm">
                     <code>{code}</code>
                   </pre>
                   <Button
@@ -256,12 +259,12 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
           </Tabs>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
             <Layout className="w-5 h-5 text-primary" />
             Features
           </h2>
-          <ul className="grid gap-3 text-muted-foreground">
+          <ul className="grid gap-3 text-sm sm:text-base text-muted-foreground">
             <li className="flex items-start gap-2">
               <Check className="w-5 h-5 text-green-500 mt-0.5" />
               <span><strong className="text-foreground">Universal compatibility</strong> - Works with React, Vue, Angular, vanilla HTML, WordPress, Webflow, and more.</span>
@@ -289,8 +292,8 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
           </ul>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
             Instructions for AI Agents
           </h2>
@@ -298,7 +301,7 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
             Copy this and paste it into your AI assistant when developing a site:
           </p>
           <div className="relative">
-            <pre className="bg-muted p-4 rounded-lg text-xs max-h-96 overflow-y-auto whitespace-pre-wrap">
+            <pre className="bg-muted p-3 sm:p-4 rounded-lg text-[11px] sm:text-xs max-h-72 sm:max-h-96 overflow-y-auto whitespace-pre-wrap">
               <code>{instructionsText}</code>
             </pre>
             <Button

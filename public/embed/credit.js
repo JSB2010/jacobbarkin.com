@@ -22,7 +22,7 @@
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
  *
- * @version 2.4.1
+ * @version 2.6.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -30,17 +30,128 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.4.1';
+  const VERSION = '2.6.0';
   const SITE_URL = 'https://jacobbarkin.com';
 
   // Analytics API endpoint (uses Cloudflare D1)
   const ANALYTICS_ENDPOINT = 'https://jacobbarkin.com/api/embed-analytics';
+  const HEARTBEAT_ENDPOINT = 'https://jacobbarkin.com/api/embed-heartbeat';
+  const HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const HEARTBEAT_JITTER_MS = 5 * 60 * 1000; // spread load up to 5 minutes
+
+  let instanceCounter = 0;
+
+  function getTrackKey(element) {
+    if (!element) return 'default';
+    if (element.id) return element.id;
+    if (!element.__jbTrackId) {
+      instanceCounter += 1;
+      element.__jbTrackId = `jb-${Date.now()}-${instanceCounter}`;
+    }
+    return element.__jbTrackId;
+  }
+
+  function getDeviceType(width) {
+    if (!width || !Number.isFinite(width)) return 'unknown';
+    if (width < 640) return 'mobile';
+    if (width < 1024) return 'tablet';
+    return 'desktop';
+  }
+
+  function getUrlParts(value) {
+    try {
+      const url = new URL(value);
+      return {
+        host: url.hostname,
+        path: url.pathname || '/',
+        utm_source: url.searchParams.get('utm_source'),
+        utm_medium: url.searchParams.get('utm_medium'),
+        utm_campaign: url.searchParams.get('utm_campaign'),
+        utm_term: url.searchParams.get('utm_term'),
+        utm_content: url.searchParams.get('utm_content'),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function getEmbedMeta(element) {
+    if (!element) return {};
+    return {
+      embed_variant: element.getAttribute('data-variant') || 'prominent',
+      embed_size: element.getAttribute('data-size') || 'default',
+      embed_theme: element.getAttribute('data-theme') || 'auto',
+      embed_position: element.getAttribute('data-position') || 'inline',
+      embed_align: element.getAttribute('data-align') || 'center',
+      is_auto: element.hasAttribute('data-auto') ? 1 : 0,
+      embed_instance_id: getTrackKey(element),
+    };
+  }
+
+  function scheduleHeartbeat(element) {
+    if (!element || element.hasAttribute('data-no-track')) return;
+
+    const state = window.__jbHeartbeat || {
+      element: null,
+      timer: null,
+      initialized: false,
+      visibilityBound: false,
+    };
+
+    state.element = element;
+    window.__jbHeartbeat = state;
+
+    const resolveElement = () => {
+      if (state.element && document.contains(state.element)) return state.element;
+      const fallback = document.querySelector('jb-credit');
+      if (fallback && document.contains(fallback)) return fallback;
+      return null;
+    };
+
+    const sendHeartbeat = () => {
+      const target = resolveElement();
+      if (!target) {
+        if (state.timer) {
+          clearInterval(state.timer);
+          state.timer = null;
+        }
+        return;
+      }
+      if (document.visibilityState === 'hidden') return;
+      Analytics.heartbeat(target);
+    };
+
+    const init = () => {
+      if (state.timer) return;
+      const delay = 5000 + Math.floor(Math.random() * HEARTBEAT_JITTER_MS);
+      setTimeout(() => {
+        sendHeartbeat();
+        state.timer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+      }, delay);
+    };
+
+    if (!state.initialized) {
+      state.initialized = true;
+      init();
+    } else if (!state.timer) {
+      init();
+    }
+
+    if (!state.visibilityBound) {
+      state.visibilityBound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          sendHeartbeat();
+        }
+      });
+    }
+  }
 
   // Analytics tracking (simplified for D1)
   const Analytics = {
     tracked: new Set(), // Avoid duplicate impressions per page load
 
-    send(eventType, element) {
+    send(eventType, element, endpoint) {
       // Skip if tracking disabled
       if (element?.hasAttribute('data-no-track')) return;
 
@@ -49,33 +160,60 @@
       if (host === 'localhost' || host === '127.0.0.1' || host.includes('.local')) return;
 
       // Skip if already tracked this element for impressions (per page load)
-      const trackKey = `${eventType}-${element?.id || 'default'}`;
+      const trackKey = `${eventType}-${getTrackKey(element)}`;
       if (eventType === 'impression' && this.tracked.has(trackKey)) return;
       this.tracked.add(trackKey);
 
-      // Also deduplicate impressions per page per session
-      if (eventType === 'impression') {
-        try {
-          const pageKey = `jb-imp-${window.location.pathname}`;
-          if (sessionStorage.getItem(pageKey)) return;
-          sessionStorage.setItem(pageKey, '1');
-        } catch {
-          // sessionStorage not available, continue anyway
-        }
-      }
+      const pageUrl = window.location.href.substring(0, 2048);
+      const referrerUrl = (document.referrer || '').substring(0, 2048);
+      const pageParts = getUrlParts(pageUrl);
+      const referrerParts = getUrlParts(referrerUrl);
+      const viewportWidth = window.innerWidth || null;
+      const viewportHeight = window.innerHeight || null;
+      const deviceType = getDeviceType(viewportWidth);
+      const language = navigator.language || (navigator.languages && navigator.languages[0]) || null;
+      const timezoneOffset = new Date().getTimezoneOffset();
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const connectionType = connection && connection.effectiveType ? connection.effectiveType : null;
+      const embedMeta = getEmbedMeta(element);
 
-      // Build analytics data for D1 (simplified schema)
+      // Build analytics data for D1 (extended schema)
       const analyticsData = {
-        page_url: window.location.href.substring(0, 2048),
-        referrer: (document.referrer || '').substring(0, 2048),
+        page_url: pageUrl,
+        page_host: pageParts ? pageParts.host : null,
+        page_path: pageParts ? pageParts.path : null,
+        page_title: document.title ? document.title.substring(0, 512) : null,
+        referrer: referrerUrl || null,
+        referrer_host: referrerParts ? referrerParts.host : null,
+        utm_source: pageParts ? pageParts.utm_source : null,
+        utm_medium: pageParts ? pageParts.utm_medium : null,
+        utm_campaign: pageParts ? pageParts.utm_campaign : null,
+        utm_term: pageParts ? pageParts.utm_term : null,
+        utm_content: pageParts ? pageParts.utm_content : null,
         event_type: eventType,
+        embed_version: VERSION,
+        viewport_width: viewportWidth,
+        viewport_height: viewportHeight,
+        device_type: deviceType,
+        language,
+        timezone_offset: timezoneOffset,
+        connection_type: connectionType,
+        ...embedMeta,
       };
+
+      const payload = JSON.stringify(analyticsData);
+      const targetEndpoint = endpoint || ANALYTICS_ENDPOINT;
 
       // Send to D1 via API endpoint
       try {
-        fetch(ANALYTICS_ENDPOINT, {
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' });
+          const queued = navigator.sendBeacon(targetEndpoint, blob);
+          if (queued) return;
+        }
+        fetch(targetEndpoint, {
           method: 'POST',
-          body: JSON.stringify(analyticsData),
+          body: payload,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -87,8 +225,9 @@
       }
     },
 
-    impression(element) { this.send('impression', element); },
-    click(element) { this.send('click', element); },
+    impression(element) { this.send('impression', element, ANALYTICS_ENDPOINT); },
+    click(element) { this.send('click', element, ANALYTICS_ENDPOINT); },
+    heartbeat(element) { this.send('heartbeat', element, HEARTBEAT_ENDPOINT); },
   };
 
   // Detect if we should auto-inject
@@ -102,6 +241,8 @@
       this.animationFrame = null;
       this.gradientPosition = { x: 0, y: 0 };
       this.isHovered = false;
+      this.impressionObserver = null;
+      this.impressionTracked = false;
     }
 
     static get observedAttributes() {
@@ -109,29 +250,34 @@
     }
 
     connectedCallback() {
-      this.render();
+      this.refresh();
       this.setupThemeObserver();
-      this.setupInteractivity();
-      this.setupTracking();
     }
 
     setupTracking() {
       // Track impression when component becomes visible
-      if (!this.hasAttribute('data-no-track')) {
+      if (!this.impressionTracked && !this.hasAttribute('data-no-track')) {
         // Use IntersectionObserver to track when actually visible
         if ('IntersectionObserver' in window) {
-          const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                Analytics.impression(this);
-                observer.disconnect();
-              }
-            });
-          }, { threshold: 0.5 });
-          observer.observe(this);
+          if (!this.impressionObserver) {
+            this.impressionObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  Analytics.impression(this);
+                  this.impressionTracked = true;
+                  if (this.impressionObserver) {
+                    this.impressionObserver.disconnect();
+                    this.impressionObserver = null;
+                  }
+                }
+              });
+            }, { threshold: 0.5 });
+            this.impressionObserver.observe(this);
+          }
         } else {
           // Fallback: track immediately
           Analytics.impression(this);
+          this.impressionTracked = true;
         }
       }
 
@@ -142,11 +288,17 @@
           Analytics.click(this);
         });
       }
+
+      scheduleHeartbeat(this);
     }
 
     disconnectedCallback() {
       if (this.themeObserver) {
         this.themeObserver.disconnect();
+      }
+      if (this.impressionObserver) {
+        this.impressionObserver.disconnect();
+        this.impressionObserver = null;
       }
       if (this.animationFrame) {
         cancelAnimationFrame(this.animationFrame);
@@ -154,8 +306,7 @@
     }
 
     attributeChangedCallback() {
-      this.render();
-      this.setupInteractivity();
+      this.refresh();
     }
 
     getTheme() {
@@ -189,8 +340,7 @@
 
     setupThemeObserver() {
       this.themeObserver = new MutationObserver(() => {
-        this.render();
-        this.setupInteractivity();
+        this.refresh();
       });
 
       this.themeObserver.observe(document.documentElement, {
@@ -201,8 +351,7 @@
       if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
           if (this.getAttribute('data-theme') === 'auto' || !this.getAttribute('data-theme')) {
-            this.render();
-            this.setupInteractivity();
+            this.refresh();
           }
         });
       }
@@ -231,6 +380,12 @@
       chip.addEventListener('mouseleave', () => {
         glowBg.style.background = 'transparent';
       });
+    }
+
+    refresh() {
+      this.render();
+      this.setupInteractivity();
+      this.setupTracking();
     }
 
     getStyles(theme, position, align, variant, size) {
@@ -616,6 +771,7 @@
   if (autoInject) {
     document.addEventListener('DOMContentLoaded', () => {
       const credit = document.createElement('jb-credit');
+      credit.setAttribute('data-auto', '');
 
       // Copy attributes from script tag
       const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track'];
