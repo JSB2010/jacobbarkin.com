@@ -7,8 +7,20 @@
 
 import { Resend } from "resend";
 
-// Initialize Resend client (will use RESEND_API_KEY from environment)
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(apiKey);
+  }
+
+  return resendClient;
+}
 
 // Email configuration - uses verified domain
 const EMAIL_CONFIG = {
@@ -38,6 +50,11 @@ export async function sendAdminNotification(data: EmailData): Promise<{
   error?: string;
 }> {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      return { success: false, error: "Missing RESEND_API_KEY" };
+    }
+
     const { data: result, error } = await resend.emails.send({
       from: EMAIL_CONFIG.from,
       to: EMAIL_CONFIG.adminEmail,
@@ -71,6 +88,11 @@ export async function sendUserConfirmation(data: EmailData): Promise<{
   error?: string;
 }> {
   try {
+    const resend = getResendClient();
+    if (!resend) {
+      return { success: false, error: "Missing RESEND_API_KEY" };
+    }
+
     const { data: result, error } = await resend.emails.send({
       from: EMAIL_CONFIG.from,
       to: data.email,
@@ -293,4 +315,3 @@ ${data.message}
 Best regards,
 Jacob Barkin`;
 }
-
