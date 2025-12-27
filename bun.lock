@@ -38,7 +38,7 @@
       "devDependencies": {
         "@axe-core/cli": "^4.10.3",
         "@eslint/eslintrc": "^3.3.3",
-        "@next/bundle-analyzer": "15.5.0",
+        "@next/bundle-analyzer": "16.1.1",
         "@tailwindcss/postcss": "^4.1.18",
         "@types/node": "^25.0.3",
         "@types/nodemailer": "^7.0.4",
@@ -424,7 +424,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, ""],
 
-    "@next/bundle-analyzer": ["@next/bundle-analyzer@15.5.0", "", { "dependencies": { "webpack-bundle-analyzer": "4.10.1" } }, ""],
+    "@next/bundle-analyzer": ["@next/bundle-analyzer@16.1.1", "", { "dependencies": { "webpack-bundle-analyzer": "4.10.1" } }, "sha512-aNJy301GGH8k36rDgrYdnyYEdjRQg6csMi1njzqHo+3qyZvOOWMHSv+p7SztNTzP5RU2KRwX0pPwYBtDcE+vVA=="],
 
     "@next/env": ["@next/env@15.5.9", "", {}, ""],
 
