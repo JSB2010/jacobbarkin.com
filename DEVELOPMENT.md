@@ -39,6 +39,15 @@ This comprehensive guide covers setting up your local environment, running the p
     npm run dev
     ```
     This runs the Next.js dev server with Turbopack enabled. Open [http://localhost:3000](http://localhost:3000) to view the site.
+    To skip pulling a fresh D1 snapshot, use:
+    ```bash
+    npm run dev:no-pull
+    ```
+    If you want to force the Cloudflare D1 binding during dev (instead of the local snapshot), unset `NEXT_DEV_USE_LOCAL_D1` or run the worker preview.
+    For a full worker-like dev loop against the remote D1 binding, run:
+    ```bash
+    bun run dev:remote
+    ```
 
 ## Environment Variables
 
@@ -69,7 +78,14 @@ These variables are kept private and used only on the server.
 The project uses **Cloudflare D1** (SQLite) for storing persistent data like contact form submissions.
 
 ### Local Development
-When you run `npm run dev`, Next.js connects to a local instance of D1 simulated by Wrangler (if configured) or mocks the interaction.
+When you run `npm run dev`, the app pulls a snapshot from remote D1 and then runs using a local SQLite-backed D1 shim (via `node:sqlite`, with a `better-sqlite3` fallback) so you can use Turbopack + HMR without running a worker build. The database file is created at `.wrangler/local-d1.sqlite` and `src/lib/db/schema.sql` is applied automatically. To change the location, set `LOCAL_D1_PATH` in `.env.local`. The dev scripts also set `NEXT_DEV_USE_LOCAL_D1=1` to bypass the Wrangler-provided D1 binding, and they invoke `next dev` via Node to ensure the SQLite driver is available.
+
+To hydrate your local database with production data (snapshot) on demand:
+```bash
+bun run d1:pull
+```
+This exports the remote D1 database to `.wrangler/remote-d1.sql`, rebuilds `.wrangler/local-d1.sqlite`, and the dev server will use that data on the next request.
+If you use a different D1 database name, set `D1_DATABASE_NAME` in `.env.local`.
 
 To manually interact with your **local** D1 database:
 ```bash

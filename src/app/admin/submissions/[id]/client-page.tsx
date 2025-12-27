@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Save, Mail, Trash, Clock, AlertTriangle, Tag } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Clock, Loader2, Mail, Save, Tag, Trash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { AdminShell } from '@/components/admin/admin-shell';
 
 
 
@@ -216,16 +217,20 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
   };
 
   return (
-    <div className="container py-8">
-        <div className="mb-4">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Submissions
-          </Button>
-        </div>
+    <AdminShell
+      title="Submission Details"
+      description="Review, tag, and respond to the message"
+      icon={Mail}
+    >
+      <div className="mb-4">
+        <Button
+          variant="outline"
+          onClick={handleBack}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Submissions
+        </Button>
+      </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
@@ -419,6 +424,6 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
           </div>
         </div>
       ) : null}
-    </div>
+    </AdminShell>
   );
 }

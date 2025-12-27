@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Eye, Edit } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit, Eye, Loader2, MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import type { ContactSubmission } from '@/lib/db/submissions';
+import { AdminShell } from '@/components/admin/admin-shell';
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -150,27 +151,31 @@ export default function AdminSubmissionsPage() {
   };
 
   return (
-    <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-              <div>
-                <CardTitle>Contact Form Submissions</CardTitle>
-                <CardDescription>
-                  Manage and respond to contact form submissions
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchSubmissions}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+    <AdminShell
+      title="Contact Submissions"
+      description="Review and triage contact form messages"
+      icon={MessageSquare}
+    >
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <CardTitle>Contact Form Submissions</CardTitle>
+              <CardDescription>
+                Manage and respond to contact form submissions
+              </CardDescription>
             </div>
-          </CardHeader>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchSubmissions}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
 
         <CardContent>
           {/* Filters */}
@@ -333,6 +338,6 @@ export default function AdminSubmissionsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AdminShell>
   );
 }

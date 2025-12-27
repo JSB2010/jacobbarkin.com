@@ -1,33 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sendAdminNotification } from "@/lib/resend";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-// Type for D1 database
-interface D1Database {
-  prepare(query: string): D1PreparedStatement;
-}
-
-interface D1PreparedStatement {
-  bind(...values: unknown[]): D1PreparedStatement;
-  run(): Promise<{ meta: { changes: number } }>;
-}
-
-// Cloudflare env type
-interface CloudflareEnv {
-  DB: D1Database;
-}
-
-// Helper to get D1 database from Cloudflare context
-async function getD1Database(): Promise<D1Database | null> {
-  try {
-    const context = await getCloudflareContext({ async: true });
-    const env = (context as unknown as { env: CloudflareEnv }).env;
-    return env?.DB || null;
-  } catch {
-    return null;
-  }
-}
+import { getD1Database } from "@/lib/db/d1";
 
 // Contact form validation schema
 const contactSchema = z.object({
@@ -141,4 +115,3 @@ export async function OPTIONS() {
     },
   });
 }
-

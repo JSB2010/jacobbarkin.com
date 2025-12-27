@@ -1,23 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-// Type for D1 database
-interface D1Database {
-  prepare(query: string): D1PreparedStatement;
-}
-
-interface D1PreparedStatement {
-  bind(...values: unknown[]): D1PreparedStatement;
-  first<T = unknown>(): Promise<T | null>;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-  run(): Promise<{ meta: { changes: number } }>;
-}
-
-// Cloudflare env type
-interface CloudflareEnv {
-  DB: D1Database;
-}
+import { getD1Database } from "@/lib/db/d1";
 
 interface EmbedAnalyticsRow {
   id: string;
@@ -113,17 +96,6 @@ interface UrlParts {
   utm_campaign: string | null;
   utm_term: string | null;
   utm_content: string | null;
-}
-
-// Helper to get D1 database from Cloudflare context
-async function getD1Database(): Promise<D1Database | null> {
-  try {
-    const context = await getCloudflareContext({ async: true });
-    const env = (context as unknown as { env: CloudflareEnv }).env;
-    return env?.DB || null;
-  } catch {
-    return null;
-  }
 }
 
 function truncateText(value: unknown, max: number): string | null {

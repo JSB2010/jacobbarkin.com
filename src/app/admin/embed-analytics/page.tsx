@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, RefreshCw, ChevronLeft, ChevronRight, Eye, MousePointer, Globe, Users, Percent } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Code2, Eye, Globe, Loader2, MousePointer, Percent, RefreshCw, Users } from 'lucide-react';
+import { AdminShell } from '@/components/admin/admin-shell';
 
 // Type for embed analytics entry
 interface EmbedAnalytics {
@@ -512,7 +513,11 @@ export default function EmbedAnalyticsPage() {
   }));
 
   return (
-    <div className="container py-8">
+    <AdminShell
+      title="Embed Analytics"
+      description="Track embed reach, heartbeats, and engagement"
+      icon={Code2}
+    >
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <Card>
@@ -1067,6 +1072,6 @@ export default function EmbedAnalyticsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AdminShell>
   );
 }

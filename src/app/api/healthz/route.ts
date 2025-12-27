@@ -1,20 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-// Type for D1 database
-interface D1Database {
-  prepare(query: string): D1PreparedStatement;
-}
-
-interface D1PreparedStatement {
-  bind(...values: unknown[]): D1PreparedStatement;
-  first<T = unknown>(): Promise<T | null>;
-}
-
-// Cloudflare env type
-interface CloudflareEnv {
-  DB: D1Database;
-}
+import { getD1Database } from "@/lib/db/d1";
 
 // Store start time when module is loaded
 const START_TIME = Date.now();
@@ -85,23 +70,13 @@ async function performHealthCheck(): Promise<HealthCheckResult> {
   };
 
   try {
-    // Get Cloudflare context once for all checks
-    let context;
-    let env: CloudflareEnv | undefined;
-    
-    try {
-      context = await getCloudflareContext({ async: true });
-      env = (context as unknown as { env: CloudflareEnv }).env;
-    } catch {
-      // Context not available - likely in development mode
-    }
-
     // Check database connectivity
     const dbStartTime = Date.now();
     try {
-      if (env?.DB) {
+      const db = await getD1Database();
+      if (db) {
         // Simple query to test database connectivity
-        await env.DB.prepare("SELECT 1").first();
+        await db.prepare("SELECT 1").first();
         health.checks.database.status = "ok";
         health.checks.database.responseTime = Date.now() - dbStartTime;
       } else {
