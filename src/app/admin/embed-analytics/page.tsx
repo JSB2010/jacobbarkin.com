@@ -198,7 +198,7 @@ function BreakdownTable({
 
 export default function EmbedAnalyticsPage() {
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authWarning, setAuthWarning] = useState<string | null>(null);
@@ -286,6 +286,7 @@ export default function EmbedAnalyticsPage() {
       setTopCampaigns(result.top_campaigns || []);
       setTopVersions(result.top_versions || []);
       setTotalRecords(result.total || 0);
+      setAuthWarning(null);
 
       const heartbeatParams = new URLSearchParams();
       heartbeatParams.set('limit', heartbeatLimit.toString());
@@ -327,21 +328,15 @@ export default function EmbedAnalyticsPage() {
     }
 
     const timer = setTimeout(() => {
-      setAuthWarning('Authentication is taking longer than expected. If this persists, verify your Clerk publishable key and domain settings.');
+      setAuthWarning('Authentication is taking longer than expected. In production, this usually means the client bundle is using a test Clerk publishable key. Rebuild with your live key and verify Clerk domain settings.');
     }, 4000);
 
     return () => clearTimeout(timer);
   }, [isLoaded]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!isSignedIn) {
-      setIsLoading(false);
-      router.push('/sign-in');
-      return;
-    }
     fetchAnalytics();
-  }, [isLoaded, isSignedIn, fetchAnalytics, router]);
+  }, [fetchAnalytics]);
 
   const handlePageChange = (newPage: number) => {
     const totalPages = Math.ceil(totalRecords / limit);
