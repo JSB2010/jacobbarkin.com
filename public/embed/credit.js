@@ -219,6 +219,7 @@
           },
           keepalive: true,
           mode: 'cors',
+          credentials: 'omit',
         }).catch(() => {}); // Silently fail - tracking should never break the embed
       } catch {
         // Silently fail

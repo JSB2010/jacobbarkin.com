@@ -171,18 +171,29 @@ function generateId(): string {
   return `emb_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// CORS headers for cross-origin requests (embed can be on any site)
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+function getCorsHeaders(origin: string | null) {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+
+  if (origin) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+    headers["Vary"] = "Origin";
+  } else {
+    headers["Access-Control-Allow-Origin"] = "*";
+  }
+
+  return headers;
+}
 
 // Handle OPTIONS for CORS preflight
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders,
+    headers: getCorsHeaders(request.headers.get("origin")),
   });
 }
 
@@ -195,7 +206,7 @@ export async function POST(request: NextRequest) {
       console.error("D1 database not available");
       return NextResponse.json(
         { success: false, error: "Database not available" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: getCorsHeaders(request.headers.get("origin")) }
       );
     }
 
@@ -206,7 +217,7 @@ export async function POST(request: NextRequest) {
     if (!pageUrl) {
       return NextResponse.json(
         { success: false, error: "page_url is required" },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: getCorsHeaders(request.headers.get("origin")) }
       );
     }
 
@@ -320,13 +331,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { success: true, id },
-      { status: 200, headers: corsHeaders }
+      { status: 200, headers: getCorsHeaders(request.headers.get("origin")) }
     );
   } catch (error) {
     console.error("Error recording embed analytics:", error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Failed to record analytics" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: getCorsHeaders(request.headers.get("origin")) }
     );
   }
 }
