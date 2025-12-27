@@ -38,7 +38,7 @@ export default function JsonLd() {
       'CSS',
     ],
     image: `${baseUrl}/images/Updated logo.png`,
-    description: 'Freshman at Kent Denver School with a focus on computer science, technology, and financial education.',
+    description: 'Sophomore (10th grade) at Kent Denver School with a focus on computer science, technology, and financial education.',
     alumniOf: {
       '@type': 'EducationalOrganization',
       name: 'Kent Denver School',

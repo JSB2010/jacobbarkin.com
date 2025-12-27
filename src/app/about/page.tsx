@@ -13,21 +13,23 @@ import {
   SiOpenai,
   SiNextdotjs,
   SiTailwindcss,
-  SiTypescript
+  SiTypescript,
+  SiGooglecloud,
+  SiCloudflare
 } from "react-icons/si";
 
 // Import additional icon sets for technologies that might not be in simple-icons
-import { FaUniversalAccess, FaGraduationCap, FaGlobeAmericas, FaBriefcase, FaUsers, FaLaptopCode } from "react-icons/fa";
+import { FaUniversalAccess, FaGraduationCap, FaGlobeAmericas, FaBriefcase, FaUsers, FaLaptopCode, FaLinkedin, FaServer, FaUserShield } from "react-icons/fa";
 
 // Import Aceternity UI components
 import { BackgroundGradient } from "@/components/ui/aceternity/background-gradient";
 import { MovingBorder } from "@/components/ui/aceternity/moving-border";
 import { Spotlight } from "@/components/ui/aceternity/spotlight";
 import { TextRevealCard } from "@/components/ui/aceternity/text-reveal-card";
-import { ThreeDCard } from "@/components/ui/aceternity/3d-card";
 import { GradientSkillsContainer } from "@/components/ui/aceternity/gradient-skills-container";
 import { PageHero } from "@/components/ui/page-hero";
 import { LazyLoad } from "@/components/ui/lazy-load";
+import { Button } from "@/components/ui/button";
 
 // Import Education Section component
 import { EducationSection } from "@/components/education/education-section";
@@ -65,6 +67,25 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
+  const skills = [
+    { title: "HTML5", icon: <SiHtml5 className="h-6 w-6" /> },
+    { title: "CSS3", icon: <SiCss3 className="h-6 w-6" /> },
+    { title: "JavaScript", icon: <SiJavascript className="h-6 w-6" /> },
+    { title: "TypeScript", icon: <SiTypescript className="h-6 w-6" /> },
+    { title: "Python", icon: <SiPython className="h-6 w-6" /> },
+    { title: "React", icon: <SiReact className="h-6 w-6" /> },
+    { title: "Next.js", icon: <SiNextdotjs className="h-6 w-6" /> },
+    { title: "Tailwind CSS", icon: <SiTailwindcss className="h-6 w-6" /> },
+    { title: "Firebase", icon: <SiFirebase className="h-6 w-6" /> },
+    { title: "Google Cloud", icon: <SiGooglecloud className="h-6 w-6" /> },
+    { title: "Appwrite", icon: <SiAppwrite className="h-6 w-6" /> },
+    { title: "Cloudflare Workers", icon: <SiCloudflare className="h-6 w-6" /> },
+    { title: "AI Integration", icon: <SiOpenai className="h-6 w-6" /> },
+    { title: "VM Management", icon: <FaServer className="h-6 w-6" /> },
+    { title: "Accessibility", icon: <FaUniversalAccess className="h-6 w-6" /> },
+    { title: "User Data Protection", icon: <FaUserShield className="h-6 w-6" /> }
+  ];
+
   return (
     <>
       {/* Hero Section */}
@@ -101,7 +122,7 @@ export default function AboutPage() {
               />
               <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-muted-foreground">
                 <p>
-                  I&apos;m a freshman at Kent Denver School with a focus on computer science, technology, and financial education. My passion for technology began at an early age, and I&apos;ve been developing my skills in programming and web development ever since.
+                  I&apos;m a sophomore (10th grade) at Kent Denver School with a focus on computer science, technology, and financial education. My passion for technology began at an early age, and I&apos;ve been developing my skills in programming and web development ever since.
                 </p>
                 <p>
                   Beyond technology, I&apos;m deeply committed to financial education and literacy for youth. As a Youth Advisory Board Member at Young Americans Center For Financial Education, I work to promote financial literacy and help young people develop essential money management skills. I believe that understanding personal finance is a critical life skill that should be accessible to everyone, especially young people who are just beginning to navigate the financial world.
@@ -206,7 +227,7 @@ export default function AboutPage() {
                       </li>
                       <li className="flex gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>A inventory management solution for our school&apos;s maker space built on Snipe-IT</span>
+                        <span>An inventory management solution for our school&apos;s maker space built on Snipe-IT</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-primary mt-1">•</span>
@@ -222,11 +243,11 @@ export default function AboutPage() {
                       </li>
                       <li className="flex gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>An in progress integration with Canvas for the Secure Exam Browser to be able to directly integrate Canvas quizzes into SEB for easier student and instructor workflows</span>
+                        <span>An in-progress integration with Canvas for the Secure Exam Browser to be able to directly integrate Canvas quizzes into SEB for easier student and instructor workflows</span>
                       </li>
                       <li className="flex gap-2">
                         <span className="text-primary mt-1">•</span>
-                        <span>A Gmail addon that enhances and improves the functionality of our school&apos;s soft phone system by allowing users to set Do not Disturb schedules, view directories with all extensions, and click-to-call functionality for easier dialing</span>
+                        <span>A Gmail add-on that enhances and improves the functionality of our school&apos;s soft phone system by allowing users to set Do Not Disturb schedules, view directories with all extensions, and click-to-call functionality for easier dialing</span>
                       </li>
                     </ul>
 
@@ -297,6 +318,19 @@ export default function AboutPage() {
                 </BackgroundGradient>
               </div>
             </div>
+
+            <div className="flex justify-center mt-8 sm:mt-10">
+              <Button asChild variant="outline" className="gap-2">
+                <a
+                  href="https://www.linkedin.com/in/jacob-barkin/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaLinkedin className="h-4 w-4" />
+                  View more job experience on LinkedIn
+                </a>
+              </Button>
+            </div>
           </div>
         </section>
       </LazyLoad>
@@ -316,150 +350,10 @@ export default function AboutPage() {
               I&apos;ve developed a diverse set of skills across various technologies and disciplines.
             </p>
 
-            <GradientSkillsContainer columns={4} rows={3}>
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiHtml5 className="h-6 w-6" />}
-                  title="HTML5"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiCss3 className="h-6 w-6" />}
-                  title="CSS3"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiJavascript className="h-6 w-6" />}
-                  title="JavaScript"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiTypescript className="h-6 w-6" />}
-                  title="TypeScript"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiPython className="h-6 w-6" />}
-                  title="Python"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiReact className="h-6 w-6" />}
-                  title="React"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiNextdotjs className="h-6 w-6" />}
-                  title="Next.js"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiTailwindcss className="h-6 w-6" />}
-                  title="Tailwind CSS"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiFirebase className="h-6 w-6" />}
-                  title="Firebase"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiAppwrite className="h-6 w-6" />}
-                  title="Appwrite"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<SiOpenai className="h-6 w-6" />}
-                  title="AI Integration"
-                />
-              </ThreeDCard>
-
-              <ThreeDCard
-                className="h-full w-full"
-                rotationIntensity={5}
-                glareOpacity={0.1}
-                glareSize={0.4}
-              >
-                <SkillCard
-                  icon={<FaUniversalAccess className="h-6 w-6" />}
-                  title="Accessibility"
-                />
-              </ThreeDCard>
+            <GradientSkillsContainer columns={4} rows={4}>
+              {skills.map((skill) => (
+                <SkillCard key={skill.title} icon={skill.icon} title={skill.title} />
+              ))}
             </GradientSkillsContainer>
           </div>
         </section>
@@ -471,57 +365,23 @@ export default function AboutPage() {
 function SkillCard({
   icon,
   title,
-  gradientPosition,
-  index,
 }: Readonly<{
   icon: React.ReactNode,
   title: string,
-  gradientPosition?: { x: number, y: number },
-  index?: number,
 }>) {
   return (
-    <div className="group h-full perspective-[1000px] transform-gpu transition-all duration-300 hover:scale-[1.03]">
-      <BackgroundGradient
-        className="rounded-xl h-full"
-        gradientPosition={gradientPosition}
-        useGlobalGradient={true}
-        index={index}
-      >
-        <Card className="overflow-hidden border-0 bg-background/80 backdrop-blur-sm h-full relative group-hover:shadow-xl transition-all duration-300">
-          {/* Glass morphism effect */}
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-          {/* Noise texture overlay */}
-          <div className="absolute inset-0 rounded-xl mix-blend-overlay pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 skill-card-noise"></div>
-
-          <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center relative z-10">
-            <MovingBorder
-              className="p-0.5 mb-4 transition-all duration-300 group-hover:p-1"
-              containerClassName="rounded-full shadow-md"
-              duration={4000}
-            >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-background text-primary flex items-center justify-center relative overflow-hidden group-hover:bg-background/90 transition-all duration-300">
-                {/* Particle effect container */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                  <div className="absolute top-0 left-1/2 w-1 h-1 rounded-full bg-primary/40 animate-float-slow"></div>
-                  <div className="absolute bottom-1/4 left-1/4 w-1 h-1 rounded-full bg-primary/40 animate-float-medium"></div>
-                  <div className="absolute top-1/3 right-1/4 w-1 h-1 rounded-full bg-primary/40 animate-float-fast"></div>
-                </div>
-
-                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110 relative z-10">
-                  {icon}
-                </div>
-              </div>
-            </MovingBorder>
-
-            <h3 className="text-base sm:text-lg md:text-xl font-medium mb-2 transition-all duration-300 group-hover:tracking-wide">
-              {title}
-            </h3>
-
-            <div className="w-16 h-1 bg-primary/30 rounded-full mx-auto group-hover:w-20 group-hover:bg-primary/50 transition-all duration-300"></div>
-          </CardContent>
-        </Card>
-      </BackgroundGradient>
-    </div>
+    <Card className="h-full border border-border/60 bg-background/70 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/40">
+      <CardContent className="p-5 sm:p-6 flex flex-col items-center text-center gap-3 sm:gap-4">
+        <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary/15 via-primary/10 to-secondary/15 text-primary ring-1 ring-primary/20">
+          <div className="flex items-center justify-center h-6 w-6 sm:h-7 sm:w-7">
+            {icon}
+          </div>
+        </div>
+        <h3 className="text-sm sm:text-base font-semibold text-foreground">
+          {title}
+        </h3>
+        <div className="w-10 h-1 bg-primary/30 rounded-full"></div>
+      </CardContent>
+    </Card>
   );
 }

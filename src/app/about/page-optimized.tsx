@@ -88,7 +88,7 @@ export default function AboutPage() {
               />
               <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-muted-foreground">
                 <p>
-                  I&apos;m a freshman at Kent Denver School with a focus on computer science, technology, and financial education. My passion for technology began at an early age, and I&apos;ve been developing my skills in programming and web development ever since.
+                  I&apos;m a sophomore (10th grade) at Kent Denver School with a focus on computer science, technology, and financial education. My passion for technology began at an early age, and I&apos;ve been developing my skills in programming and web development ever since.
                 </p>
                 <p>
                   Beyond technology, I&apos;m deeply committed to financial education for youth. I believe that understanding personal finance is a critical life skill that should be accessible to everyone, especially young people who are just beginning to navigate the financial world.
@@ -137,7 +137,7 @@ export default function AboutPage() {
                         </div>
                       </MovingBorder>
                       <div>
-                        <p className="font-medium text-sm sm:text-base">Freshman</p>
+                        <p className="font-medium text-sm sm:text-base">Sophomore</p>
                         <p className="text-xs sm:text-sm text-muted-foreground">Focus on Computer Science & Technology</p>
                       </div>
                     </div>

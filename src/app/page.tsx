@@ -9,7 +9,9 @@ import {
   Train,
   Code,
   User,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  GraduationCap
 } from "lucide-react";
 import { FaMoneyBillWave, FaRunning, FaSkiing } from "react-icons/fa";
 import { useEffect, useState } from "react";
@@ -116,7 +118,9 @@ export default function Home() {
                         className="object-cover"
                         style={{ objectPosition: 'center 30%' }}
                         priority={true}
-                        quality={90}
+                        quality={85}
+                        sizes="(max-width: 640px) 160px, (max-width: 768px) 192px, 256px"
+                        fetchPriority="high"
                       />
                     </div>
                   </BackgroundGradient>
@@ -169,6 +173,16 @@ export default function Home() {
                     About Me
                   </Button>
                 </Link>
+                <Link href="https://askthekidz.com" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                  <Button
+                    variant="secondary"
+                    size="default"
+                    className="text-sm sm:text-base h-10 sm:h-11 flex items-center justify-center w-full bg-[rgb(34,44,130)] text-white hover:bg-[rgb(28,36,108)]"
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    Ask The Kidz
+                  </Button>
+                </Link>
               </div>
 
               <div className="flex gap-3 sm:gap-4 mt-2 justify-center md:justify-start">
@@ -187,7 +201,9 @@ export default function Home() {
                     className="object-cover"
                     style={{ objectPosition: 'center 30%' }}
                     priority={true}
-                    quality={90}
+                    quality={85}
+                    sizes="(max-width: 768px) 0px, (max-width: 1024px) 40vw, 30vw"
+                    fetchPriority="high"
                   />
                 </div>
               </BackgroundGradient>
@@ -262,6 +278,25 @@ export default function Home() {
                       <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">Financial Literacy</h3>
                       <p className="text-xs sm:text-sm text-muted-foreground flex-grow">
                         Promoting financial education for youth and helping young people develop essential money management skills.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </BackgroundGradient>
+
+              {/* Education / EdTech Card */}
+              <BackgroundGradient className="rounded-xl h-full">
+                <Card className="border-0 bg-background/80 backdrop-blur-sm h-full flex flex-col">
+                  <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6 flex-grow flex flex-col">
+                    <div className="flex flex-col items-center text-center h-full">
+                      <MovingBorder className="p-0.5" containerClassName="rounded-full mb-3 sm:mb-4">
+                        <div className="p-2 sm:p-3 rounded-full bg-background text-primary">
+                          <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8" />
+                        </div>
+                      </MovingBorder>
+                      <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">Education / EdTech</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground flex-grow">
+                        Exploring how technology can make learning more engaging, accessible, and effective.
                       </p>
                     </div>
                   </CardContent>

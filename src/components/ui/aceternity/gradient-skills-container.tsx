@@ -27,7 +27,9 @@ export const GradientSkillsContainer = ({
   const actualRows = Math.ceil(totalChildren / actualColumns);
 
   const processedChildren = childrenArray.map((child, index) => {
-    if (!React.isValidElement(child)) return child;
+    if (!React.isValidElement(child) || typeof child.type === "string" || child.type === React.Fragment) {
+      return child;
+    }
 
     // Calculate position in the grid
     const row = Math.floor(index / actualColumns);
