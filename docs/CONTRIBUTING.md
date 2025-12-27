@@ -21,7 +21,8 @@ Thank you for considering contributing to this project! This document outlines t
 
 - Node.js 18.17 or later
 - npm or yarn
-- Appwrite account (for backend functionality)
+- Cloudflare account (for deployment)
+- Clerk account (for authentication)
 
 ### Installation
 
@@ -39,7 +40,7 @@ Thank you for considering contributing to this project! This document outlines t
 
 4. Set up environment variables:
    - Copy `.env.example` to `.env.local`
-   - Update the values with your Appwrite credentials
+   - Update the values with your Cloudflare/Clerk credentials
 
 5. Start the development server:
    ```bash

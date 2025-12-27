@@ -312,7 +312,7 @@ This document provides detailed information about the key React components used 
 - Uses React Hook Form for form state management and validation
 - Implements Zod schema validation for form inputs
 - Uses the useFormPersistence hook for auto-saving form data
-- Handles form submission to Appwrite backend
+- Handles form submission to Cloudflare D1 backend
 - Provides visual feedback during submission process
 - Includes accessibility features and error handling
 

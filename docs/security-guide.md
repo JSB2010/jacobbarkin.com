@@ -1,225 +1,43 @@
 # Security Guide
 
-This document outlines the security measures implemented in the Jacob Barkin Portfolio website and provides guidance for maintaining and enhancing security.
-
-## Table of Contents
-
-1. [Authentication & Authorization](#authentication--authorization)
-2. [Data Protection](#data-protection)
-3. [API Security](#api-security)
-4. [Content Security Policy](#content-security-policy)
-5. [Form Security](#form-security)
-6. [Dependency Management](#dependency-management)
-7. [Deployment Security](#deployment-security)
-8. [Security Headers](#security-headers)
-9. [Security Testing](#security-testing)
-10. [Incident Response](#incident-response)
+This document outlines the security measures implemented in the Jacob Barkin Portfolio.
 
 ## Authentication & Authorization
 
-### Appwrite Authentication
-
-The admin dashboard uses Appwrite authentication to secure access:
-
-- Email/password authentication for admin users
-- Session management with secure cookies
-- Role-based access control for admin features
-
-### Implementation
-
-- Admin authentication is implemented in `src/lib/appwrite/auth.ts`
-- Admin routes are protected with middleware in `src/middleware.ts`
-- Role checks are performed in API routes
-
-### Best Practices
-
-- Use strong, unique passwords for admin accounts
-- Implement multi-factor authentication when available
-- Regularly review and rotate admin credentials
-- Limit the number of admin users
+### Clerk Authentication
+We use **Clerk** for Identity and Access Management (IAM), specifically to protect the Admin Dashboard.
+-   **Middleware**: `src/middleware.ts` uses `clerkMiddleware()` to intercept requests to `/admin*`.
+-   **Edge Compatible**: Clerk's Edge Middleware runs natively on Cloudflare Workers, ensuring low latency.
+-   **Policies**: Public routes are explicitly defined; everything else (admin) requires a session.
 
 ## Data Protection
 
+### Database (D1)
+-   **Binding**: The D1 database is accessed via a binding (`env.DB`) that is only available within the secure Worker context. it is NOT exposed to the client.
+-   **Prepared Statements**: All SQL queries use parameter binding (`?`) to prevent SQL Injection attacks.
+
 ### Environment Variables
-
-Sensitive information is stored in environment variables:
-
-- Appwrite API keys and endpoints
-- SMTP credentials for email notifications
-- Other service credentials
-
-### Implementation
-
-- Environment variables are validated using Zod in `src/lib/env.ts`
-- Different environment files for development and production
-- GitHub repository secrets for CI/CD
-
-### Best Practices
-
-- Never commit `.env` files to the repository
-- Use different API keys for development and production
-- Regularly rotate API keys and credentials
-- Limit the scope of API keys to only what's needed
+-   **Client-Side**: Only variables prefixed with `NEXT_PUBLIC_` are exposed to the browser (e.g., Clerk Publishable Key).
+-   **Server-Side**: Sensitive keys (Resend API Key, Clerk Secret) are stored in Cloudflare Secrets and accessed via `process.env` or the context binding.
 
 ## API Security
 
 ### Rate Limiting
+-   **Cloudflare WAF**: The application sits behind Cloudflare, providing automatic DDoS protection.
+-   **Application Logic**: The contact form logs IP addresses (`contact_submissions.ip_address`), allowing for future rate-limiting logic at the application layer if abuse is detected.
 
-API endpoints are protected with rate limiting:
+### Validation
+-   **Zod**: We use Zod schemas for both Client-side and Server-side validation of all inputs (Contact Form, Embed Analytics). This strictly enforces data shapes and prevents malformed data from reaching the DB.
 
-- Limits the number of requests from a single IP
-- Prevents brute force attacks and abuse
-- Configurable limits based on endpoint sensitivity
+## Content Security Policy (CSP)
 
-### Implementation
-
-- Rate limiting middleware in `src/lib/rate-limiter.ts`
-- Applied to all API routes, especially contact form submissions
-- Customizable limits and windows
-
-### CORS Configuration
-
-Cross-Origin Resource Sharing (CORS) is properly configured:
-
-- Restricts which domains can access the API
-- Prevents cross-site request forgery (CSRF)
-- Configurable based on environment
-
-### Implementation
-
-- CORS configuration in API routes
-- Proper headers for Cloudflare Pages
-
-## Content Security Policy
-
-A strict Content Security Policy (CSP) is implemented:
-
-- Restricts which resources can be loaded
-- Prevents cross-site scripting (XSS) attacks
-- Configurable based on environment
-
-### Implementation
-
-- CSP headers in `public/_headers`
-- Nonce-based inline script protection
-- Report-only mode for testing
-
-## Form Security
-
-### Input Validation
-
-All form inputs are validated:
-
-- Client-side validation with React Hook Form and Zod
-- Server-side validation in API routes
-- Sanitization to prevent injection attacks
-
-### Implementation
-
-- Form schemas in `src/lib/schemas/`
-- Validation in API routes
-- Sanitization utilities in `src/lib/sanitize.ts`
-
-### CSRF Protection
-
-Cross-Site Request Forgery protection:
-
-- Token-based CSRF protection
-- Secure cookie handling
-- Origin validation
-
-### Implementation
-
-- CSRF tokens in forms
-- Origin checking in API routes
-
-## Dependency Management
-
-### Dependency Scanning
-
-Regular scanning of dependencies for vulnerabilities:
-
-- GitHub Dependabot for automated updates
-- npm audit for vulnerability detection
-- Manual review of critical dependencies
-
-### Implementation
-
-- Dependabot configuration in `.github/dependabot.yml`
-- Security workflow in `.github/workflows/security.yml`
-- Regular npm audit checks
-
-### Best Practices
-
-- Keep dependencies up to date
-- Review security advisories
-- Use lockfiles for deterministic builds
-- Minimize the number of dependencies
-
-## Deployment Security
-
-### Cloudflare Pages
-
-Secure deployment to Cloudflare Pages:
-
-- HTTPS by default
-- Automatic TLS certificate management
-- Edge caching and protection
-
-### Implementation
-
-- Cloudflare Pages configuration in `wrangler.toml`
-- Build and deployment workflow in `.github/workflows/cloudflare-pages.yml`
-
-### Best Practices
-
-- Use environment-specific variables
-- Implement proper access controls
-- Regular deployment testing
-- Maintain deployment documentation
-
-## Security Headers
-
-Comprehensive security headers:
-
-- Strict-Transport-Security (HSTS)
-- X-Content-Type-Options
-- X-Frame-Options
-- Referrer-Policy
-- Permissions-Policy
-
-### Implementation
-
-- Headers configuration in `public/_headers`
-- Cloudflare Pages configuration
-
-## Security Testing
-
-Regular security testing:
-
-- Automated security scanning
-- Manual penetration testing
-- Dependency vulnerability scanning
-
-### Implementation
-
-- Security workflow in `.github/workflows/security.yml`
-- CodeQL analysis for code scanning
-- npm audit for dependency scanning
+Next.js automatically handles many security headers. We enhance this by:
+-   **Strict Strict-Transport-Security (HSTS)**: Enforced by Cloudflare.
+-   **X-Content-Type-Options**: `nosniff`.
 
 ## Incident Response
 
-Procedure for handling security incidents:
-
-1. Identify and contain the incident
-2. Assess the impact and severity
-3. Remediate the vulnerability
-4. Notify affected users if necessary
-5. Document the incident and lessons learned
-
-### Contact
-
-For security issues, please contact:
-
-- Email: [security@jacobbarkin.com](mailto:security@jacobbarkin.com)
-- Form: [Contact Form](https://jacobbarkin.com/contact) (mark as "Security Issue")
+If a security vulnerability is discovered:
+1.  **Isolate**: If the issue is with the Worker, rollback to a previous deployment via `wrangler rollback`.
+2.  **Rotate**: Rotate compromised keys (Clerk, Resend, Cloudflare API Token) immediately.
+3.  **Patch**: Push a fix through the CI/CD pipeline.
