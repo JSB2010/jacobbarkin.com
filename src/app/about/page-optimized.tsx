@@ -97,6 +97,9 @@ export default function AboutPage() {
                   I&apos;m also interested in public transportation systems and their impact on communities. I research and advocate for improved public transit, focusing on accessibility and sustainability.
                 </p>
                 <p>
+                  In journalism, I was a staff writer for The Sun Devil&apos;s Advocate (the Advocate) in 2025 and now edit the news section for 2026. I care about reporting clearly so people stay informed.
+                </p>
+                <p>
                   Through my projects and initiatives, I aim to combine these interests to create meaningful solutions that help people learn, grow, and navigate the world more effectively.
                 </p>
               </div>

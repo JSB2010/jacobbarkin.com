@@ -11,7 +11,8 @@ import {
   User,
   ArrowRight,
   ExternalLink,
-  GraduationCap
+  GraduationCap,
+  Newspaper
 } from "lucide-react";
 import { FaMoneyBillWave, FaRunning, FaSkiing } from "react-icons/fa";
 import { useEffect, useState } from "react";
@@ -144,11 +145,15 @@ export default function Home() {
                 <span className="px-2 sm:px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs sm:text-sm flex items-center gap-1">
                   <FaMoneyBillWave className="h-3 w-3" /> Financial Literacy
                 </span>
+                <span className="px-2 sm:px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs sm:text-sm flex items-center gap-1">
+                  <Newspaper className="h-3 w-3" /> Journalism
+                </span>
               </div>
 
               <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto md:mx-0">
                 I&apos;m passionate about technology, financial literacy, and making a positive impact.
                 With a focus on accessibility and innovation, I develop solutions that help people solve their technology challenges while also advocating for youth financial education.
+                I also write and edit for The Sun Devil&apos;s Advocate (the Advocate) to help people stay informed.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-2 justify-center md:justify-start">
@@ -297,6 +302,25 @@ export default function Home() {
                       <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">Education / EdTech</h3>
                       <p className="text-xs sm:text-sm text-muted-foreground flex-grow">
                         Exploring how technology can make learning more engaging, accessible, and effective.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </BackgroundGradient>
+
+              {/* Journalism Card */}
+              <BackgroundGradient className="rounded-xl h-full">
+                <Card className="border-0 bg-background/80 backdrop-blur-sm h-full flex flex-col">
+                  <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6 flex-grow flex flex-col">
+                    <div className="flex flex-col items-center text-center h-full">
+                      <MovingBorder className="p-0.5" containerClassName="rounded-full mb-3 sm:mb-4">
+                        <div className="p-2 sm:p-3 rounded-full bg-background text-primary">
+                          <Newspaper className="h-6 w-6 sm:h-8 sm:w-8" />
+                        </div>
+                      </MovingBorder>
+                      <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">Journalism</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground flex-grow">
+                        Staff writer turned news section editor for The Sun Devil&apos;s Advocate, focused on clear reporting that keeps people informed.
                       </p>
                     </div>
                   </CardContent>

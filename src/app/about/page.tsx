@@ -93,7 +93,7 @@ export default function AboutPage() {
         title="About Me"
         description="I'm Jacob Barkin, a student developer passionate about technology, financial education, and making a positive impact through accessible solutions."
         backgroundImage="/images/mountains-bg.jpg"
-        tags={["Developer", "Student", "Financial Education", "Accessibility"]}
+        tags={["Developer", "Student", "Journalism", "Financial Education", "Accessibility"]}
       />
 
       {/* Bio Section */}
@@ -129,6 +129,9 @@ export default function AboutPage() {
                 </p>
                 <p>
                   I&apos;m also interested in public transportation systems and their impact on communities. I research and advocate for improved public transit, focusing on accessibility and sustainability.
+                </p>
+                <p>
+                  In journalism, I served as a staff writer for The Sun Devil&apos;s Advocate (the Advocate) in 2025 and now edit the news section for 2026. I love reporting and writing stories that keep the school community informed.
                 </p>
                 <p>
                   Through my projects and initiatives, I aim to combine these interests to create meaningful solutions that help people learn, grow, and navigate both the technological and financial aspects of the modern world more effectively.
@@ -322,7 +325,7 @@ export default function AboutPage() {
             <div className="flex justify-center mt-8 sm:mt-10">
               <Button asChild variant="outline" className="gap-2">
                 <a
-                  href="https://www.linkedin.com/in/jacob-barkin/"
+                  href="https://www.linkedin.com/in/jacobbarkin/"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
