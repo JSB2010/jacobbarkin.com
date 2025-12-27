@@ -8,11 +8,16 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import JsonLd from "@/components/json-ld";
 
+const clerkPublishableKey =
+  process.env.CLERK_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  "";
+
 // Check if Clerk is properly configured
 const isClerkConfigured = !!(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_your_publishable_key" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_")
+  clerkPublishableKey &&
+  clerkPublishableKey !== "pk_test_your_publishable_key" &&
+  clerkPublishableKey.startsWith("pk_")
 );
 
 const inter = Inter({
@@ -133,7 +138,7 @@ export default function RootLayout({
   }
 
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={clerkPublishableKey}>
       <AppContent>{children}</AppContent>
     </ClerkProvider>
   );

@@ -201,6 +201,7 @@ export default function EmbedAnalyticsPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authWarning, setAuthWarning] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<EmbedAnalytics[]>([]);
   const [stats, setStats] = useState<EmbedStats>({
     impressions: 0,
@@ -318,6 +319,19 @@ export default function EmbedAnalyticsPage() {
       setIsLoading(false);
     }
   }, [limit, offset, days, heartbeatLimit, router]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      setAuthWarning(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setAuthWarning('Authentication is taking longer than expected. If this persists, verify your Clerk publishable key and domain settings.');
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -510,6 +524,11 @@ export default function EmbedAnalyticsPage() {
 
   return (
     <div className="container py-8">
+      {authWarning && (
+        <div className="p-3 mb-4 bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-300 text-sm">
+          {authWarning}
+        </div>
+      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <Card>

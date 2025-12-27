@@ -43,7 +43,8 @@
 	"vars": {
 		"SITE_URL": "https://jacobbarkin.com",
 		"ADMIN_EMAIL": "jacobsamuelbarkin@gmail.com",
-		"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuamFjb2JiYXJraW4uY29tJA"
+		"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuamFjb2JiYXJraW4uY29tJA",
+		"CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuamFjb2JiYXJraW4uY29tJA"
 	},
 	// Note: Sensitive secrets must be set via:
 	//   wrangler secret put VARIABLE_NAME
