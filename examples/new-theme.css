@@ -1,0 +1,1339 @@
+/**
+ * Theme System CSS
+ * Clean, organized styles for light/dark/auto theme modes
+ */
+
+/* Base theme variables */
+:root {
+    /* Common colors (used in both themes) */
+    --primary-color: #0ea5e9;
+    --secondary-color: #10b981;
+    --accent-color: #8b5cf6;
+    --success-color: #22c55e;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+
+    /* Theme-specific colors for tech, transit, mountain, space */
+    --tech-primary: #0ea5e9;
+    --transit-primary: #10b981;
+    --mountain-primary: #0d9488;
+    --space-primary: #1e40af;
+
+    /* Light theme colors */
+    --light-bg-color: #f8fafc;
+    --light-text-color: #1e293b;
+    --light-text-muted: #64748b;
+    --light-heading-color: #0f172a;
+    --light-link-color: #0284c7;
+    --light-link-hover: #0369a1;
+    --light-border-color: #e2e8f0;
+    --light-card-bg: rgba(255, 255, 255, 0.95);
+    --light-card-border: rgba(255, 255, 255, 0.7);
+    --light-card-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 5px 15px -5px rgba(0, 0, 0, 0.07);
+    --light-input-bg: #ffffff;
+    --light-input-border: #cbd5e1;
+    --light-input-text: #1e293b;
+    --light-input-placeholder: #94a3b8;
+    --light-button-bg: #e2e8f0;
+    --light-button-text: #1e293b;
+    --light-button-hover: #cbd5e1;
+    --light-nav-bg: rgba(255, 255, 255, 0.8);
+    --light-nav-text: #0f172a;
+    --light-nav-border: rgba(0, 0, 0, 0.1);
+    --light-nav-shadow: rgba(0, 0, 0, 0.1);
+    --light-footer-bg: rgba(248, 250, 252, 0.9);
+    --light-footer-text: #1e293b;
+    --light-footer-link: #0284c7;
+    --light-footer-border: #e2e8f0;
+    --light-code-bg: #f1f5f9;
+    --light-code-text: #334155;
+    --light-code-border: #cbd5e1;
+    --light-table-header-bg: #f1f5f9;
+    --light-table-border: #e2e8f0;
+    --light-table-row-alt: #f8fafc;
+
+    /* Dark theme colors */
+    --dark-bg-color: #0f172a;
+    --dark-text-color: #e2e8f0;
+    --dark-text-muted: #94a3b8;
+    --dark-heading-color: #f8fafc;
+    --dark-link-color: #38bdf8;
+    --dark-link-hover: #7dd3fc;
+    --dark-border-color: #1e293b;
+    --dark-card-bg: rgba(26, 32, 44, 0.9);
+    --dark-card-border: rgba(255, 255, 255, 0.1);
+    --dark-card-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.3),
+        0 5px 15px -5px rgba(0, 0, 0, 0.2);
+    --dark-input-bg: #1e293b;
+    --dark-input-border: #334155;
+    --dark-input-text: #e2e8f0;
+    --dark-input-placeholder: #64748b;
+    --dark-button-bg: #334155;
+    --dark-button-text: #e2e8f0;
+    --dark-button-hover: #475569;
+    --dark-nav-bg: rgba(15, 23, 42, 0.8);
+    --dark-nav-text: #f8fafc;
+    --dark-nav-border: rgba(255, 255, 255, 0.1);
+    --dark-nav-shadow: rgba(0, 0, 0, 0.3);
+    --dark-footer-bg: rgba(15, 23, 42, 0.9);
+    --dark-footer-text: #e2e8f0;
+    --dark-footer-link: #38bdf8;
+    --dark-footer-border: #1e293b;
+    --dark-code-bg: #1e293b;
+    --dark-code-text: #e2e8f0;
+    --dark-code-border: #334155;
+    --dark-table-header-bg: #1e293b;
+    --dark-table-border: #334155;
+    --dark-table-row-alt: #0f172a;
+
+    /* Mountain background colors */
+    --light-mountain-bg: linear-gradient(to bottom, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+    --dark-mountain-bg: linear-gradient(to bottom, #0f0221 0%, #0c1339 30%, #081c51 70%, #102346 100%);
+
+    /* Transition settings */
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Base theme transitions */
+body, main, header, footer, .card, .project-card, .nav-menu, .theme-button {
+    transition: var(--theme-transition);
+}
+
+/* Light Theme Styles */
+:root.light-theme {
+    color-scheme: light;
+}
+
+:root.light-theme body {
+    background-color: var(--light-bg-color);
+    color: var(--light-text-color);
+}
+
+:root.light-theme h1,
+:root.light-theme h2,
+:root.light-theme h3,
+:root.light-theme h4,
+:root.light-theme h5,
+:root.light-theme h6 {
+    color: var(--light-heading-color);
+}
+
+/* Light theme navigation */
+:root.light-theme .main-nav {
+    background: var(--light-nav-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--light-nav-border);
+    box-shadow: 0 4px 15px var(--light-nav-shadow);
+}
+
+:root.light-theme .nav-menu li a {
+    color: var(--light-nav-text);
+}
+
+/* Dark Theme Styles */
+:root.dark-theme {
+    color-scheme: dark;
+}
+
+:root.dark-theme body {
+    background-color: var(--dark-bg-color);
+    color: var(--dark-text-color);
+}
+
+:root.dark-theme h1,
+:root.dark-theme h2,
+:root.dark-theme h3,
+:root.dark-theme h4,
+:root.dark-theme h5,
+:root.dark-theme h6 {
+    color: var(--dark-heading-color);
+}
+
+/* Dark theme navigation */
+:root.dark-theme .main-nav {
+    background: var(--dark-nav-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--dark-nav-border);
+    box-shadow: 0 4px 15px var(--dark-nav-shadow);
+}
+
+:root.dark-theme .nav-menu li a {
+    color: var(--dark-nav-text);
+}
+
+/* Auto Theme Styles */
+:root.auto-theme {
+    color-scheme: light dark;
+}
+
+/* Auto theme in light mode */
+@media (prefers-color-scheme: light) {
+    :root.auto-theme body {
+        background-color: var(--light-bg-color);
+        color: var(--light-text-color);
+    }
+
+    :root.auto-theme h1,
+    :root.auto-theme h2,
+    :root.auto-theme h3,
+    :root.auto-theme h4,
+    :root.auto-theme h5,
+    :root.auto-theme h6 {
+        color: var(--light-heading-color);
+    }
+
+    :root.auto-theme .main-nav {
+        background: var(--light-nav-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--light-nav-border);
+        box-shadow: 0 4px 15px var(--light-nav-shadow);
+    }
+
+    :root.auto-theme .nav-menu li a {
+        color: var(--light-nav-text);
+    }
+}
+
+/* Auto theme in dark mode */
+@media (prefers-color-scheme: dark) {
+    :root.auto-theme body {
+        background-color: var(--dark-bg-color);
+        color: var(--dark-text-color);
+    }
+
+    :root.auto-theme h1,
+    :root.auto-theme h2,
+    :root.auto-theme h3,
+    :root.auto-theme h4,
+    :root.auto-theme h5,
+    :root.auto-theme h6 {
+        color: var(--dark-heading-color);
+    }
+
+    :root.auto-theme .main-nav {
+        background: var(--dark-nav-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--dark-nav-border);
+        box-shadow: 0 4px 15px var(--dark-nav-shadow);
+    }
+
+    :root.auto-theme .nav-menu li a {
+        color: var(--dark-nav-text);
+    }
+}
+
+/* Visual mode classes for more direct targeting */
+:root.visual-light-mode body {
+    background-color: var(--light-bg-color);
+    color: var(--light-text-color);
+}
+
+:root.visual-dark-mode body {
+    background-color: var(--dark-bg-color);
+    color: var(--dark-text-color);
+}
+
+/* Mountain Background Styles */
+.light-theme-mountain,
+.dark-theme-mountain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+.light-theme-mountain {
+    background: var(--light-mountain-bg);
+}
+
+.dark-theme-mountain {
+    background: var(--dark-mountain-bg);
+}
+
+/* Mountain visibility rules */
+:root.visual-light-mode .light-theme-mountain {
+    display: block;
+}
+
+:root.visual-light-mode .dark-theme-mountain {
+    display: none;
+}
+
+:root.visual-dark-mode .light-theme-mountain {
+    display: none;
+}
+
+:root.visual-dark-mode .dark-theme-mountain {
+    display: block;
+}
+
+/* Enhanced Mountain SVG Styles with Unique Mountains */
+.mountains-svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    z-index: 1;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+}
+
+/* Light mode mountain colors with snow caps */
+/* Background mountains - left (blue tint) */
+:root.visual-light-mode .mountain-bg-left {
+    fill: rgba(56, 189, 248, 0.3);
+}
+
+/* Snow cap for left background mountain */
+:root.visual-light-mode .mountain-bg-left-snow {
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+/* Background mountains - right (purple tint) */
+:root.visual-light-mode .mountain-bg-right {
+    fill: rgba(124, 58, 237, 0.2);
+}
+
+/* Middle mountains - left (sharp, blue-green) */
+:root.visual-light-mode .mountain-middle-left {
+    fill: rgba(14, 165, 233, 0.4);
+}
+
+/* Snow cap for middle left mountain */
+:root.visual-light-mode .mountain-middle-left-snow {
+    fill: rgba(255, 255, 255, 0.6);
+}
+
+/* Middle mountains - right (rounded, teal) */
+:root.visual-light-mode .mountain-middle-right {
+    fill: rgba(20, 184, 166, 0.3);
+}
+
+/* Snow cap for middle right mountain */
+:root.visual-light-mode .mountain-middle-right-snow {
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+/* Foreground mountains - left (sharp peak, dark blue) */
+:root.visual-light-mode .mountain-near-left {
+    fill: rgba(2, 132, 199, 0.5);
+}
+
+/* Snow cap for sharp peak */
+:root.visual-light-mode .mountain-near-left-snow {
+    fill: rgba(255, 255, 255, 0.7);
+}
+
+/* Foreground mountains - right (plateau, green) */
+:root.visual-light-mode .mountain-near-right {
+    fill: rgba(5, 150, 105, 0.4);
+}
+
+/* Forest/foothills */
+:root.visual-light-mode .forest {
+    fill: rgba(16, 185, 129, 0.3);
+}
+
+/* Dark mode mountain colors with snow caps */
+/* Background mountains - left (dark blue) */
+:root.visual-dark-mode .mountain-bg-left {
+    fill: rgba(12, 74, 110, 0.5);
+}
+
+/* Snow cap for left background mountain */
+:root.visual-dark-mode .mountain-bg-left-snow {
+    fill: rgba(226, 232, 240, 0.3);
+}
+
+/* Background mountains - right (dark purple) */
+:root.visual-dark-mode .mountain-bg-right {
+    fill: rgba(76, 29, 149, 0.4);
+}
+
+/* Middle mountains - left (sharp, teal) */
+:root.visual-dark-mode .mountain-middle-left {
+    fill: rgba(15, 118, 110, 0.5);
+}
+
+/* Snow cap for middle left mountain */
+:root.visual-dark-mode .mountain-middle-left-snow {
+    fill: rgba(226, 232, 240, 0.4);
+}
+
+/* Middle mountains - right (rounded, green) */
+:root.visual-dark-mode .mountain-middle-right {
+    fill: rgba(6, 95, 70, 0.5);
+}
+
+/* Snow cap for middle right mountain */
+:root.visual-dark-mode .mountain-middle-right-snow {
+    fill: rgba(226, 232, 240, 0.4);
+}
+
+/* Foreground mountains - left (sharp peak, dark teal) */
+:root.visual-dark-mode .mountain-near-left {
+    fill: rgba(17, 94, 89, 0.6);
+}
+
+/* Snow cap for sharp peak */
+:root.visual-dark-mode .mountain-near-left-snow {
+    fill: rgba(226, 232, 240, 0.5);
+}
+
+/* Foreground mountains - right (plateau, dark green) */
+:root.visual-dark-mode .mountain-near-right {
+    fill: rgba(4, 120, 87, 0.6);
+}
+
+/* Forest/foothills */
+:root.visual-dark-mode .forest {
+    fill: rgba(5, 150, 105, 0.4);
+}
+
+/* Animation for subtle mountain movement - different for each mountain */
+@keyframes mountain-sway-slow {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes mountain-sway-medium {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(-4px); }
+    100% { transform: translateX(0); }
+}
+
+/* Apply subtle animations to different mountains */
+.mountain-bg-left, .mountain-bg-left-snow {
+    will-change: transform;
+    animation: mountain-sway-slow 150s ease-in-out infinite;
+}
+
+.mountain-bg-right {
+    will-change: transform;
+    animation: mountain-sway-medium 180s ease-in-out infinite reverse;
+}
+
+.mountain-middle-left, .mountain-middle-left-snow {
+    will-change: transform;
+    animation: mountain-sway-medium 120s ease-in-out infinite;
+}
+
+.mountain-middle-right, .mountain-middle-right-snow {
+    will-change: transform;
+    animation: mountain-sway-slow 140s ease-in-out infinite reverse;
+}
+
+/* Space Elements Styles */
+.space-elements {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+:root.visual-dark-mode .space-elements {
+    opacity: 1;
+}
+
+.stars-container,
+.extra-stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: twinkle 5s infinite alternate ease-in-out;
+    will-change: transform, opacity; /* Performance optimization */
+}
+
+.star.bright {
+    width: 3px;
+    height: 3px;
+    opacity: 0.9;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.3; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.2); }
+}
+
+.extra-stars {
+    display: none;
+}
+
+:root.visual-dark-mode .extra-stars {
+    display: block;
+}
+
+/* Theme Toggle Button Styles */
+.theme-switcher {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.theme-button {
+    position: relative;
+    overflow: hidden;
+    padding: 0.75rem;
+    min-width: 80px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Light mode theme buttons */
+:root.visual-light-mode .theme-button {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--light-text-color);
+}
+
+/* Dark mode theme buttons */
+:root.visual-dark-mode .theme-button {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--dark-text-color);
+}
+
+.theme-button i {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.theme-button span {
+    font-size: 0.8rem;
+}
+
+.theme-button.active {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-button:hover:not(.active) {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Enhanced focus styles for accessibility */
+.theme-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Ripple effect for theme buttons */
+.theme-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: width 0.5s, height 0.5s, opacity 0.5s;
+}
+
+.theme-button:active::before {
+    width: 200px;
+    height: 200px;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0.2s;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mountains-svg {
+        height: 40%;
+    }
+
+    .theme-button {
+        padding: 0.5rem;
+        min-width: 70px;
+    }
+
+    .theme-button i {
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .theme-button span {
+        font-size: 0.7rem;
+    }
+}
+
+/* Ensure proper contrast for cards in both themes */
+:root.visual-light-mode .card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 5px 15px -5px rgba(0, 0, 0, 0.07),
+        0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+:root.visual-dark-mode .card {
+    background: rgba(26, 32, 44, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.3),
+        0 5px 15px -5px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+:root.visual-light-mode .card h2 {
+    color: #1a202c;
+}
+
+:root.visual-dark-mode .card h2 {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root.visual-light-mode .card p {
+    color: #4a5568;
+}
+
+:root.visual-dark-mode .card p {
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Card hover text effects */
+:root.visual-light-mode .card:hover h2 {
+    color: var(--primary-color);
+}
+
+:root.visual-light-mode .card:hover p {
+    color: #2d3748;
+}
+
+:root.visual-dark-mode .card:hover h2 {
+    color: var(--primary-color);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:root.visual-dark-mode .card:hover p {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Card icon hover effects */
+:root.visual-light-mode .card:hover i {
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+:root.visual-dark-mode .card:hover i {
+    color: var(--primary-color);
+    opacity: 1;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* Card theme-specific styles */
+:root.visual-light-mode .tech-card {
+    background: rgba(240, 249, 255, 0.95);
+}
+
+:root.visual-light-mode .transit-card {
+    background: rgba(236, 253, 245, 0.95);
+}
+
+:root.visual-light-mode .mountain-card {
+    background: rgba(235, 250, 249, 0.95);
+}
+
+:root.visual-light-mode .space-card {
+    background: rgba(238, 242, 255, 0.95);
+}
+
+:root.visual-dark-mode .tech-card {
+    background: rgba(30, 41, 59, 0.9);
+}
+
+:root.visual-dark-mode .transit-card {
+    background: rgba(20, 83, 45, 0.9);
+}
+
+:root.visual-dark-mode .mountain-card {
+    background: rgba(19, 78, 74, 0.9);
+}
+
+:root.visual-dark-mode .space-card {
+    background: rgba(30, 58, 138, 0.9);
+}
+
+/* Card hover effects */
+:root.visual-light-mode .card:hover {
+    background: #ffffff;
+    transform: translateY(-8px);
+    box-shadow:
+        0 15px 30px -10px rgba(0, 0, 0, 0.15),
+        0 8px 15px -5px rgba(0, 0, 0, 0.07),
+        0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+:root.visual-dark-mode .card:hover {
+    background: rgba(44, 55, 74, 0.95);
+    transform: translateY(-8px);
+    box-shadow:
+        0 15px 30px -10px rgba(0, 0, 0, 0.4),
+        0 8px 15px -5px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Theme-specific card hover effects in dark mode */
+:root.visual-dark-mode .tech-card:hover {
+    background: rgba(44, 82, 130, 0.95);
+}
+
+:root.visual-dark-mode .transit-card:hover {
+    background: rgba(30, 93, 55, 0.95);
+}
+
+:root.visual-dark-mode .mountain-card:hover {
+    background: rgba(29, 88, 84, 0.95);
+}
+
+:root.visual-dark-mode .space-card:hover {
+    background: rgba(40, 68, 148, 0.95);
+}
+
+/* Form elements styling */
+/* Inputs */
+input, textarea, select {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode input,
+:root.visual-light-mode textarea,
+:root.visual-light-mode select {
+    background-color: var(--light-input-bg);
+    color: var(--light-input-text);
+    border: 1px solid var(--light-input-border);
+}
+
+:root.visual-light-mode input::placeholder,
+:root.visual-light-mode textarea::placeholder {
+    color: var(--light-input-placeholder);
+}
+
+:root.visual-dark-mode input,
+:root.visual-dark-mode textarea,
+:root.visual-dark-mode select {
+    background-color: var(--dark-input-bg);
+    color: var(--dark-input-text);
+    border: 1px solid var(--dark-input-border);
+}
+
+:root.visual-dark-mode input::placeholder,
+:root.visual-dark-mode textarea::placeholder {
+    color: var(--dark-input-placeholder);
+}
+
+/* Buttons */
+button:not(.theme-button),
+.button {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode button:not(.theme-button),
+:root.visual-light-mode .button {
+    background-color: var(--light-button-bg);
+    color: var(--light-button-text);
+    border: 1px solid var(--light-border-color);
+}
+
+:root.visual-light-mode button:not(.theme-button):hover,
+:root.visual-light-mode .button:hover {
+    background-color: var(--light-button-hover);
+}
+
+:root.visual-dark-mode button:not(.theme-button),
+:root.visual-dark-mode .button {
+    background-color: var(--dark-button-bg);
+    color: var(--dark-button-text);
+    border: 1px solid var(--dark-border-color);
+}
+
+:root.visual-dark-mode button:not(.theme-button):hover,
+:root.visual-dark-mode .button:hover {
+    background-color: var(--dark-button-hover);
+}
+
+/* Links */
+a:not(.card):not(.button):not(.nav-link):not(.logo a) {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode a:not(.card):not(.button):not(.nav-link):not(.logo a) {
+    color: var(--light-link-color);
+}
+
+:root.visual-light-mode a:not(.card):not(.button):not(.nav-link):not(.logo a):hover {
+    color: var(--light-link-hover);
+}
+
+:root.visual-dark-mode a:not(.card):not(.button):not(.nav-link):not(.logo a) {
+    color: var(--dark-link-color);
+}
+
+:root.visual-dark-mode a:not(.card):not(.button):not(.nav-link):not(.logo a):hover {
+    color: var(--dark-link-hover);
+}
+
+/* Footer styling */
+footer {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode footer {
+    background-color: var(--light-footer-bg);
+    color: var(--light-footer-text);
+    border-top: 1px solid var(--light-footer-border);
+}
+
+:root.visual-light-mode footer a:not(.theme-button) {
+    color: var(--light-footer-link);
+}
+
+:root.visual-dark-mode footer {
+    background-color: var(--dark-footer-bg);
+    color: var(--dark-footer-text);
+    border-top: 1px solid var(--dark-footer-border);
+}
+
+:root.visual-dark-mode footer a:not(.theme-button) {
+    color: var(--dark-footer-link);
+}
+
+/* Code blocks */
+code, pre {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode code,
+:root.visual-light-mode pre {
+    background-color: var(--light-code-bg);
+    color: var(--light-code-text);
+    border: 1px solid var(--light-code-border);
+}
+
+:root.visual-dark-mode code,
+:root.visual-dark-mode pre {
+    background-color: var(--dark-code-bg);
+    color: var(--dark-code-text);
+    border: 1px solid var(--dark-code-border);
+}
+
+/* Tables */
+table {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode table {
+    border-color: var(--light-table-border);
+}
+
+:root.visual-light-mode th {
+    background-color: var(--light-table-header-bg);
+    color: var(--light-heading-color);
+}
+
+:root.visual-light-mode tr:nth-child(even) {
+    background-color: var(--light-table-row-alt);
+}
+
+:root.visual-dark-mode table {
+    border-color: var(--dark-table-border);
+}
+
+:root.visual-dark-mode th {
+    background-color: var(--dark-table-header-bg);
+    color: var(--dark-heading-color);
+}
+
+:root.visual-dark-mode tr:nth-child(even) {
+    background-color: var(--dark-table-row-alt);
+}
+
+/* Project cards and elements */
+.project-card, .project {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .project-card,
+:root.visual-light-mode .project {
+    background-color: var(--light-card-bg);
+    color: var(--light-text-color);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+}
+
+:root.visual-light-mode .project-card h3,
+:root.visual-light-mode .project-title {
+    color: var(--light-heading-color);
+}
+
+:root.visual-dark-mode .project-card,
+:root.visual-dark-mode .project {
+    background-color: var(--dark-card-bg);
+    color: var(--dark-text-color);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+}
+
+:root.visual-dark-mode .project-card h3,
+:root.visual-dark-mode .project-title {
+    color: var(--dark-heading-color);
+}
+
+/* Project hover effects */
+:root.visual-light-mode .project:hover {
+    background-color: #ffffff;
+    transform: translateY(-5px);
+}
+
+:root.visual-dark-mode .project:hover {
+    background-color: rgba(30, 41, 59, 0.95);
+    transform: translateY(-5px);
+}
+
+/* Project tags */
+.project-tag {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .project-tag {
+    background-color: rgba(226, 232, 240, 0.7);
+    color: var(--light-text-color);
+}
+
+:root.visual-dark-mode .project-tag {
+    background-color: rgba(30, 41, 59, 0.7);
+    color: var(--dark-text-color);
+}
+
+:root.visual-light-mode .project-tag.tech {
+    background-color: rgba(186, 230, 253, 0.5);
+}
+
+:root.visual-light-mode .project-tag.transit {
+    background-color: rgba(209, 250, 229, 0.5);
+}
+
+:root.visual-light-mode .project-tag.mountain {
+    background-color: rgba(204, 251, 241, 0.5);
+}
+
+:root.visual-light-mode .project-tag.space {
+    background-color: rgba(219, 234, 254, 0.5);
+}
+
+:root.visual-dark-mode .project-tag.tech {
+    background-color: rgba(12, 74, 110, 0.5);
+}
+
+:root.visual-dark-mode .project-tag.transit {
+    background-color: rgba(6, 78, 59, 0.5);
+}
+
+:root.visual-dark-mode .project-tag.mountain {
+    background-color: rgba(17, 94, 89, 0.5);
+}
+
+:root.visual-dark-mode .project-tag.space {
+    background-color: rgba(30, 58, 138, 0.5);
+}
+
+/* Project links */
+.project-link {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .project-link {
+    color: var(--primary-color);
+    background-color: rgba(226, 232, 240, 0.5);
+}
+
+:root.visual-light-mode .project-link:hover {
+    background-color: rgba(226, 232, 240, 0.8);
+}
+
+:root.visual-dark-mode .project-link {
+    color: var(--dark-link-color);
+    background-color: rgba(30, 41, 59, 0.5);
+}
+
+:root.visual-dark-mode .project-link:hover {
+    background-color: rgba(30, 41, 59, 0.8);
+}
+
+/* Project filter buttons */
+.filter-button {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .filter-button {
+    background-color: var(--light-button-bg);
+    color: var(--light-button-text);
+    border: 1px solid var(--light-border-color);
+}
+
+:root.visual-light-mode .filter-button:hover {
+    background-color: var(--light-button-hover);
+}
+
+:root.visual-light-mode .filter-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+:root.visual-dark-mode .filter-button {
+    background-color: var(--dark-button-bg);
+    color: var(--dark-button-text);
+    border: 1px solid var(--dark-border-color);
+}
+
+:root.visual-dark-mode .filter-button:hover {
+    background-color: var(--dark-button-hover);
+}
+
+:root.visual-dark-mode .filter-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Contact form and elements */
+.contact-form {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .contact-form {
+    background-color: var(--light-card-bg);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+}
+
+:root.visual-dark-mode .contact-form {
+    background-color: var(--dark-card-bg);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+}
+
+/* Contact form inputs */
+.contact-form .input-with-icon {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .contact-form .input-with-icon {
+    background-color: var(--light-input-bg);
+    border: 1px solid var(--light-input-border);
+}
+
+:root.visual-dark-mode .contact-form .input-with-icon {
+    background-color: var(--dark-input-bg);
+    border: 1px solid var(--dark-input-border);
+}
+
+:root.visual-light-mode .contact-form .input-with-icon i {
+    color: var(--light-text-muted);
+}
+
+:root.visual-dark-mode .contact-form .input-with-icon i {
+    color: var(--dark-text-muted);
+}
+
+:root.visual-light-mode .contact-form input,
+:root.visual-light-mode .contact-form textarea {
+    color: var(--light-input-text);
+    background-color: transparent;
+}
+
+:root.visual-dark-mode .contact-form input,
+:root.visual-dark-mode .contact-form textarea {
+    color: var(--dark-input-text);
+    background-color: transparent;
+}
+
+:root.visual-light-mode .contact-form input::placeholder,
+:root.visual-light-mode .contact-form textarea::placeholder {
+    color: var(--light-input-placeholder);
+}
+
+:root.visual-dark-mode .contact-form input::placeholder,
+:root.visual-dark-mode .contact-form textarea::placeholder {
+    color: var(--dark-input-placeholder);
+}
+
+/* Submit button */
+.contact-form .submit-button {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .contact-form .submit-button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+:root.visual-light-mode .contact-form .submit-button:hover {
+    background: #0284c7;
+}
+
+:root.visual-dark-mode .contact-form .submit-button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+:root.visual-dark-mode .contact-form .submit-button:hover {
+    background: #38bdf8;
+}
+
+/* Contact methods */
+.contact-method {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .contact-method {
+    background-color: var(--light-card-bg);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+    color: var(--light-text-color);
+}
+
+:root.visual-light-mode .contact-method i {
+    color: var(--primary-color);
+}
+
+:root.visual-light-mode .contact-method:hover {
+    background-color: #ffffff;
+    transform: translateY(-5px);
+}
+
+:root.visual-dark-mode .contact-method {
+    background-color: var(--dark-card-bg);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+    color: var(--dark-text-color);
+}
+
+:root.visual-dark-mode .contact-method i {
+    color: var(--primary-color);
+}
+
+:root.visual-dark-mode .contact-method:hover {
+    background-color: rgba(30, 41, 59, 0.95);
+    transform: translateY(-5px);
+}
+
+/* Thank you message */
+.thank-you-message {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .thank-you-message {
+    background-color: var(--light-card-bg);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+    color: var(--light-text-color);
+}
+
+:root.visual-dark-mode .thank-you-message {
+    background-color: var(--dark-card-bg);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+    color: var(--dark-text-color);
+}
+
+:root.visual-light-mode .thank-you-message i {
+    color: var(--success-color);
+}
+
+:root.visual-dark-mode .thank-you-message i {
+    color: var(--success-color);
+}
+
+:root.visual-light-mode .close-button {
+    color: var(--light-text-muted);
+    background: transparent;
+    border: none;
+}
+
+:root.visual-dark-mode .close-button {
+    color: var(--dark-text-muted);
+    background: transparent;
+    border: none;
+}
+
+/* About page sections and elements */
+.about-section, .interests-section {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .about-section,
+:root.visual-light-mode .interests-section {
+    background-color: var(--light-card-bg);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+}
+
+:root.visual-dark-mode .about-section,
+:root.visual-dark-mode .interests-section {
+    background-color: var(--dark-card-bg);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+}
+
+/* Interest cards */
+.interest-card {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .interest-card {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--light-card-border);
+    box-shadow: var(--light-card-shadow);
+}
+
+:root.visual-light-mode .interest-card:hover {
+    background-color: #ffffff;
+    transform: translateY(-5px);
+}
+
+:root.visual-dark-mode .interest-card {
+    background-color: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--dark-card-border);
+    box-shadow: var(--dark-card-shadow);
+}
+
+:root.visual-dark-mode .interest-card:hover {
+    background-color: rgba(30, 41, 59, 0.95);
+    transform: translateY(-5px);
+}
+
+/* Interest icons */
+.interest-icon {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .interest-icon {
+    background-color: rgba(226, 232, 240, 0.7);
+    color: var(--primary-color);
+}
+
+:root.visual-dark-mode .interest-icon {
+    background-color: rgba(30, 41, 59, 0.7);
+    color: var(--primary-color);
+}
+
+/* Interest content */
+:root.visual-light-mode .interest-content h3 {
+    color: var(--light-heading-color);
+}
+
+:root.visual-dark-mode .interest-content h3 {
+    color: var(--dark-heading-color);
+}
+
+:root.visual-light-mode .interest-content p {
+    color: var(--light-text-color);
+}
+
+:root.visual-dark-mode .interest-content p {
+    color: var(--dark-text-color);
+}
+
+/* Button links */
+.button-link {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .button-link {
+    background-color: var(--light-button-bg);
+    color: var(--light-button-text);
+    border: 1px solid var(--light-border-color);
+}
+
+:root.visual-light-mode .button-link:hover {
+    background-color: var(--light-button-hover);
+}
+
+:root.visual-dark-mode .button-link {
+    background-color: var(--dark-button-bg);
+    color: var(--dark-button-text);
+    border: 1px solid var(--dark-border-color);
+}
+
+:root.visual-dark-mode .button-link:hover {
+    background-color: var(--dark-button-hover);
+}
+
+/* Hyperlinks in about page */
+.hyperlink {
+    transition: var(--theme-transition);
+}
+
+:root.visual-light-mode .hyperlink {
+    color: var(--light-link-color);
+    border-bottom: 1px dotted var(--light-link-color);
+}
+
+:root.visual-light-mode .hyperlink:hover {
+    color: var(--light-link-hover);
+    border-bottom-color: var(--light-link-hover);
+}
+
+:root.visual-dark-mode .hyperlink {
+    color: var(--dark-link-color);
+    border-bottom: 1px dotted var(--dark-link-color);
+}
+
+:root.visual-dark-mode .hyperlink:hover {
+    color: var(--dark-link-hover);
+    border-bottom-color: var(--dark-link-hover);
+}
