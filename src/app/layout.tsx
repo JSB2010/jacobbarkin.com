@@ -108,7 +108,7 @@ export const metadata: Metadata = {
 function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased min-h-screen bg-background`}>
+      <body className={`${inter.variable} antialiased min-h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

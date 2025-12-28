@@ -3,6 +3,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 
+// Simple seeded random number generator for consistent star positions
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 export function MountainBackground() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -11,13 +17,13 @@ export function MountainBackground() {
     setMounted(true);
   }, []);
 
-  // Generate star data once using useMemo to prevent flickering
+  // Generate star data once using useMemo with seeded random for consistency
   const stars = useMemo(() => {
-    return Array.from({ length: 150 }).map(() => ({
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      animationDelay: `${Math.random() * 5}s`,
-      size: Math.random() > 0.7 ? 3 : 2,
+    return Array.from({ length: 150 }).map((_, i) => ({
+      left: `${seededRandom(i * 2) * 100}%`,
+      top: `${seededRandom(i * 2 + 1) * 100}%`,
+      animationDelay: `${seededRandom(i * 3) * 5}s`,
+      size: seededRandom(i * 4) > 0.7 ? 3 : 2,
     }));
   }, []);
 
@@ -404,7 +410,7 @@ export function MountainBackground() {
 
         @media (max-width: 768px) {
           .mountains-svg {
-            height: 40% !important;
+            height: 40%;
           }
         }
       `}</style>
