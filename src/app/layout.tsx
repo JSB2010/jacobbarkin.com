@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import JsonLd from "@/components/json-ld";
+import { MountainBackground } from "@/components/mountain-background";
 
 const clerkPublishableKey =
   process.env.CLERK_PUBLISHABLE_KEY ||
@@ -114,6 +115,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           enableSystem
           storageKey="jacob-barkin-theme"
         >
+          <MountainBackground />
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8">{children}</main>
