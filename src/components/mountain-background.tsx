@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 
 export function MountainBackground() {
@@ -9,6 +9,16 @@ export function MountainBackground() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Generate star data once using useMemo to prevent flickering
+  const stars = useMemo(() => {
+    return Array.from({ length: 150 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 5}s`,
+      size: Math.random() > 0.7 ? 3 : 2,
+    }));
   }, []);
 
   // Don't render anything on the server to avoid hydration mismatch
@@ -42,16 +52,16 @@ export function MountainBackground() {
       {isDarkMode && (
         <div className="fixed inset-0 -z-10 pointer-events-none">
           <div className="stars-container">
-            {Array.from({ length: 150 }).map((_, i) => (
+            {stars.map((star, i) => (
               <div
                 key={i}
                 className="star"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 5}s`,
-                  width: Math.random() > 0.7 ? "3px" : "2px",
-                  height: Math.random() > 0.7 ? "3px" : "2px",
+                  left: star.left,
+                  top: star.top,
+                  animationDelay: star.animationDelay,
+                  width: `${star.size}px`,
+                  height: `${star.size}px`,
                 }}
               />
             ))}
@@ -62,7 +72,7 @@ export function MountainBackground() {
       {/* Mountain SVG */}
       <div className="mountains-container fixed bottom-0 left-0 w-full h-full -z-[5] pointer-events-none overflow-hidden">
         <svg
-          className="mountains-svg absolute bottom-0 left-0 w-full h-[60%] md:h-[60%]"
+          className="mountains-svg absolute bottom-0 left-0 w-full h-[40%] md:h-[60%]"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 1440 320"
           preserveAspectRatio="none"
