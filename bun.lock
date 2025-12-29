@@ -47,7 +47,7 @@
         "@types/webpack": "^5.28.5",
         "archiver": "^7.0.1",
         "baseline-browser-mapping": "^2.9.11",
-        "better-sqlite3": "^9.6.0",
+        "better-sqlite3": "^12.5.0",
         "critters": "^0.0.25",
         "dotenv": "^17.2.3",
         "eslint": "^9.39.2",
@@ -841,7 +841,7 @@
 
     "basic-ftp": ["basic-ftp@5.0.5", "", {}, ""],
 
-    "better-sqlite3": ["better-sqlite3@9.6.0", "", { "dependencies": { "bindings": "^1.5.0", "prebuild-install": "^7.1.1" } }, "sha512-yR5HATnqeYNVnkaUTf4bOP2dJSnyhP4puJN/QPRyx4YkBEEUxib422n2XzPqDEHjQQqazoYoADdAm5vE15+dAQ=="],
+    "better-sqlite3": ["better-sqlite3@12.5.0", "", { "dependencies": { "bindings": "^1.5.0", "prebuild-install": "^7.1.1" } }, "sha512-WwCZ/5Diz7rsF29o27o0Gcc1Du+l7Zsv7SYtVPG0X3G/uUI1LqdxrQI7c9Hs2FWpqXXERjW9hp6g3/tH7DlVKg=="],
 
     "bindings": ["bindings@1.5.0", "", { "dependencies": { "file-uri-to-path": "1.0.0" } }, "sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ=="],
 
