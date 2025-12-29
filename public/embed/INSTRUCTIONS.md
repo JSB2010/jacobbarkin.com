@@ -36,6 +36,31 @@ useEffect(() => {
 <jb-credit></jb-credit>
 ```
 
+### TypeScript (React / Next.js)
+If your project uses TypeScript, add a JSX intrinsic element declaration so `<jb-credit>` is allowed:
+
+```ts
+// e.g. src/types/custom-elements.d.ts
+import type { HTMLAttributes } from 'react';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'jb-credit': HTMLAttributes<HTMLElement> & {
+        'data-variant'?: 'prominent' | 'chip' | 'badge' | 'logo' | 'minimal' | 'text';
+        'data-theme'?: 'light' | 'dark' | 'auto';
+        'data-position'?: 'inline' | 'fixed';
+        'data-size'?: 'small' | 'default' | 'large';
+        'data-align'?: 'left' | 'right' | 'center';
+        'data-no-track'?: string | boolean;
+      };
+    }
+  }
+}
+
+export {};
+```
+
 ---
 
 ## Implementation Notes (for AI agents)
