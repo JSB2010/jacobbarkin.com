@@ -1,17 +1,17 @@
 version: 2
 updates:
   # Enable version updates for npm/bun
-  - package-ecosystem: "npm"
+  - package-ecosystem: "bun"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-      timezone: "America/New_York"
+      timezone: "America/Denver"
     labels:
       - "dependencies"
       - "npm"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 20
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -87,7 +87,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-      timezone: "America/New_York"
+      timezone: "America/Denver"
     labels:
       - "dependencies"
       - "github-actions"
