@@ -41,12 +41,12 @@ If your project uses TypeScript, add a JSX intrinsic element declaration so `<jb
 
 ```ts
 // e.g. src/types/custom-elements.d.ts
-import type { HTMLAttributes } from 'react';
+import 'react';
 
-declare global {
+declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
-      'jb-credit': HTMLAttributes<HTMLElement> & {
+      'jb-credit': React.HTMLAttributes<HTMLElement> & {
         'data-variant'?: 'prominent' | 'chip' | 'badge' | 'logo' | 'minimal' | 'text';
         'data-theme'?: 'light' | 'dark' | 'auto';
         'data-position'?: 'inline' | 'fixed';
@@ -57,9 +57,15 @@ declare global {
     }
   }
 }
-
-export {};
 ```
+
+Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src/` layout, put it under `src/types/`). If your project uses `typeRoots` or `types`, add the folder there so TypeScript can see the declaration.
+
+**Troubleshooting (TypeScript)**
+- Build still fails: the `.d.ts` file is not being picked up. Move it into `src/` or add its folder to `tsconfig.json` `include`.
+- If `typeRoots` or `types` are set, add your types folder there (otherwise TypeScript ignores it).
+- Restart the dev server or rerun `next build` after adding the `.d.ts`.
+- Don't place the file in `app/` unless your `tsconfig.json` includes it.
 
 ---
 
