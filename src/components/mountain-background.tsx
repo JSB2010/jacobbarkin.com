@@ -59,8 +59,7 @@ export function MountainBackground() {
         }`}
         style={{
           background: "linear-gradient(to bottom, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%)",
-          minHeight: "100vh",
-          minHeight: "100dvh", // Dynamic viewport height for mobile
+          minHeight: "100dvh", // Dynamic viewport height for mobile, falls back to 100vh in older browsers
         }}
       />
       <div
@@ -69,8 +68,7 @@ export function MountainBackground() {
         }`}
         style={{
           background: "linear-gradient(to bottom, #0f0221 0%, #0c1339 30%, #081c51 70%, #102346 100%)",
-          minHeight: "100vh",
-          minHeight: "100dvh", // Dynamic viewport height for mobile
+          minHeight: "100dvh", // Dynamic viewport height for mobile, falls back to 100vh in older browsers
         }}
       />
 
