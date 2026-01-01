@@ -86,7 +86,7 @@ export function MountainBackground() {
           {/* Far background mountains - gentle rolling hills */}
           <path
             className="mountain-layer mountain-far"
-            d="M0,280 Q200,240 360,260 T720,240 Q900,220 1080,240 T1440,260 L1440,400 L0,400 Z"
+            d="M0,280 Q200,240 360,260 Q520,280 720,240 Q900,220 1080,240 Q1260,260 1440,260 L1440,400 L0,400 Z"
           />
 
           {/* Background mountains with smooth curves */}
@@ -131,7 +131,7 @@ export function MountainBackground() {
 
           <path
             className="mountain-layer mountain-near-3"
-            d="M1000,380 Q1100,360 1200,370 Q1300,380 1400,300 Q1500,220 1600,340 L1600,400 L1000,400 Z"
+            d="M1000,380 Q1100,360 1200,370 Q1300,380 1440,320 L1440,400 L1000,400 Z"
           />
 
           {/* Snow caps for foreground mountains */}
