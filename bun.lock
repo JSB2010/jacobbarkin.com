@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "jacob-barkin-portfolio",
@@ -19,7 +20,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
-        "framer-motion": "^12.23.26",
+        "framer-motion": "^12.24.0",
         "lucide-react": "^0.562.0",
         "next": "15.5.9",
         "next-themes": "^0.4.6",
@@ -31,7 +32,7 @@
         "resend": "^6.6.0",
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
-        "zod": "^4.2.1",
+        "zod": "^4.3.5",
         "zustand": "^5.0.9",
       },
       "devDependencies": {
@@ -63,7 +64,7 @@
         "wrangler": "^4.54.0",
       },
       "optionalDependencies": {
-        "@ast-grep/napi-linux-x64-gnu": "^0.40.0",
+        "@ast-grep/napi-linux-x64-gnu": "^0.40.4",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.1.0",
         "@unrs/resolver-binding-linux-x64-gnu": "^1.0.0",
         "lightningcss-linux-x64-gnu": "^1.29.0",
@@ -84,7 +85,7 @@
 
     "@ast-grep/napi-darwin-arm64": ["@ast-grep/napi-darwin-arm64@0.40.0", "", { "os": "darwin", "cpu": "arm64" }, ""],
 
-    "@ast-grep/napi-linux-x64-gnu": ["@ast-grep/napi-linux-x64-gnu@0.40.3", "", { "os": "linux", "cpu": "x64" }, "sha512-3W1I9hKREFR/Wpu443C7RCR7s3kIP61eBDaevpJcO3Xi99+t2UNas6p765oqv08M7DOxJoTbC4OpI9GybD0aUA=="],
+    "@ast-grep/napi-linux-x64-gnu": ["@ast-grep/napi-linux-x64-gnu@0.40.4", "", { "os": "linux", "cpu": "x64" }, "sha512-6BrPYjP+Gr+mkI3z3Xh/UHkOedJ25qKGdhRwbYteeK/QX3rWeuuo/tUjow4nh/8ewhk04wHGw/G96OiF47ICjA=="],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, ""],
 
@@ -1156,7 +1157,7 @@
 
     "forwarded": ["forwarded@0.2.0", "", {}, ""],
 
-    "framer-motion": ["framer-motion@12.23.26", "", { "dependencies": { "motion-dom": "^12.23.23", "motion-utils": "^12.23.6", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid"] }, ""],
+    "framer-motion": ["framer-motion@12.24.0", "", { "dependencies": { "motion-dom": "^12.24.0", "motion-utils": "^12.23.28", "tslib": "^2.4.0" }, "peerDependencies": { "@emotion/is-prop-valid": "*", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@emotion/is-prop-valid", "react", "react-dom"] }, "sha512-ggTMRkIDPc76lHmM+dRT1MmVfFV6t/y+jkWjWuzR7FG5xRvnAAl/5wFPjzSkLE8Nu5E5uIQRCNxmIXtWJVo6XQ=="],
 
     "fresh": ["fresh@2.0.0", "", {}, ""],
 
@@ -1462,9 +1463,9 @@
 
     "mnemonist": ["mnemonist@0.38.3", "", { "dependencies": { "obliterator": "^1.6.1" } }, ""],
 
-    "motion-dom": ["motion-dom@12.23.23", "", { "dependencies": { "motion-utils": "^12.23.6" } }, ""],
+    "motion-dom": ["motion-dom@12.24.0", "", { "dependencies": { "motion-utils": "^12.23.28" } }, "sha512-RD2kZkFd/GH4fITI8IJvypGgn0vIu5vkrJaXIAkYqORGs5P0CKDHKNvswmoY1H+tbUAOPSh6VtUqoAmc/3Gvig=="],
 
-    "motion-utils": ["motion-utils@12.23.6", "", {}, ""],
+    "motion-utils": ["motion-utils@12.23.28", "", {}, "sha512-0W6cWd5Okoyf8jmessVK3spOmbyE0yTdNKujHctHH9XdAE4QDuZ1/LjSXC68rrhsJU+TkzXURC5OdSWh9ibOwQ=="],
 
     "mrmime": ["mrmime@2.0.1", "", {}, ""],
 
@@ -1934,7 +1935,7 @@
 
     "zip-stream": ["zip-stream@6.0.1", "", { "dependencies": { "archiver-utils": "^5.0.0", "compress-commons": "^6.0.2", "readable-stream": "^4.0.0" } }, ""],
 
-    "zod": ["zod@4.2.1", "", {}, ""],
+    "zod": ["zod@4.3.5", "", {}, "sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g=="],
 
     "zod-validation-error": ["zod-validation-error@4.0.2", "", { "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, ""],
 
@@ -2197,6 +2198,8 @@
     "eslint-module-utils/debug": ["debug@3.2.7", "", { "dependencies": { "ms": "^2.1.1" } }, ""],
 
     "eslint-plugin-import/debug": ["debug@3.2.7", "", { "dependencies": { "ms": "^2.1.1" } }, ""],
+
+    "eslint-plugin-react-hooks/zod": ["zod@4.2.1", "", {}, ""],
 
     "execa/get-stream": ["get-stream@6.0.1", "", {}, ""],
 
