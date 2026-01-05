@@ -171,7 +171,10 @@ export const signatures: SignatureDefinition[] = [
       .jb-card a { color: #60a5fa !important; }
       .jb-card svg path { stroke: #d1d5db !important; }
       .jb-card .jb-gradient-bar { background: linear-gradient(180deg, #60a5fa 0%, #34d399 100%) !important; }
-      .jb-card .jb-icon { filter: invert(0.9) brightness(1.05) !important; }
+      .jb-card .jb-icon { filter: invert(1) brightness(1.25) !important; }
+      .jb-card .jb-social-github { background: #111827 !important; }
+      .jb-card .jb-social-linkedin { background: rgb(50, 114, 174) !important; }
+      .jb-card .jb-social-img { filter: none !important; }
     }
   </style>
   <!--[if mso]>
@@ -237,13 +240,13 @@ export const signatures: SignatureDefinition[] = [
             <tbody>
               <tr valign="middle">
                 <td style="padding-right:8px; vertical-align:middle;">
-                          <a href="https://github.com/jsb2010" aria-label="GitHub: jsb2010" title="GitHub" style="display:inline-block; background:#111827; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
-                            <img src="https://user-images.githubusercontent.com/3369400/139447912-e0f43f33-6d9f-45f8-be46-2df5bbc91289.png" width="16" height="16" alt="GitHub" style="display:block; border:0; outline:none;">
+                          <a href="https://github.com/jsb2010" aria-label="GitHub: jsb2010" title="GitHub" class="jb-social-github" style="display:inline-block; background:#111827; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                            <img class="jb-social-img" src="https://user-images.githubusercontent.com/3369400/139447912-e0f43f33-6d9f-45f8-be46-2df5bbc91289.png" width="16" height="16" alt="GitHub" style="display:block; border:0; outline:none;">
                   </a>
                 </td>
                 <td style="vertical-align:middle;">
-                  <a href="https://www.linkedin.com/in/jacobbarkin" aria-label="LinkedIn: jacobbarkin" title="LinkedIn" style="display:inline-block; background:#0077b5; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" width="16" height="16" alt="LinkedIn" style="display:block; border:0; outline:none;">
+                  <a href="https://www.linkedin.com/in/jacobbarkin" aria-label="LinkedIn: jacobbarkin" title="LinkedIn" class="jb-social-linkedin" style="display:inline-block; background:rgb(50, 114, 174); border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                    <img class="jb-social-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" width="16" height="16" alt="LinkedIn" style="display:block; border:0; outline:none;">
                   </a>
                 </td>
               </tr>
@@ -277,7 +280,10 @@ export const signatures: SignatureDefinition[] = [
       .jb-atk-card a { color: #60a5fa !important; }
       .jb-atk-card svg path { stroke: #d1d5db !important; }
       .jb-atk-card .jb-atk-gradient-bar { background: linear-gradient(180deg, #60a5fa 0%, #34d399 100%) !important; }
-      .jb-atk-card .jb-icon { filter: invert(0.9) brightness(1.05) !important; }
+      .jb-atk-card .jb-icon { filter: invert(1) brightness(1.25) !important; }
+      .jb-atk-card .jb-social-github { background: #111827 !important; }
+      .jb-atk-card .jb-social-linkedin { background: rgb(50, 114, 174) !important; }
+      .jb-atk-card .jb-social-img { filter: none !important; }
     }
   </style>
   <!--[if mso]>
@@ -349,13 +355,13 @@ export const signatures: SignatureDefinition[] = [
             <tbody>
               <tr valign="middle">
                 <td style="padding-right:8px; vertical-align:middle;">
-                  <a href="https://github.com/jsb2010" aria-label="GitHub: jsb2010" title="GitHub" style="display:inline-block; background:#111827; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
-                    <img src="https://user-images.githubusercontent.com/3369400/139447912-e0f43f33-6d9f-45f8-be46-2df5bbc91289.png" width="16" height="16" alt="GitHub" style="display:block; border:0; outline:none;">
+                  <a href="https://github.com/jsb2010" aria-label="GitHub: jsb2010" title="GitHub" class="jb-social-github" style="display:inline-block; background:#111827; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                    <img class="jb-social-img" src="https://user-images.githubusercontent.com/3369400/139447912-e0f43f33-6d9f-45f8-be46-2df5bbc91289.png" width="16" height="16" alt="GitHub" style="display:block; border:0; outline:none;">
                   </a>
                 </td>
                 <td style="vertical-align:middle;">
-                  <a href="https://www.linkedin.com/in/jacobbarkin" aria-label="LinkedIn: jacobbarkin" title="LinkedIn" style="display:inline-block; background:#0077b5; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" width="16" height="16" alt="LinkedIn" style="display:block; border:0; outline:none;">
+                  <a href="https://www.linkedin.com/in/jacobbarkin" aria-label="LinkedIn: jacobbarkin" title="LinkedIn" class="jb-social-linkedin" style="display:inline-block; background:rgb(50, 114, 174); border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                    <img class="jb-social-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" width="16" height="16" alt="LinkedIn" style="display:block; border:0; outline:none;">
                   </a>
                 </td>
               </tr>
