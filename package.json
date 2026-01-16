@@ -70,14 +70,14 @@
     "@eslint/eslintrc": "^3.3.3",
     "@next/bundle-analyzer": "16.1.1",
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^25.0.3",
-    "@types/nodemailer": "^7.0.4",
+    "@types/node": "^25.0.9",
+    "@types/nodemailer": "^7.0.5",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "@types/webpack": "^5.28.5",
     "archiver": "^7.0.1",
-    "baseline-browser-mapping": "^2.9.11",
-    "better-sqlite3": "^12.5.0",
+    "baseline-browser-mapping": "^2.9.14",
+    "better-sqlite3": "^12.6.0",
     "critters": "^0.0.25",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
@@ -90,8 +90,8 @@
     "sharp-cli": "^5.2.0",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.51.0",
-    "wrangler": "^4.58.0"
+    "typescript-eslint": "^8.53.0",
+    "wrangler": "^4.59.2"
   },
   "overrides": {
     "@swc/helpers": ">=0.5.17"
