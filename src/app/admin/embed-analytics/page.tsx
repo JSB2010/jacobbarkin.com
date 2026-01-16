@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { ChevronLeft, ChevronRight, Code2, Eye, Globe, Loader2, MousePointer, Percent, RefreshCw, Users } from 'lucide-react';
 import { AdminShell } from '@/components/admin/admin-shell';
+import { CustomContentManager } from '@/components/admin/custom-content-manager';
 
 // Type for embed analytics entry
 interface EmbedAnalytics {
@@ -1072,6 +1073,11 @@ export default function EmbedAnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Custom Content Manager */}
+      <div className="mt-6">
+        <CustomContentManager />
+      </div>
     </AdminShell>
   );
 }

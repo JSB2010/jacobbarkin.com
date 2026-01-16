@@ -121,3 +121,19 @@ CREATE TABLE IF NOT EXISTS embed_sites (
 CREATE INDEX IF NOT EXISTS idx_embed_heartbeat_created_at ON embed_heartbeat(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_embed_heartbeat_page_host ON embed_heartbeat(page_host);
 CREATE INDEX IF NOT EXISTS idx_embed_sites_last_seen ON embed_sites(last_seen DESC);
+
+-- Embed Custom Content Table
+CREATE TABLE IF NOT EXISTS embed_custom_content (
+  id TEXT PRIMARY KEY,
+  url_pattern TEXT NOT NULL,
+  match_type TEXT DEFAULT 'exact' CHECK(match_type IN ('exact', 'domain', 'regex')),
+  content_html TEXT NOT NULL,
+  preset_type TEXT,
+  custom_text TEXT,
+  is_active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_embed_custom_content_active ON embed_custom_content(is_active);
+CREATE INDEX IF NOT EXISTS idx_embed_custom_content_url_pattern ON embed_custom_content(url_pattern);
