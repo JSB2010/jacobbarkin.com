@@ -47,7 +47,7 @@ declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'jb-credit': React.HTMLAttributes<HTMLElement> & {
-        'data-variant'?: 'prominent' | 'chip' | 'badge' | 'logo' | 'minimal' | 'text';
+        'data-variant'?: 'prominent' | 'chip' | 'badge' | 'logo' | 'minimal' | 'text' | 'data-only';
         'data-theme'?: 'light' | 'dark' | 'auto';
         'data-position'?: 'inline' | 'fixed';
         'data-size'?: 'small' | 'default' | 'large';
@@ -83,14 +83,14 @@ Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src
 
 All options are optional. Set via `data-*` attributes on the `<jb-credit>` element:
 
-| Attribute        | Values                                                    | Default   | Description                                      |
-|------------------|-----------------------------------------------------------|-----------|--------------------------------------------------|
-| `data-variant`   | `prominent`, `chip`, `badge`, `logo`, `minimal`, `text`   | `prominent` | Visual style variant                           |
-| `data-size`      | `small`, `default`, `large`                               | `default` | Component size                                   |
-| `data-align`     | `left`, `center`, `right`                                 | `center`  | Horizontal alignment within container            |
-| `data-theme`     | `auto`, `light`, `dark`                                   | `auto`    | Color theme (auto detects from page)             |
-| `data-position`  | `inline`, `fixed`                                         | `inline`  | inline = normal flow, fixed = sticky footer bar  |
-| `data-no-track`  | (boolean)                                                 | false     | Disable analytics tracking for this embed        |
+| Attribute        | Values                                                           | Default   | Description                                      |
+|------------------|------------------------------------------------------------------|-----------|--------------------------------------------------|
+| `data-variant`   | `prominent`, `chip`, `badge`, `logo`, `minimal`, `text`, `data-only` | `prominent` | Visual style variant                           |
+| `data-size`      | `small`, `default`, `large`                                      | `default` | Component size                                   |
+| `data-align`     | `left`, `center`, `right`                                        | `center`  | Horizontal alignment within container            |
+| `data-theme`     | `auto`, `light`, `dark`                                          | `auto`    | Color theme (auto detects from page)             |
+| `data-position`  | `inline`, `fixed`                                                | `inline`  | inline = normal flow, fixed = sticky footer bar  |
+| `data-no-track`  | (boolean)                                                        | false     | Disable analytics tracking for this embed        |
 
 Note: When using `data-auto`, you can set these `data-*` attributes (including `data-no-track`) on the `<script>` tag and they will be applied to the injected `<jb-credit>`.
 
@@ -128,6 +128,9 @@ Text only by default. On hover, a chip background appears. Good for footers or s
 
 ### text
 Ultra low-profile. Just the text "Designed by Jacob Barkin" with a gradient on the name. Subtle underline appears on hover. No chip, no background.
+
+### data-only
+Completely invisible - no UI whatsoever. Only sends heartbeat pings to track active sites. Does NOT track impressions or clicks. Perfect for tracking site activity without visible credit.
 
 ---
 
@@ -181,6 +184,11 @@ Force dark theme:
 Auto-inject with options:
 ```html
 <script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small" data-no-track></script>
+```
+
+Data-only variant (invisible, heartbeats only):
+```html
+<jb-credit data-variant="data-only"></jb-credit>
 ```
 
 ---

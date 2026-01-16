@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
     // Public endpoint: check for matching custom content
     const url = searchParams.get('url') || '';
     const host = searchParams.get('host') || '';
-    const path = searchParams.get('path') || '';
 
     const db = await getD1Database();
     if (!db) {
@@ -83,7 +82,13 @@ export async function GET(request: NextRequest) {
         match: true,
         content_html: exactMatch.content_html,
         preset_type: exactMatch.preset_type,
-      }, { headers: corsHeaders });
+      }, { 
+        headers: {
+          ...corsHeaders,
+          // Cache for 1 minute to allow near-instant updates when rules change
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        }
+      });
     }
 
     // 2. Try domain match (any page on this domain)
@@ -100,7 +105,13 @@ export async function GET(request: NextRequest) {
         match: true,
         content_html: domainMatch.content_html,
         preset_type: domainMatch.preset_type,
-      }, { headers: corsHeaders });
+      }, { 
+        headers: {
+          ...corsHeaders,
+          // Cache for 1 minute to allow near-instant updates when rules change
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        }
+      });
     }
 
     // 3. Try regex matches
@@ -119,7 +130,13 @@ export async function GET(request: NextRequest) {
               match: true,
               content_html: rule.content_html,
               preset_type: rule.preset_type,
-            }, { headers: corsHeaders });
+            }, { 
+              headers: {
+                ...corsHeaders,
+                // Cache for 1 minute to allow near-instant updates when rules change
+                'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+              }
+            });
           }
         } catch (err) {
           // Invalid regex, skip
@@ -128,10 +145,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // No match found
+    // No match found - cache for 30 seconds
     return NextResponse.json({
       match: false,
-    }, { headers: corsHeaders });
+    }, { 
+      headers: {
+        ...corsHeaders,
+        'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
+      }
+    });
 
   } catch (error: unknown) {
     console.error('Error checking custom content:', error);
@@ -167,7 +189,7 @@ export async function POST(request: NextRequest) {
     if (match_type === 'regex') {
       try {
         new RegExp(url_pattern);
-      } catch (err) {
+      } catch {
         return NextResponse.json({ error: 'Invalid regex pattern' }, { status: 400 });
       }
     }
@@ -219,7 +241,7 @@ export async function PUT(request: NextRequest) {
     if (match_type === 'regex' && url_pattern) {
       try {
         new RegExp(url_pattern);
-      } catch (err) {
+      } catch {
         return NextResponse.json({ error: 'Invalid regex pattern' }, { status: 400 });
       }
     }

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Plus, Trash2, Edit, Code2, FileText, File } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, Code2, FileText, File, Eye } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -70,42 +70,101 @@ const PRESET_TEMPLATES = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Message</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* Auto dark mode detection */
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #1f2937;
+      --card-bg: #ffffff;
+      --card-border: #e5e7eb;
+      --gradient-from: #3b82f6;
+      --gradient-to: #10b981;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #0a0a0a;
+        --text-color: #e5e7eb;
+        --card-bg: #1a1a1a;
+        --card-border: #27272a;
+        --gradient-from: #60a5fa;
+        --gradient-to: #34d399;
+        --shadow: rgba(0, 0, 0, 0.3);
+      }
+    }
+    
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
+      background: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
     }
+    
     .message {
       text-align: center;
-      padding: 2rem;
+      padding: 3rem 2rem;
       max-width: 600px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -1px var(--shadow);
+      position: relative;
+      overflow: hidden;
     }
-    h1 {
-      font-size: 2.5rem;
-      margin: 0 0 1rem 0;
-      font-weight: 700;
+    
+    /* Blue-green gradient accent bar at top */
+    .message::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(to right, var(--gradient-from), var(--gradient-to));
     }
-    p {
+    
+    .content {
       font-size: 1.125rem;
-      line-height: 1.6;
-      margin: 0;
-      opacity: 0.9;
+      line-height: 1.75;
+      margin-top: 1rem;
+    }
+    
+    .content strong {
+      background: linear-gradient(to right, var(--gradient-from), var(--gradient-to));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+    
+    @media (max-width: 640px) {
+      .message {
+        padding: 2rem 1.5rem;
+      }
+      .content {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
   <div class="message">
-    ${customText}
+    <div class="content">
+      ${customText}
+    </div>
   </div>
 </body>
 </html>`,
@@ -126,6 +185,9 @@ export function CustomContentManager() {
   const [customText, setCustomText] = useState('');
   const [contentHtml, setContentHtml] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [regexError, setRegexError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchRules = async () => {
     setIsLoading(true);
@@ -148,6 +210,7 @@ export function CustomContentManager() {
 
   useEffect(() => {
     fetchRules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = () => {
@@ -158,6 +221,8 @@ export function CustomContentManager() {
     setContentHtml('');
     setIsActive(true);
     setEditingRule(null);
+    setShowPreview(false);
+    setRegexError('');
   };
 
   const handlePresetChange = (preset: string) => {
@@ -185,6 +250,35 @@ export function CustomContentManager() {
     }
   };
 
+  const validateRegex = (pattern: string): boolean => {
+    if (matchType !== 'regex') return true;
+    try {
+      new RegExp(pattern);
+      setRegexError('');
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      setRegexError(error.message);
+      return false;
+    }
+  };
+
+  const handleUrlPatternChange = (value: string) => {
+    setUrlPattern(value);
+    if (matchType === 'regex') {
+      validateRegex(value);
+    }
+  };
+
+  const handleMatchTypeChange = (value: 'exact' | 'domain' | 'regex') => {
+    setMatchType(value);
+    if (value === 'regex' && urlPattern) {
+      validateRegex(urlPattern);
+    } else {
+      setRegexError('');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!urlPattern || !contentHtml) {
       toast({
@@ -195,6 +289,16 @@ export function CustomContentManager() {
       return;
     }
 
+    if (matchType === 'regex' && !validateRegex(urlPattern)) {
+      toast({
+        title: 'Error',
+        description: 'Invalid regex pattern',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const method = editingRule ? 'PUT' : 'POST';
       const body: Record<string, unknown> = {
@@ -233,6 +337,8 @@ export function CustomContentManager() {
         description: 'Failed to save rule',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -337,18 +443,26 @@ export function CustomContentManager() {
                   <Input
                     id="url-pattern"
                     value={urlPattern}
-                    onChange={(e) => setUrlPattern(e.target.value)}
+                    onChange={(e) => handleUrlPatternChange(e.target.value)}
                     placeholder="example.com/about"
+                    className={regexError ? 'border-red-500' : ''}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    The URL or domain to match
-                  </p>
+                  {regexError && (
+                    <p className="text-xs text-red-500">
+                      Invalid regex: {regexError}
+                    </p>
+                  )}
+                  {!regexError && (
+                    <p className="text-xs text-muted-foreground">
+                      The URL or domain to match
+                    </p>
+                  )}
                 </div>
 
                 {/* Match Type */}
                 <div className="space-y-2">
                   <Label htmlFor="match-type">Match Type *</Label>
-                  <Select value={matchType} onValueChange={(value: 'exact' | 'domain' | 'regex') => setMatchType(value)}>
+                  <Select value={matchType} onValueChange={handleMatchTypeChange}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -406,15 +520,25 @@ export function CustomContentManager() {
                         id="custom-text"
                         value={customText}
                         onChange={(e) => handleCustomTextChange(e.target.value)}
-                        placeholder="Enter your message (supports HTML)"
+                        placeholder="<h1>Welcome</h1><p>Your message here (supports HTML)</p>"
                         rows={4}
                       />
                       <p className="text-sm text-muted-foreground">
-                        Displays a centered message with a gradient background. You can use HTML tags.
+                        Displays a centered message with site theme colors. You can use HTML tags.
+                        Use <code className="text-xs bg-muted px-1 rounded">&lt;strong&gt;</code> for gradient text.
                       </p>
                     </TabsContent>
 
                     <TabsContent value="custom" className="space-y-2">
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 mb-3">
+                        <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                          <span className="text-lg">⚠️</span>
+                          <span>
+                            <strong>Security Warning:</strong> Custom HTML will be rendered as-is without sanitization. 
+                            Only use trusted HTML content. Malicious scripts could harm visitors.
+                          </span>
+                        </p>
+                      </div>
                       <Label htmlFor="content-html">Custom HTML *</Label>
                       <Textarea
                         id="content-html"
@@ -449,10 +573,40 @@ export function CustomContentManager() {
                 }}>
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit}>
-                  {editingRule ? 'Update' : 'Create'} Rule
+                {contentHtml && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowPreview(!showPreview)}
+                    type="button"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    {showPreview ? 'Hide' : 'Show'} Preview
+                  </Button>
+                )}
+                <Button onClick={handleSubmit} disabled={!!regexError || isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>{editingRule ? 'Update' : 'Create'} Rule</>
+                  )}
                 </Button>
               </DialogFooter>
+              
+              {/* Preview iframe */}
+              {showPreview && contentHtml && (
+                <div className="mt-4 border rounded-lg overflow-hidden">
+                  <div className="bg-muted px-4 py-2 text-sm font-medium">Preview</div>
+                  <iframe
+                    srcDoc={contentHtml}
+                    className="w-full h-96 border-0"
+                    title="Content Preview"
+                    sandbox="allow-same-origin"
+                  />
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>

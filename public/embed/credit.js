@@ -16,13 +16,14 @@
  *     - logo: Logo only, no text (36px)
  *     - minimal: Text only, chip appears on hover
  *     - text: Plain text link, no chip
+ *     - data-only: Invisible (heartbeats only, no UI, no impressions/clicks)
  *   data-theme="auto|light|dark" - Color theme (default: auto-detects)
  *   data-align="center|left|right" - Alignment (default: center)
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
  *
- * @version 2.7.0
+ * @version 2.9.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -30,7 +31,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.7.0';
+  const VERSION = '2.9.0';
   const SITE_URL = 'https://jacobbarkin.com';
 
   // Analytics API endpoint (uses Cloudflare D1)
@@ -43,17 +44,25 @@
   let instanceCounter = 0;
 
   // Check for custom content replacement on page load
+  // Uses a fast, non-blocking approach to avoid impacting normal page loads
   async function checkCustomContent() {
     try {
       const pageUrl = window.location.href;
       const pageHost = window.location.hostname;
-      const pagePath = window.location.pathname;
       
-      const response = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}&path=${encodeURIComponent(pagePath)}`, {
+      // Use fetch with timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+      
+      const response = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}`, {
         method: 'GET',
         mode: 'cors',
         credentials: 'omit',
+        cache: 'default', // Use browser cache for performance
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const result = await response.json();
@@ -67,20 +76,24 @@
       }
     } catch (err) {
       // Silently fail - don't break the embed
+      // Timeout or network errors won't impact page load
       console.debug('Custom content check failed:', err);
     }
     return false;
   }
 
-  // Run custom content check on DOMContentLoaded
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-      await checkCustomContent();
-    });
-  } else {
-    // DOM already loaded
-    checkCustomContent();
-  }
+  // Run custom content check immediately but asynchronously
+  // This prevents blocking the main thread and embed rendering
+  (function runEarlyCheck() {
+    // Check if custom content feature should run
+    // Only run on pages where the script is actually embedded
+    if (document.currentScript || document.querySelector('jb-credit')) {
+      // Run check asynchronously without blocking
+      checkCustomContent().catch(() => {
+        // Errors are already handled in checkCustomContent
+      });
+    }
+  })();
 
   function getTrackKey(element) {
     if (!element) return 'default';
@@ -297,6 +310,15 @@
     }
 
     setupTracking() {
+      const variant = this.getAttribute('data-variant') || 'prominent';
+      const isDataOnly = variant === 'data-only';
+      
+      // For data-only variant, skip impression/click tracking entirely
+      if (isDataOnly) {
+        scheduleHeartbeat(this);
+        return;
+      }
+      
       // Track impression when component becomes visible
       if (!this.impressionTracked && !this.hasAttribute('data-no-track')) {
         // Use IntersectionObserver to track when actually visible
@@ -779,6 +801,21 @@
       const align = this.getAttribute('data-align') || 'center';
       const variant = this.getAttribute('data-variant') || 'prominent';
       const size = this.getAttribute('data-size') || 'default';
+
+      // Data-only variant: completely invisible, no UI
+      if (variant === 'data-only') {
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: none !important;
+              width: 0 !important;
+              height: 0 !important;
+              visibility: hidden !important;
+            }
+          </style>
+        `;
+        return;
+      }
 
       // Show effects for chip and new prominent variants
       const effectVariants = ['chip', 'badge', 'logo', 'prominent'];
