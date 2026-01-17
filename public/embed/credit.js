@@ -44,56 +44,49 @@
   let instanceCounter = 0;
 
   // Check for custom content replacement on page load
-  // Uses a fast, non-blocking approach to avoid impacting normal page loads
-  async function checkCustomContent() {
+  // This MUST run synchronously and block to prevent flash
+  function checkCustomContentSync() {
     try {
       const pageUrl = window.location.href;
       const pageHost = window.location.hostname;
       
-      // Use fetch with timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+      // Use synchronous XHR to block page rendering (only way to prevent flash)
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}`, false); // false = synchronous
+      xhr.timeout = 1500; // 1.5 second timeout
+      xhr.send(null);
       
-      const response = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}`, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'omit',
-        cache: 'default', // Use browser cache for performance
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const result = await response.json();
+      if (xhr.status === 200) {
+        const result = JSON.parse(xhr.responseText);
         if (result.match && result.content_html) {
-          // Replace entire page with custom content
+          // Replace entire page with custom content IMMEDIATELY
           document.open();
           document.write(result.content_html);
           document.close();
-          return true;
+          // Stop script execution
+          throw new Error('Page replaced');
         }
       }
     } catch (err) {
-      // Silently fail - don't break the embed
-      // Timeout or network errors won't impact page load
+      // If it's the "Page replaced" error, rethrow to stop execution
+      if (err.message === 'Page replaced') {
+        throw err;
+      }
+      // Otherwise silently fail - don't break the embed
       console.debug('Custom content check failed:', err);
     }
-    return false;
   }
 
-  // Run custom content check immediately but asynchronously
-  // This prevents blocking the main thread and embed rendering
-  (function runEarlyCheck() {
-    // Check if custom content feature should run
-    // Only run on pages where the script is actually embedded
-    if (document.currentScript || document.querySelector('jb-credit')) {
-      // Run check asynchronously without blocking
-      checkCustomContent().catch(() => {
-        // Errors are already handled in checkCustomContent
-      });
+  // Run check IMMEDIATELY and SYNCHRONOUSLY before anything else
+  // This is the ONLY way to prevent flash of original content
+  try {
+    checkCustomContentSync();
+  } catch (err) {
+    if (err.message === 'Page replaced') {
+      // Stop all further script execution
+      return;
     }
-  })();
+  }
 
   function getTrackKey(element) {
     if (!element) return 'default';

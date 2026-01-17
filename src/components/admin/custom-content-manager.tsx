@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Plus, Trash2, Edit, Code2, FileText, File, Eye } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit, Code2, FileText, File, Eye, Clock, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -60,9 +60,137 @@ const PRESET_TEMPLATES = {
 <body></body>
 </html>`,
   },
+  maintenance: {
+    name: 'Maintenance Mode',
+    description: 'Professional maintenance page',
+    generate: () => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { text-align: center; max-width: 600px; }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #60a5fa, #34d399);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-size: 1.125rem;
+      line-height: 1.75;
+      color: #a1a1aa;
+      margin-bottom: 0.5rem;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 2rem; }
+      p { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🔧</div>
+    <h1>Under Maintenance</h1>
+    <p>We're currently performing scheduled maintenance.</p>
+    <p>We'll be back online shortly!</p>
+  </div>
+</body>
+</html>`,
+  },
+  coming_soon: {
+    name: 'Coming Soon',
+    description: 'Modern coming soon page',
+    generate: () => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coming Soon</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff;
+      color: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0a0a0a; color: #fafafa; }
+    }
+    .container { text-align: center; max-width: 700px; }
+    .badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+    }
+    p {
+      font-size: 1.25rem;
+      line-height: 1.75;
+      color: #71717a;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 2.5rem; }
+      p { font-size: 1.125rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">Coming Soon</div>
+    <h1>Something Amazing Is On The Way</h1>
+    <p>We're working hard to bring you something special.</p>
+    <p>Stay tuned!</p>
+  </div>
+</body>
+</html>`,
+  },
   custom_message: {
     name: 'Custom Message',
-    description: 'A centered message on a clean page',
+    description: 'A modern, professional message page',
     generate: (customText = 'Your message here') => `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,100 +204,252 @@ const PRESET_TEMPLATES = {
       box-sizing: border-box;
     }
     
-    /* Auto dark mode detection */
+    /* CSS Variables for theming */
     :root {
-      --bg-color: #ffffff;
-      --text-color: #1f2937;
+      --bg: #ffffff;
+      --fg: #0a0a0a;
       --card-bg: #ffffff;
       --card-border: #e5e7eb;
+      --muted: #71717a;
       --gradient-from: #3b82f6;
+      --gradient-mid: #06b6d4;
       --gradient-to: #10b981;
-      --shadow: rgba(0, 0, 0, 0.1);
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     }
     
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #0a0a0a;
-        --text-color: #e5e7eb;
-        --card-bg: #1a1a1a;
+        --bg: #0a0a0a;
+        --fg: #fafafa;
+        --card-bg: #18181b;
         --card-border: #27272a;
+        --muted: #a1a1aa;
         --gradient-from: #60a5fa;
+        --gradient-mid: #22d3ee;
         --gradient-to: #34d399;
-        --shadow: rgba(0, 0, 0, 0.3);
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
       }
     }
     
     body {
-      margin: 0;
-      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: var(--bg-color);
-      color: var(--text-color);
+      padding: 1.5rem;
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
-    .message {
-      text-align: center;
-      padding: 3rem 2rem;
-      max-width: 600px;
-      width: 90%;
+    .container {
+      width: 100%;
+      max-width: 42rem;
+      position: relative;
+    }
+    
+    /* Gradient decoration */
+    .gradient-bg {
+      position: absolute;
+      inset: -4rem;
+      background: linear-gradient(135deg, var(--gradient-from), var(--gradient-mid), var(--gradient-to));
+      opacity: 0.05;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -1px var(--shadow);
+      border-radius: 1rem;
+      box-shadow: var(--shadow-lg);
+      padding: 3rem 2.5rem;
       position: relative;
       overflow: hidden;
     }
     
-    /* Blue-green gradient accent bar at top */
-    .message::before {
+    /* Gradient accent bar */
+    .card::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(to right, var(--gradient-from), var(--gradient-to));
+      background: linear-gradient(90deg, var(--gradient-from), var(--gradient-mid), var(--gradient-to));
+    }
+    
+    /* Subtle corner accent */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle at top right, var(--gradient-to), transparent 70%);
+      opacity: 0.06;
+      pointer-events: none;
     }
     
     .content {
-      font-size: 1.125rem;
-      line-height: 1.75;
-      margin-top: 1rem;
+      position: relative;
+      z-index: 1;
+      text-align: center;
     }
     
+    .content h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+    }
+    
+    .content h2 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.025em;
+      line-height: 1.3;
+    }
+    
+    .content h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      letter-spacing: -0.025em;
+      line-height: 1.4;
+    }
+    
+    .content p {
+      font-size: 1.125rem;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    
+    .content p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* Gradient text for <strong> tags */
     .content strong {
-      background: linear-gradient(to right, var(--gradient-from), var(--gradient-to));
+      background: linear-gradient(135deg, var(--gradient-from), var(--gradient-mid), var(--gradient-to));
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      background-clip: text;
       font-weight: 600;
     }
     
+    /* Link styling */
+    .content a {
+      color: var(--gradient-from);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    
+    .content a:hover {
+      border-bottom-color: var(--gradient-from);
+    }
+    
+    /* Utility classes for common patterns */
+    .content .lead {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    
+    .content .small {
+      font-size: 0.875rem;
+      margin-top: 1.5rem;
+    }
+    
     @media (max-width: 640px) {
-      .message {
+      body {
+        padding: 1rem;
+      }
+      
+      .card {
         padding: 2rem 1.5rem;
       }
-      .content {
+      
+      .content h1 {
+        font-size: 1.875rem;
+      }
+      
+      .content h2 {
+        font-size: 1.5rem;
+      }
+      
+      .content h3 {
+        font-size: 1.25rem;
+      }
+      
+      .content p {
         font-size: 1rem;
       }
+      
+      .content .lead {
+        font-size: 1.125rem;
+      }
+    }
+    
+    /* Smooth fade-in animation */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .card {
+      animation: fadeIn 0.6s ease-out;
     }
   </style>
 </head>
 <body>
-  <div class="message">
-    <div class="content">
-      ${customText}
+  <div class="container">
+    <div class="gradient-bg"></div>
+    <div class="card">
+      <div class="content">
+        ${customText}
+      </div>
     </div>
   </div>
 </body>
 </html>`,
   },
 };
+
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  
+  // For older dates, show the actual date
+  return date.toLocaleDateString();
+}
 
 export function CustomContentManager() {
   const { toast } = useToast();
@@ -188,6 +468,8 @@ export function CustomContentManager() {
   const [showPreview, setShowPreview] = useState(false);
   const [regexError, setRegexError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchRules = async () => {
     setIsLoading(true);
@@ -329,12 +611,12 @@ export function CustomContentManager() {
 
       setIsDialogOpen(false);
       resetForm();
-      fetchRules();
+      await fetchRules(); // Wait for refetch to complete
     } catch (error) {
       console.error('Error saving rule:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save rule',
+        description: error instanceof Error ? error.message : 'Failed to save rule',
         variant: 'destructive',
       });
     } finally {
@@ -356,55 +638,77 @@ export function CustomContentManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this rule?')) return;
 
+    setDeletingId(id);
     try {
       const response = await fetch(`/api/embed-custom-content?id=${id}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete rule');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete rule');
+      }
+
+      // Optimistically update UI
+      setRules(prev => prev.filter(r => r.id !== id));
 
       toast({
         title: 'Success',
         description: 'Rule deleted successfully',
       });
-
-      fetchRules();
     } catch (error) {
       console.error('Error deleting rule:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete rule',
+        description: error instanceof Error ? error.message : 'Failed to delete rule',
         variant: 'destructive',
       });
+      // Refetch on error to ensure consistency
+      await fetchRules();
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const handleToggleActive = async (rule: CustomContentRule) => {
+    setTogglingId(rule.id);
+    const newActiveState = rule.is_active === 1 ? 0 : 1;
+    
     try {
       const response = await fetch('/api/embed-custom-content', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: rule.id,
-          is_active: rule.is_active === 1 ? 0 : 1,
+          is_active: newActiveState,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to toggle rule');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to toggle rule');
+      }
+
+      // Optimistically update UI
+      setRules(prev => prev.map(r => 
+        r.id === rule.id ? { ...r, is_active: newActiveState } : r
+      ));
 
       toast({
         title: 'Success',
-        description: rule.is_active === 1 ? 'Rule deactivated' : 'Rule activated',
+        description: newActiveState === 1 ? 'Rule activated' : 'Rule deactivated',
       });
-
-      fetchRules();
     } catch (error) {
       console.error('Error toggling rule:', error);
       toast({
         title: 'Error',
-        description: 'Failed to toggle rule',
+        description: error instanceof Error ? error.message : 'Failed to toggle rule',
         variant: 'destructive',
       });
+      // Refetch on error to ensure consistency
+      await fetchRules();
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -412,11 +716,21 @@ export function CustomContentManager() {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <div>
+          <div className="space-y-2">
             <CardTitle>Custom Content Replacement</CardTitle>
             <CardDescription>
               Replace page content with custom HTML when the embed loads on specific domains or URLs
             </CardDescription>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                <Clock className="h-3 w-3" />
+                Cache: 60s
+              </div>
+              <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Info className="h-3 w-3" />
+                Changes take effect within 60 seconds
+              </div>
+            </div>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -483,22 +797,30 @@ export function CustomContentManager() {
                 <div className="space-y-2">
                   <Label>Content Template</Label>
                   <Tabs value={presetType} onValueChange={handlePresetChange}>
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="blank_white">
-                        <File className="mr-2 h-4 w-4" />
-                        Blank White
+                    <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
+                      <TabsTrigger value="blank_white" className="flex items-center gap-1.5">
+                        <File className="h-3.5 w-3.5" />
+                        <span className="text-xs">Blank White</span>
                       </TabsTrigger>
-                      <TabsTrigger value="blank_black">
-                        <File className="mr-2 h-4 w-4" />
-                        Blank Black
+                      <TabsTrigger value="blank_black" className="flex items-center gap-1.5">
+                        <File className="h-3.5 w-3.5" />
+                        <span className="text-xs">Blank Black</span>
                       </TabsTrigger>
-                      <TabsTrigger value="custom_message">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Custom Message
+                      <TabsTrigger value="maintenance" className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="text-xs">Maintenance</span>
                       </TabsTrigger>
-                      <TabsTrigger value="custom">
-                        <Code2 className="mr-2 h-4 w-4" />
-                        Custom HTML
+                      <TabsTrigger value="coming_soon" className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="text-xs">Coming Soon</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="custom_message" className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="text-xs">Custom Message</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="custom" className="flex items-center gap-1.5">
+                        <Code2 className="h-3.5 w-3.5" />
+                        <span className="text-xs">Custom HTML</span>
                       </TabsTrigger>
                     </TabsList>
 
@@ -511,6 +833,18 @@ export function CustomContentManager() {
                     <TabsContent value="blank_black" className="space-y-2">
                       <p className="text-sm text-muted-foreground">
                         Displays a completely blank black page
+                      </p>
+                    </TabsContent>
+
+                    <TabsContent value="maintenance" className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Professional maintenance mode page with animated icon and gradient text
+                      </p>
+                    </TabsContent>
+
+                    <TabsContent value="coming_soon" className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Modern coming soon page with badge and large heading
                       </p>
                     </TabsContent>
 
@@ -620,6 +954,7 @@ export function CustomContentManager() {
                 <TableHead>URL Pattern</TableHead>
                 <TableHead>Match Type</TableHead>
                 <TableHead>Template</TableHead>
+                <TableHead>Last Updated</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -627,13 +962,13 @@ export function CustomContentManager() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : rules.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
                     No custom content rules yet. Click &quot;Add Rule&quot; to create one.
                   </TableCell>
                 </TableRow>
@@ -656,10 +991,22 @@ export function CustomContentManager() {
                       </span>
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span title={new Date(rule.updated_at).toLocaleString()}>
+                          {formatRelativeTime(rule.updated_at)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Switch
                         checked={rule.is_active === 1}
                         onCheckedChange={() => handleToggleActive(rule)}
+                        disabled={togglingId === rule.id}
                       />
+                      {togglingId === rule.id && (
+                        <Loader2 className="h-3 w-3 animate-spin inline-block ml-2" />
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -667,6 +1014,7 @@ export function CustomContentManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(rule)}
+                          disabled={deletingId === rule.id || togglingId === rule.id}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -674,8 +1022,13 @@ export function CustomContentManager() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(rule.id)}
+                          disabled={deletingId === rule.id || togglingId === rule.id}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingId === rule.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
