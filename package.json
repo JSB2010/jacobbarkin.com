@@ -76,8 +76,8 @@
     "@types/react-dom": "^19.2.3",
     "@types/webpack": "^5.28.5",
     "archiver": "^7.0.1",
-    "baseline-browser-mapping": "^2.9.14",
-    "better-sqlite3": "^12.6.0",
+    "baseline-browser-mapping": "^2.9.15",
+    "better-sqlite3": "^12.6.2",
     "critters": "^0.0.25",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
@@ -90,7 +90,7 @@
     "sharp-cli": "^5.2.0",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.0",
+    "typescript-eslint": "^8.53.1",
     "wrangler": "^4.59.2"
   },
   "overrides": {
