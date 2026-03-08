@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getD1Database } from '@/lib/db/d1';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { env } from '@/lib/env';
 
 // CORS headers for public GET endpoint
 const corsHeaders = {
@@ -21,6 +22,32 @@ interface CustomContentRow {
   updated_at: string;
 }
 
+async function requireAdmin(): Promise<{ authorized: boolean; response?: NextResponse }> {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const clerk = await clerkClient();
+  const user = await clerk.users.getUser(userId);
+  const primaryEmail = user.emailAddresses.find(
+    (email) => email.id === user.primaryEmailAddressId
+  )?.emailAddress?.toLowerCase();
+
+  if (!primaryEmail || primaryEmail !== env.ADMIN_EMAIL.toLowerCase()) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+    };
+  }
+
+  return { authorized: true };
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
@@ -35,10 +62,9 @@ export async function GET(request: NextRequest) {
 
     // Admin endpoint: list all rules
     if (listAll) {
-      const { userId } = await auth();
-      
-      if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const adminCheck = await requireAdmin();
+      if (!adminCheck.authorized) {
+        return adminCheck.response!;
       }
 
       const db = await getD1Database();
@@ -167,10 +193,9 @@ export async function GET(request: NextRequest) {
 // POST - Create new custom content rule (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.authorized) {
+      return adminCheck.response!;
     }
 
     const body = await request.json();
@@ -219,10 +244,9 @@ export async function POST(request: NextRequest) {
 // PUT - Update custom content rule (admin only)
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.authorized) {
+      return adminCheck.response!;
     }
 
     const body = await request.json();
@@ -302,10 +326,9 @@ export async function PUT(request: NextRequest) {
 // DELETE - Remove custom content rule (admin only)
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.authorized) {
+      return adminCheck.response!;
     }
 
     const { searchParams } = new URL(request.url);
