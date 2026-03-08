@@ -32,7 +32,7 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
 
   // Admin configuration
-  ADMIN_EMAIL: z.string().email().default('jacobsamuelbarkin@gmail.com'),
+  ADMIN_EMAIL: z.string().email().optional(),
 
   // GitHub configuration
   GITHUB_TOKEN: z.string().optional(),
