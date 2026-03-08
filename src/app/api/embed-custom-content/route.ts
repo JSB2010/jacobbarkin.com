@@ -22,7 +22,16 @@ interface CustomContentRow {
   updated_at: string;
 }
 
-async function requireAdmin(): Promise<{ authorized: boolean; response?: NextResponse }> {
+type AdminCheckResult = { authorized: true } | { authorized: false; response: NextResponse };
+
+async function requireAdmin(): Promise<AdminCheckResult> {
+  if (!env.ADMIN_EMAIL) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Server configuration error' }, { status: 500 }),
+    };
+  }
+
   const { userId } = await auth();
 
   if (!userId) {
@@ -56,15 +65,15 @@ export async function OPTIONS() {
 // OR list all custom content rules (admin only, with ?list=true)
 // Query params: url, host, path OR list=true
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const listAll = searchParams.get('list') === 'true';
+  const { searchParams } = new URL(request.url);
+  const listAll = searchParams.get('list') === 'true';
 
-    // Admin endpoint: list all rules
-    if (listAll) {
+  // Admin endpoint: list all rules
+  if (listAll) {
+    try {
       const adminCheck = await requireAdmin();
       if (!adminCheck.authorized) {
-        return adminCheck.response!;
+        return adminCheck.response;
       }
 
       const db = await getD1Database();
@@ -79,9 +88,16 @@ export async function GET(request: NextRequest) {
       `).all<CustomContentRow>();
 
       return NextResponse.json({ rules: results.results || [] });
+    } catch (error: unknown) {
+      console.error('Error listing custom content:', error);
+      return NextResponse.json({
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, { status: 500 });
     }
+  }
 
-    // Public endpoint: check for matching custom content
+  // Public endpoint: check for matching custom content
+  try {
     const url = searchParams.get('url') || '';
     const host = searchParams.get('host') || '';
 
@@ -195,7 +211,7 @@ export async function POST(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin();
     if (!adminCheck.authorized) {
-      return adminCheck.response!;
+      return adminCheck.response;
     }
 
     const body = await request.json();
@@ -246,7 +262,7 @@ export async function PUT(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin();
     if (!adminCheck.authorized) {
-      return adminCheck.response!;
+      return adminCheck.response;
     }
 
     const body = await request.json();
@@ -328,7 +344,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const adminCheck = await requireAdmin();
     if (!adminCheck.authorized) {
-      return adminCheck.response!;
+      return adminCheck.response;
     }
 
     const { searchParams } = new URL(request.url);
