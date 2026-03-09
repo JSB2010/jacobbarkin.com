@@ -84,7 +84,6 @@ export function AdminShell({ title, description, icon: Icon, actions, children }
 
               <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg">
                 <UserButton
-                  afterSignOutUrl="/"
                   appearance={{
                     elements: {
                       avatarBox: "w-9 h-9",
@@ -99,7 +98,6 @@ export function AdminShell({ title, description, icon: Icon, actions, children }
 
               <div className="sm:hidden">
                 <UserButton
-                  afterSignOutUrl="/"
                   appearance={{
                     elements: {
                       avatarBox: "w-10 h-10",
