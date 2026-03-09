@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 // Import actual programming language and technology icons
 import {
   SiHtml5,
-  SiCss3,
+  SiCss,
   SiJavascript,
   SiPython,
   SiAppwrite,
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   const skills = [
     { title: "HTML5", icon: <SiHtml5 className="h-6 w-6" /> },
-    { title: "CSS3", icon: <SiCss3 className="h-6 w-6" /> },
+    { title: "CSS3", icon: <SiCss className="h-6 w-6" /> },
     { title: "JavaScript", icon: <SiJavascript className="h-6 w-6" /> },
     { title: "TypeScript", icon: <SiTypescript className="h-6 w-6" /> },
     { title: "Python", icon: <SiPython className="h-6 w-6" /> },
