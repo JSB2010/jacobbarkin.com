@@ -5,110 +5,76 @@ initOpenNextCloudflareForDev();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  // Required for Cloudflare Workers deployment
-  output: 'standalone',
-
-  // Enable React Developer Tools in all environments
-  crossOrigin: 'anonymous',
-
-  // Security headers - applied in both dev and production
-  // Workers will use these directly, no need for _headers file
+  crossOrigin: "anonymous",
   async headers() {
     return [
       {
-        // Apply these headers to all routes
-        source: '/:path*',
+        source: "/:path*",
         headers: [
           {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://static.cloudflareinsights.com https://*.clerk.accounts.dev https://*.clerk.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdn.honey.io; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: https://*.clerk.com; connect-src 'self' https://api.github.com https://www.google-analytics.com https://www.google.com https://cloudflareinsights.com https://*.clerk.accounts.dev https://*.clerk.com; frame-src 'self' https://docs.google.com https://*.google.com https://1drv.ms https://*.onedrive.live.com https://*.office.com https://*.office365.com https://*.officeapps.live.com https://*.microsoftonline.com https://*.clerk.accounts.dev https://*.clerk.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'; worker-src 'self' blob:;"
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://static.cloudflareinsights.com https://*.clerk.accounts.dev https://*.clerk.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdn.honey.io; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: https://*.clerk.com; connect-src 'self' https://api.github.com https://www.google-analytics.com https://www.google.com https://cloudflareinsights.com https://*.clerk.accounts.dev https://*.clerk.com; frame-src 'self' https://docs.google.com https://*.google.com https://1drv.ms https://*.onedrive.live.com https://*.office.com https://*.office365.com https://*.officeapps.live.com https://*.microsoftonline.com https://*.clerk.accounts.dev https://*.clerk.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'; worker-src 'self' blob:;",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
           {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
-          }
-        ]
-      }
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
     ];
   },
-
-  // Enable build caching for faster rebuilds
-  experimental: {
-    // Enable optimized CSS with critters for inlining critical CSS
-    optimizeCss: true,
-    // Enable memory cache for faster builds
-    memoryBasedWorkersCount: true,
-  },
-
-  // Server external packages
-  serverExternalPackages: [],
-
-  // Image configuration - Cloudflare Workers supports image optimization via Cloudflare Images
   images: {
-    // Define allowed image widths for optimization
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Define allowed quality values (required in Next.js 15.5+)
     qualities: [75, 80, 85, 90, 95, 100],
-    // Allow local images to be optimized
     localPatterns: [
       {
-        pathname: '/images/**',
+        pathname: "/images/**",
       },
     ],
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'www.kentdenver.org',
+        protocol: "https",
+        hostname: "www.kentdenver.org",
       },
       {
-        protocol: 'https',
-        hostname: 'avatars.githubusercontent.com',
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
       },
       {
-        protocol: 'https',
-        hostname: 'cdn.simpleicons.org',
+        protocol: "https",
+        hostname: "cdn.simpleicons.org",
       },
     ],
   },
-
-  // TypeScript configuration
   typescript: {
-    // Enable type checking during build
     ignoreBuildErrors: false,
   },
-
-  // ESLint configuration
-  eslint: {
-    // ESLint still runs but suppress circular structure warning during build logging
-    // The actual linting still works - only the JSON serialization for logging fails
-    ignoreDuringBuilds: false,
-  },
-
-  // Compiler options for production
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? {
+            exclude: ["error", "warn"],
+          }
+        : false,
   },
-
 };
 
 export default nextConfig;
