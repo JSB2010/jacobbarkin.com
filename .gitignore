@@ -21,6 +21,8 @@ node_modules
 /.open-next/
 .open-next
 .wrangler
+/.wrangler-dry-run/
+.wrangler-dry-run
 cloudflare-env.d.ts
 **/.next/**/*.pack
 **/.next/cache/**
