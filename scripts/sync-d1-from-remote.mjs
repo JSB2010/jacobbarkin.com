@@ -10,17 +10,18 @@ const dbPath =
   process.env.LOCAL_D1_PATH ||
   path.join(process.cwd(), ".wrangler", "local-d1.sqlite");
 const schemaPath = path.join(process.cwd(), "src", "lib", "db", "schema.sql");
+const importRuntimeModule = (specifier) => import(specifier);
 
 async function openLocalDatabase(filePath) {
   try {
-    const { DatabaseSync } = await import("node:sqlite");
+    const { DatabaseSync } = await importRuntimeModule(["node", "sqlite"].join(":"));
     return new DatabaseSync(filePath);
   } catch {
     // Fall back to better-sqlite3 for older Node versions.
   }
 
   try {
-    const sqliteModule = await import("better-sqlite3");
+    const sqliteModule = await importRuntimeModule(["better", "sqlite3"].join("-"));
     const Database =
       sqliteModule.default ||
       sqliteModule;

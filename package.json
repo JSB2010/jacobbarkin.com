@@ -11,7 +11,7 @@
     "clean": "rm -rf .next .open-next out",
     "build": "bun scripts/generate-embed-instructions.mjs && next build",
     "build:worker": "bun scripts/generate-embed-instructions.mjs && opennextjs-cloudflare build",
-    "build:cf": "bun scripts/generate-embed-instructions.mjs && (bun add @ast-grep/napi-linux-x64-gnu lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu @unrs/resolver-binding-linux-x64-gnu || true) && opennextjs-cloudflare build",
+    "build:cf": "bun run build:worker",
     "start": "next start",
     "preview": "bun run build:worker && opennextjs-cloudflare preview",
     "deploy": "bun run build:worker && opennextjs-cloudflare deploy",
