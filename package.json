@@ -17,6 +17,8 @@
     "deploy": "bun run build:worker && opennextjs-cloudflare deploy",
     "deploy:manual": "bun run build:worker && wrangler deploy",
     "d1:pull": "node scripts/sync-d1-from-remote.mjs",
+    "d1:migrate": "node scripts/migrate-d1.mjs --remote",
+    "d1:migrate:local": "node scripts/migrate-d1.mjs --local",
     "dev:remote": "bun run build:worker && bunx wrangler dev --remote",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "typecheck": "next typegen && tsc --noEmit --incremental false",

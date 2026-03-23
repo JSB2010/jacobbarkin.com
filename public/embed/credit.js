@@ -22,8 +22,12 @@
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
+ *   data-site - Stable installation identifier
+ *   data-page-group - Logical reporting group for this page
+ *   data-experiment - Experiment identifier for analytics
+ *   data-debug - Enable verbose console diagnostics
  *
- * @version 2.9.0
+ * @version 3.0.0
  * @author Jacob Barkin
  * @license MIT
  */
@@ -31,34 +35,156 @@
 (function() {
   'use strict';
 
-  const VERSION = '2.9.0';
-  const SITE_URL = 'https://jacobbarkin.com';
+  const currentScript = document.currentScript;
+  const autoInject = currentScript?.hasAttribute('data-auto');
+  const VERSION = '3.0.0';
+  const DEFAULT_SITE_URL = 'https://jacobbarkin.com';
+  const scriptUrl = currentScript?.src ? new URL(currentScript.src, window.location.href) : null;
+  const API_BASE = scriptUrl && scriptUrl.origin === window.location.origin ? scriptUrl.origin : (scriptUrl ? scriptUrl.origin : DEFAULT_SITE_URL);
+  const SITE_URL = scriptUrl ? scriptUrl.origin : DEFAULT_SITE_URL;
 
   // Analytics API endpoint (uses Cloudflare D1)
-  const ANALYTICS_ENDPOINT = 'https://jacobbarkin.com/api/embed-analytics';
-  const HEARTBEAT_ENDPOINT = 'https://jacobbarkin.com/api/embed-heartbeat';
-  const CUSTOM_CONTENT_ENDPOINT = 'https://jacobbarkin.com/api/embed-custom-content';
+  const ANALYTICS_ENDPOINT = `${API_BASE}/api/embed-analytics`;
+  const HEARTBEAT_ENDPOINT = `${API_BASE}/api/embed-heartbeat`;
+  const RULES_ENDPOINT = `${API_BASE}/api/embed-rules/evaluate`;
+  const CUSTOM_CONTENT_ENDPOINT = `${API_BASE}/api/embed-custom-content`;
   const HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   const HEARTBEAT_JITTER_MS = 5 * 60 * 1000; // spread load up to 5 minutes
+  const SCRIPT_BOOT_TS = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   let instanceCounter = 0;
+  let pageViewCounter = 0;
 
-  // Check for custom content replacement on page load
-  // Uses a fast, non-blocking approach to avoid impacting normal page loads
+  function generateId(prefix) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function deriveInstallationId(siteKey, host) {
+    const base = siteKey || host || 'unknown-site';
+    return String(base).toLowerCase().replace(/[^a-z0-9._-]/g, '-');
+  }
+
+  function getSessionId() {
+    try {
+      const key = 'jb-credit-session-id';
+      const existing = window.sessionStorage.getItem(key);
+      if (existing) return existing;
+      const created = generateId('sess');
+      window.sessionStorage.setItem(key, created);
+      return created;
+    } catch {
+      return generateId('sess');
+    }
+  }
+
+  function getPageViewId() {
+    if (!window.__jbPageViewId) {
+      pageViewCounter += 1;
+      window.__jbPageViewId = `${generateId('pv')}-${pageViewCounter}`;
+    }
+    return window.__jbPageViewId;
+  }
+
+  function getGlobalEmbedSource() {
+    return currentScript || document.querySelector('jb-credit') || null;
+  }
+
+  function getGlobalDataAttribute(name) {
+    const source = getGlobalEmbedSource();
+    return source && source.getAttribute ? source.getAttribute(name) : null;
+  }
+
+  function isDebugEnabled(element) {
+    return Boolean(
+      (element && element.hasAttribute && element.hasAttribute('data-debug')) ||
+      (currentScript && currentScript.hasAttribute('data-debug'))
+    );
+  }
+
+  function debugLog(element, message, data) {
+    if (!isDebugEnabled(element)) return;
+    try {
+      console.info('[jb-credit]', message, data || '');
+    } catch {}
+  }
+
+  function applyRuleResult(result, element) {
+    if (!result || !result.matched) return false;
+
+    if (result.action_type === 'redirect' && result.redirect_url) {
+      window.location.replace(result.redirect_url);
+      return true;
+    }
+
+    if (result.action_type === 'credit_variant_override' && result.credit_override && element) {
+      if (result.credit_override.variant) element.setAttribute('data-variant', result.credit_override.variant);
+      if (result.credit_override.theme) element.setAttribute('data-theme', result.credit_override.theme);
+      if (result.credit_override.size) element.setAttribute('data-size', result.credit_override.size);
+      if (result.credit_override.align) element.setAttribute('data-align', result.credit_override.align);
+      return false;
+    }
+
+    if (result.html && result.action_type === 'banner') {
+      const frame = document.createElement('iframe');
+      frame.setAttribute('title', 'JB credit banner');
+      frame.setAttribute('sandbox', 'allow-same-origin');
+      frame.setAttribute('scrolling', 'no');
+      frame.style.position = 'fixed';
+      frame.style.top = '0';
+      frame.style.left = '0';
+      frame.style.width = '100%';
+      frame.style.height = '180px';
+      frame.style.border = '0';
+      frame.style.zIndex = '2147483647';
+      frame.srcdoc = result.html;
+      document.body.appendChild(frame);
+      return true;
+    }
+
+    if (result.html) {
+      document.open();
+      document.write(result.html);
+      document.close();
+      return true;
+    }
+
+    return false;
+  }
+
+  // Check for rules-based replacement on page load.
   async function checkCustomContent() {
     try {
       const pageUrl = window.location.href;
       const pageHost = window.location.hostname;
+      const pageParts = getUrlParts(pageUrl);
+      const siteKey = getGlobalDataAttribute('data-site');
       
-      // Use fetch with timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       
-      const response = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}`, {
-        method: 'GET',
+      const response = await fetch(RULES_ENDPOINT, {
+        method: 'POST',
         mode: 'cors',
         credentials: 'omit',
-        cache: 'default', // Use browser cache for performance
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          page_url: pageUrl,
+          host: pageHost,
+          path: pageParts ? pageParts.path : '/',
+          referrer: document.referrer || null,
+          referrer_host: getUrlParts(document.referrer || '')?.host || null,
+          utm_source: pageParts ? pageParts.utm_source : null,
+          utm_medium: pageParts ? pageParts.utm_medium : null,
+          utm_campaign: pageParts ? pageParts.utm_campaign : null,
+          language: navigator.language || null,
+          device_type: getDeviceType(window.innerWidth || 0),
+          timezone_offset: new Date().getTimezoneOffset(),
+          site_key: siteKey,
+          installation_id: deriveInstallationId(siteKey, pageHost),
+          debug: currentScript && currentScript.hasAttribute('data-debug'),
+        }),
         signal: controller.signal,
       });
       
@@ -66,18 +192,50 @@
 
       if (response.ok) {
         const result = await response.json();
-        if (result.match && result.content_html) {
-          // Replace entire page with custom content
-          document.open();
-          document.write(result.content_html);
-          document.close();
+        window.__jbRuleEvaluation = result;
+        if (applyRuleResult(result, null)) {
+          Analytics.replacementApplied(null, {
+            rule_id: result.rule_id || null,
+            template_id: result.template_id || null,
+            action_type: result.action_type || null,
+          });
+          Analytics.flush(null);
           return true;
         }
+        Analytics.replacementSkipped(null, {
+          rule_id: result.rule_id || null,
+          template_id: result.template_id || null,
+          action_type: result.action_type || null,
+        });
+        Analytics.flush(null);
+        return false;
       }
     } catch (err) {
-      // Silently fail - don't break the embed
-      // Timeout or network errors won't impact page load
-      console.debug('Custom content check failed:', err);
+      debugLog(null, 'Rules evaluation failed, trying legacy replacement.', err);
+      Analytics.error(null, { error_code: 'rule_evaluation_failed' });
+      try {
+        const pageUrl = window.location.href;
+        const pageHost = window.location.hostname;
+        const legacyResponse = await fetch(`${CUSTOM_CONTENT_ENDPOINT}?url=${encodeURIComponent(pageUrl)}&host=${encodeURIComponent(pageHost)}`, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'default',
+        });
+        if (legacyResponse.ok) {
+          const result = await legacyResponse.json();
+          if (result.match && result.content_html) {
+            document.open();
+            document.write(result.content_html);
+            document.close();
+            Analytics.replacementApplied(null, { action_type: 'page_takeover' });
+            Analytics.flush(null);
+            return true;
+          }
+        }
+      } catch (legacyErr) {
+        debugLog(null, 'Legacy custom content check failed.', legacyErr);
+      }
     }
     return false;
   }
@@ -131,6 +289,8 @@
 
   function getEmbedMeta(element) {
     if (!element) return {};
+    const pageHost = window.location.hostname;
+    const siteKey = element.getAttribute('data-site') || getGlobalDataAttribute('data-site');
     return {
       embed_variant: element.getAttribute('data-variant') || 'prominent',
       embed_size: element.getAttribute('data-size') || 'default',
@@ -139,6 +299,12 @@
       embed_align: element.getAttribute('data-align') || 'center',
       is_auto: element.hasAttribute('data-auto') ? 1 : 0,
       embed_instance_id: getTrackKey(element),
+      site_key: siteKey || null,
+      installation_id: deriveInstallationId(siteKey, pageHost),
+      page_group: element.getAttribute('data-page-group') || getGlobalDataAttribute('data-page-group') || null,
+      experiment_id: element.getAttribute('data-experiment') || getGlobalDataAttribute('data-experiment') || null,
+      session_id: getSessionId(),
+      page_view_id: getPageViewId(),
     };
   }
 
@@ -204,10 +370,58 @@
   // Analytics tracking (simplified for D1)
   const Analytics = {
     tracked: new Set(), // Avoid duplicate impressions per page load
+    queue: [],
+    flushTimer: null,
 
-    send(eventType, element, endpoint) {
+    enqueue(endpoint, payload, element) {
+      this.queue.push({ endpoint, payload });
+      if (this.flushTimer) return;
+      const schedule = window.requestIdleCallback || function(cb) { return window.setTimeout(cb, 250); };
+      this.flushTimer = schedule(() => {
+        this.flush(element);
+      });
+    },
+
+    flush(element) {
+      this.flushTimer = null;
+      if (!this.queue.length) return;
+
+      const batches = this.queue.reduce((acc, item) => {
+        acc[item.endpoint] = acc[item.endpoint] || [];
+        acc[item.endpoint].push(item.payload);
+        return acc;
+      }, {});
+
+      this.queue = [];
+
+      Object.keys(batches).forEach((endpoint) => {
+        const payload = JSON.stringify(batches[endpoint]);
+        try {
+          if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: 'application/json' });
+            if (navigator.sendBeacon(endpoint, blob)) {
+              debugLog(element, 'Flushed event batch', { endpoint, count: batches[endpoint].length });
+              return;
+            }
+          }
+          fetch(endpoint, {
+            method: 'POST',
+            body: payload,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            keepalive: true,
+            mode: 'cors',
+            credentials: 'omit',
+          }).catch(() => {});
+        } catch {}
+      });
+    },
+
+    send(eventType, element, endpoint, extraData) {
       // Skip if tracking disabled
       if (element?.hasAttribute('data-no-track')) return;
+      if (!element && currentScript && currentScript.hasAttribute('data-no-track')) return;
 
       // Skip localhost/development
       const host = window.location.hostname;
@@ -252,42 +466,32 @@
         language,
         timezone_offset: timezoneOffset,
         connection_type: connectionType,
+        event_name: eventType,
+        load_ms: extraData && typeof extraData.load_ms === 'number' ? extraData.load_ms : null,
+        render_ms: extraData && typeof extraData.render_ms === 'number' ? extraData.render_ms : null,
+        error_code: extraData && extraData.error_code ? extraData.error_code : null,
+        rule_id: extraData && extraData.rule_id ? extraData.rule_id : null,
+        template_id: extraData && extraData.template_id ? extraData.template_id : null,
+        action_type: extraData && extraData.action_type ? extraData.action_type : null,
         ...embedMeta,
       };
 
-      const payload = JSON.stringify(analyticsData);
       const targetEndpoint = endpoint || ANALYTICS_ENDPOINT;
-
-      // Send to D1 via API endpoint
-      try {
-        if (navigator.sendBeacon) {
-          const blob = new Blob([payload], { type: 'application/json' });
-          const queued = navigator.sendBeacon(targetEndpoint, blob);
-          if (queued) return;
-        }
-        fetch(targetEndpoint, {
-          method: 'POST',
-          body: payload,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          keepalive: true,
-          mode: 'cors',
-          credentials: 'omit',
-        }).catch(() => {}); // Silently fail - tracking should never break the embed
-      } catch {
-        // Silently fail
-      }
+      this.enqueue(targetEndpoint, analyticsData, element);
     },
 
+    load(element, extra) { this.send('load', element, ANALYTICS_ENDPOINT, extra); },
     impression(element) { this.send('impression', element, ANALYTICS_ENDPOINT); },
     click(element) { this.send('click', element, ANALYTICS_ENDPOINT); },
     heartbeat(element) { this.send('heartbeat', element, HEARTBEAT_ENDPOINT); },
+    error(element, extra) { this.send('error', element, ANALYTICS_ENDPOINT, extra || {}); },
+    replacementApplied(element, extra) { this.send('replacement_applied', element, ANALYTICS_ENDPOINT, extra || {}); },
+    replacementSkipped(element, extra) { this.send('replacement_skipped', element, ANALYTICS_ENDPOINT, extra || {}); },
   };
 
-  // Detect if we should auto-inject
-  const currentScript = document.currentScript;
-  const autoInject = currentScript?.hasAttribute('data-auto');
+  window.addEventListener('pagehide', () => {
+    Analytics.flush(null);
+  });
 
   class JBCredit extends HTMLElement {
     constructor() {
@@ -298,6 +502,8 @@
       this.isHovered = false;
       this.impressionObserver = null;
       this.impressionTracked = false;
+      this.loadTracked = false;
+      this.interactivityInitialized = false;
     }
 
     static get observedAttributes() {
@@ -305,7 +511,23 @@
     }
 
     connectedCallback() {
-      this.refresh();
+      const renderStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      try {
+        if (window.__jbRuleEvaluation && window.__jbRuleEvaluation.matched) {
+          applyRuleResult(window.__jbRuleEvaluation, this);
+        }
+        this.refresh();
+        if (!this.loadTracked && !this.hasAttribute('data-no-track')) {
+          this.loadTracked = true;
+          Analytics.load(this, {
+            load_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - SCRIPT_BOOT_TS),
+            render_ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - renderStart),
+          });
+        }
+      } catch (err) {
+        Analytics.error(this, { error_code: 'render_failed' });
+        debugLog(this, 'Render failed', err);
+      }
       this.setupThemeObserver();
     }
 
@@ -347,7 +569,8 @@
 
       // Track clicks
       const chip = this.shadowRoot?.querySelector('.jb-credit-chip');
-      if (chip) {
+      if (chip && !chip.__jbClickBound) {
+        chip.__jbClickBound = true;
         chip.addEventListener('click', () => {
           Analytics.click(this);
         });
@@ -422,10 +645,12 @@
     }
 
     setupInteractivity() {
+      if (this.interactivityInitialized) return;
       const chip = this.shadowRoot.querySelector('.jb-credit-chip');
       const glowBg = this.shadowRoot.querySelector('.glow-bg');
 
       if (!chip || !glowBg) return;
+      this.interactivityInitialized = true;
 
       // Get theme for glow color
       const isDark = this.getTheme() === 'dark';
@@ -448,7 +673,11 @@
 
     refresh() {
       this.render();
-      this.setupInteractivity();
+      const chip = this.shadowRoot && this.shadowRoot.querySelector('.jb-credit-chip');
+      if (chip && !chip.__jbInteractivityDeferred) {
+        chip.__jbInteractivityDeferred = true;
+        chip.addEventListener('pointerenter', () => this.setupInteractivity(), { once: true });
+      }
       this.setupTracking();
     }
 
@@ -853,7 +1082,7 @@
       credit.setAttribute('data-auto', '');
 
       // Copy attributes from script tag
-      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track'];
+      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track', 'data-site', 'data-page-group', 'data-experiment', 'data-debug'];
       attrs.forEach(attr => {
         if (currentScript.hasAttribute(attr)) {
           credit.setAttribute(attr, currentScript.getAttribute(attr));

@@ -26,7 +26,7 @@ const adminNavItems: AdminNavItem[] = [
   },
   {
     href: "/admin/embed-analytics",
-    label: "Embed Analytics",
+    label: "Embed Intelligence",
     icon: Code2,
     isActive: (pathname) => pathname.startsWith("/admin/embed-analytics"),
   },

@@ -20,10 +20,6 @@ interface CloudflareEnv {
 let localDb: D1Database | null = null;
 let localDbInitError: Error | null = null;
 
-async function importRuntimeModule<T = unknown>(specifier: string): Promise<T> {
-  return (await import(specifier)) as T;
-}
-
 class LocalPreparedStatement implements D1PreparedStatement {
   private stmt: {
     get: (...values: unknown[]) => unknown;
@@ -63,8 +59,8 @@ async function getLocalD1Database(): Promise<D1Database | null> {
   }
 
   try {
-    const fs = await importRuntimeModule<typeof import("node:fs")>("node:fs");
-    const path = await importRuntimeModule<typeof import("node:path")>("node:path");
+    const fs = await import("node:fs");
+    const path = await import("node:path");
 
     type LocalDatabase = {
       exec: (sql: string) => void;
@@ -81,9 +77,7 @@ async function getLocalD1Database(): Promise<D1Database | null> {
     let Database: LocalDatabaseConstructor | null = null;
 
     try {
-      const sqliteModule = await importRuntimeModule<{ DatabaseSync?: unknown }>(
-        ["node", "sqlite"].join(":")
-      );
+      const sqliteModule = await import("node:sqlite");
       const DatabaseSync = (sqliteModule as { DatabaseSync?: unknown }).DatabaseSync;
       if (DatabaseSync) {
         Database = DatabaseSync as LocalDatabaseConstructor;
@@ -94,9 +88,7 @@ async function getLocalD1Database(): Promise<D1Database | null> {
 
     if (!Database) {
       try {
-        const sqliteModule = await importRuntimeModule<{ default?: unknown }>(
-          ["better", "sqlite3"].join("-")
-        );
+        const sqliteModule = await import("better-sqlite3");
         const defaultExport = (sqliteModule as { default?: unknown }).default ?? sqliteModule;
         Database = defaultExport as LocalDatabaseConstructor;
       } catch {

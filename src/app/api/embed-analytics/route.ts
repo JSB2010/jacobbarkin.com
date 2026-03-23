@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getD1Database } from "@/lib/db/d1";
+import {
+  buildSessionFingerprint,
+  createMetricIncrement,
+  deriveInstallationId,
+  generateId,
+  getUrlParts,
+  incrementDailyMetric,
+  insertEmbedEvent,
+  normalizeEventName,
+  parseBooleanInt,
+  parseNumber,
+  truncateText,
+  upsertInstallation,
+  type EmbedTelemetryPayload,
+} from "@/lib/embed/utils";
 
 interface EmbedAnalyticsRow {
   id: string;
@@ -88,61 +103,6 @@ interface TopVersionRow {
   clicks: number;
 }
 
-interface UrlParts {
-  host: string;
-  path: string;
-  utm_source: string | null;
-  utm_medium: string | null;
-  utm_campaign: string | null;
-  utm_term: string | null;
-  utm_content: string | null;
-}
-
-function truncateText(value: unknown, max: number): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed.length > max ? trimmed.slice(0, max) : trimmed;
-}
-
-function parseNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function parseBooleanInt(value: unknown): number | null {
-  if (value === true || value === "true" || value === 1 || value === "1") return 1;
-  if (value === false || value === "false" || value === 0 || value === "0") return 0;
-  return null;
-}
-
-function getUrlParts(value: string | null): UrlParts | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    return {
-      host: url.hostname,
-      path: url.pathname || "/",
-      utm_source: url.searchParams.get("utm_source"),
-      utm_medium: url.searchParams.get("utm_medium"),
-      utm_campaign: url.searchParams.get("utm_campaign"),
-      utm_term: url.searchParams.get("utm_term"),
-      utm_content: url.searchParams.get("utm_content"),
-    };
-  } catch {
-    return null;
-  }
-}
-
-// Generate a unique ID
-function generateId(): string {
-  return `emb_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
-
 function getCorsHeaders(origin: string | null) {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -182,127 +142,222 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { page_url, referrer, event_type } = body;
+    const payload = await request.json();
+    const bodies = Array.isArray(payload) ? payload : Array.isArray(payload?.events) ? payload.events : [payload];
+    const ids: string[] = [];
+    let invalidCount = 0;
 
-    const pageUrl = truncateText(page_url, 2048);
-    if (!pageUrl) {
+    const ipAddress = request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0] ||
+      "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+
+    for (const body of bodies) {
+      const pageUrl = truncateText(body?.page_url, 2048);
+      if (!pageUrl) {
+        invalidCount += 1;
+        continue;
+      }
+
+      const id = generateId("emb");
+      const now = new Date().toISOString();
+      const pageParts = getUrlParts(pageUrl);
+      const referrerValue = truncateText(body.referrer, 2048);
+      const referrerParts = getUrlParts(referrerValue);
+      const resolvedPageHost = truncateText(body.page_host, 255) || pageParts?.host || null;
+      const resolvedPagePath = truncateText(body.page_path, 1024) || pageParts?.path || null;
+      const resolvedPageTitle = truncateText(body.page_title, 512);
+      const resolvedReferrerHost = truncateText(body.referrer_host, 255) || referrerParts?.host || null;
+      const resolvedUtmSource = truncateText(body.utm_source, 128) || pageParts?.utm_source || null;
+      const resolvedUtmMedium = truncateText(body.utm_medium, 128) || pageParts?.utm_medium || null;
+      const resolvedUtmCampaign = truncateText(body.utm_campaign, 128) || pageParts?.utm_campaign || null;
+      const resolvedUtmTerm = truncateText(body.utm_term, 128) || pageParts?.utm_term || null;
+      const resolvedUtmContent = truncateText(body.utm_content, 128) || pageParts?.utm_content || null;
+      const embedVersion = truncateText(body.embed_version, 32);
+      const embedVariant = truncateText(body.embed_variant, 32);
+      const embedSize = truncateText(body.embed_size, 32);
+      const embedTheme = truncateText(body.embed_theme, 16);
+      const embedPosition = truncateText(body.embed_position, 16);
+      const embedAlign = truncateText(body.embed_align, 16);
+      const embedInstanceId = truncateText(body.embed_instance_id, 64);
+      const isAuto = parseBooleanInt(body.is_auto) ?? 0;
+      const language = truncateText(body.language, 32);
+      const timezoneOffset = parseNumber(body.timezone_offset);
+      const viewportWidth = parseNumber(body.viewport_width);
+      const viewportHeight = parseNumber(body.viewport_height);
+      const deviceType = truncateText(body.device_type, 16);
+      const connectionType = truncateText(body.connection_type, 16);
+      const siteKey = truncateText(body.site_key || body.site || body.data_site, 128);
+      const installationId = truncateText(body.installation_id, 128) || deriveInstallationId(siteKey, resolvedPageHost);
+      const sessionFingerprint = buildSessionFingerprint(ipAddress, userAgent, resolvedPageHost);
+      const sessionId = truncateText(body.session_id, 128) || `sess_${sessionFingerprint.slice(0, 20)}`;
+      const pageViewId = truncateText(body.page_view_id, 128) || `pv_${sessionId}_${Date.now()}`;
+      const eventName = normalizeEventName(body.event_name || body.event_type);
+      const pageGroup = truncateText(body.page_group, 128);
+      const experimentId = truncateText(body.experiment_id, 128);
+      const variantKey = truncateText(body.variant_key, 128);
+      const ruleId = truncateText(body.rule_id, 128);
+      const templateId = truncateText(body.template_id, 128);
+      const actionType = truncateText(body.action_type, 64);
+      const errorCode = truncateText(body.error_code, 128);
+      const loadMs = parseNumber(body.load_ms);
+      const renderMs = parseNumber(body.render_ms);
+
+      await db.prepare(
+        `INSERT INTO embed_analytics (
+           id,
+           page_url,
+           page_host,
+           page_path,
+           page_title,
+           referrer,
+           referrer_host,
+           utm_source,
+           utm_medium,
+           utm_campaign,
+           utm_term,
+           utm_content,
+           user_agent,
+           ip_address,
+           event_type,
+           embed_version,
+           embed_variant,
+           embed_size,
+           embed_theme,
+           embed_position,
+           embed_align,
+           embed_instance_id,
+           is_auto,
+           installation_id,
+           session_id,
+           page_view_id,
+           event_name,
+           site_key,
+           page_group,
+           experiment_id,
+           variant_key,
+           rule_id,
+           template_id,
+           action_type,
+           load_ms,
+           render_ms,
+           error_code,
+           language,
+           timezone_offset,
+           viewport_width,
+           viewport_height,
+           device_type,
+           connection_type,
+           created_at
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        id,
+        pageUrl,
+        resolvedPageHost,
+        resolvedPagePath,
+        resolvedPageTitle,
+        referrerValue,
+        resolvedReferrerHost,
+        resolvedUtmSource,
+        resolvedUtmMedium,
+        resolvedUtmCampaign,
+        resolvedUtmTerm,
+        resolvedUtmContent,
+        userAgent,
+        ipAddress,
+        body.event_type || eventName,
+        embedVersion,
+        embedVariant,
+        embedSize,
+        embedTheme,
+        embedPosition,
+        embedAlign,
+        embedInstanceId,
+        isAuto,
+        installationId,
+        sessionId,
+        pageViewId,
+        eventName,
+        siteKey,
+        pageGroup,
+        experimentId,
+        variantKey,
+        ruleId,
+        templateId,
+        actionType,
+        loadMs,
+        renderMs,
+        errorCode,
+        language,
+        timezoneOffset,
+        viewportWidth,
+        viewportHeight,
+        deviceType,
+        connectionType,
+        now
+      ).run();
+
+      const telemetryPayload: EmbedTelemetryPayload = {
+        page_url: pageUrl,
+        page_host: resolvedPageHost,
+        page_path: resolvedPagePath,
+        page_title: resolvedPageTitle,
+        referrer: referrerValue,
+        referrer_host: resolvedReferrerHost,
+        utm_source: resolvedUtmSource,
+        utm_medium: resolvedUtmMedium,
+        utm_campaign: resolvedUtmCampaign,
+        utm_term: resolvedUtmTerm,
+        utm_content: resolvedUtmContent,
+        event_name: eventName,
+        event_type: typeof body.event_type === "string" && body.event_type.trim() ? body.event_type : eventName,
+        embed_version: embedVersion,
+        embed_variant: embedVariant,
+        embed_size: embedSize,
+        embed_theme: embedTheme,
+        embed_position: embedPosition,
+        embed_align: embedAlign,
+        embed_instance_id: embedInstanceId,
+        is_auto: isAuto,
+        language,
+        timezone_offset: timezoneOffset,
+        viewport_width: viewportWidth,
+        viewport_height: viewportHeight,
+        device_type: deviceType,
+        connection_type: connectionType,
+        installation_id: installationId,
+        site_key: siteKey,
+        session_id: sessionId,
+        page_view_id: pageViewId,
+        page_group: pageGroup,
+        experiment_id: experimentId,
+        variant_key: variantKey,
+        rule_id: ruleId,
+        template_id: templateId,
+        action_type: actionType,
+        error_code: errorCode,
+        load_ms: loadMs,
+        render_ms: renderMs,
+        session_fingerprint: sessionFingerprint,
+        created_at: now,
+      };
+
+      await insertEmbedEvent(db, generateId("evt"), telemetryPayload);
+      await upsertInstallation(db, telemetryPayload);
+      await incrementDailyMetric(db, createMetricIncrement(telemetryPayload));
+      ids.push(id);
+    }
+
+    if (!ids.length) {
       return NextResponse.json(
-        { success: false, error: "page_url is required" },
+        { success: false, error: invalidCount ? "No valid page_url values were provided" : "page_url is required" },
         { status: 400, headers: getCorsHeaders(request.headers.get("origin")) }
       );
     }
 
-    // Get client info from headers
-    const ipAddress = request.headers.get("cf-connecting-ip") || 
-                      request.headers.get("x-forwarded-for")?.split(",")[0] || 
-                      "unknown";
-    const userAgent = request.headers.get("user-agent") || "unknown";
-
-    const id = generateId();
-    const now = new Date().toISOString();
-
-    const pageParts = getUrlParts(pageUrl);
-    const referrerValue = truncateText(referrer, 2048);
-    const referrerParts = getUrlParts(referrerValue);
-
-    const resolvedPageHost = truncateText(body.page_host, 255) || pageParts?.host || null;
-    const resolvedPagePath = truncateText(body.page_path, 1024) || pageParts?.path || null;
-    const resolvedPageTitle = truncateText(body.page_title, 512);
-
-    const resolvedReferrerHost = truncateText(body.referrer_host, 255) || referrerParts?.host || null;
-
-    const resolvedUtmSource = truncateText(body.utm_source, 128) || pageParts?.utm_source || null;
-    const resolvedUtmMedium = truncateText(body.utm_medium, 128) || pageParts?.utm_medium || null;
-    const resolvedUtmCampaign = truncateText(body.utm_campaign, 128) || pageParts?.utm_campaign || null;
-    const resolvedUtmTerm = truncateText(body.utm_term, 128) || pageParts?.utm_term || null;
-    const resolvedUtmContent = truncateText(body.utm_content, 128) || pageParts?.utm_content || null;
-
-    const embedVersion = truncateText(body.embed_version, 32);
-    const embedVariant = truncateText(body.embed_variant, 32);
-    const embedSize = truncateText(body.embed_size, 32);
-    const embedTheme = truncateText(body.embed_theme, 16);
-    const embedPosition = truncateText(body.embed_position, 16);
-    const embedAlign = truncateText(body.embed_align, 16);
-    const embedInstanceId = truncateText(body.embed_instance_id, 64);
-
-    const isAuto = parseBooleanInt(body.is_auto) ?? 0;
-    const language = truncateText(body.language, 32);
-    const timezoneOffset = parseNumber(body.timezone_offset);
-    const viewportWidth = parseNumber(body.viewport_width);
-    const viewportHeight = parseNumber(body.viewport_height);
-    const deviceType = truncateText(body.device_type, 16);
-    const connectionType = truncateText(body.connection_type, 16);
-
-    await db.prepare(
-      `INSERT INTO embed_analytics (
-         id,
-         page_url,
-         page_host,
-         page_path,
-         page_title,
-         referrer,
-         referrer_host,
-         utm_source,
-         utm_medium,
-         utm_campaign,
-         utm_term,
-         utm_content,
-         user_agent,
-         ip_address,
-         event_type,
-         embed_version,
-         embed_variant,
-         embed_size,
-         embed_theme,
-         embed_position,
-         embed_align,
-         embed_instance_id,
-         is_auto,
-         language,
-         timezone_offset,
-         viewport_width,
-         viewport_height,
-         device_type,
-         connection_type,
-         created_at
-       )
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
-      id,
-      pageUrl,
-      resolvedPageHost,
-      resolvedPagePath,
-      resolvedPageTitle,
-      referrerValue,
-      resolvedReferrerHost,
-      resolvedUtmSource,
-      resolvedUtmMedium,
-      resolvedUtmCampaign,
-      resolvedUtmTerm,
-      resolvedUtmContent,
-      userAgent,
-      ipAddress,
-      event_type || "impression",
-      embedVersion,
-      embedVariant,
-      embedSize,
-      embedTheme,
-      embedPosition,
-      embedAlign,
-      embedInstanceId,
-      isAuto,
-      language,
-      timezoneOffset,
-      viewportWidth,
-      viewportHeight,
-      deviceType,
-      connectionType,
-      now
-    ).run();
-
     return NextResponse.json(
-      { success: true, id },
+      { success: true, id: ids[0], ids, accepted: ids.length, rejected: invalidCount },
       { status: 200, headers: getCorsHeaders(request.headers.get("origin")) }
     );
   } catch (error) {
@@ -362,7 +417,7 @@ export async function GET(request: NextRequest) {
          SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks,
          COUNT(DISTINCT page_url) as unique_pages,
          COUNT(DISTINCT page_host) as unique_domains,
-         COUNT(DISTINCT ip_address) as unique_visitors,
+         COUNT(DISTINCT COALESCE(NULLIF(session_id, ''), ip_address)) as unique_visitors,
          SUM(CASE WHEN is_auto = 1 AND event_type IN ('impression', 'view') THEN 1 ELSE 0 END) as auto_impressions,
          SUM(CASE WHEN is_auto = 1 AND event_type = 'click' THEN 1 ELSE 0 END) as auto_clicks
        FROM embed_analytics 

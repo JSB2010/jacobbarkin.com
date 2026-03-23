@@ -53,6 +53,10 @@ declare module 'react' {
         'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'left' | 'right' | 'center';
         'data-no-track'?: string | boolean;
+        'data-site'?: string;
+        'data-page-group'?: string;
+        'data-experiment'?: string;
+        'data-debug'?: string | boolean;
       };
     }
   }
@@ -91,6 +95,10 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 | `data-theme`     | `auto`, `light`, `dark`                                          | `auto`    | Color theme (auto detects from page)             |
 | `data-position`  | `inline`, `fixed`                                                | `inline`  | inline = normal flow, fixed = sticky footer bar  |
 | `data-no-track`  | (boolean)                                                        | false     | Disable analytics tracking for this embed        |
+| `data-site`      | string                                                           | host-based fallback | Stable installation identifier         |
+| `data-page-group`| string                                                           | none      | Logical page grouping for reporting              |
+| `data-experiment`| string                                                           | none      | Experiment identifier for analytics              |
+| `data-debug`     | (boolean)                                                        | false     | Log rule evaluation + runtime diagnostics        |
 
 Note: When using `data-auto`, you can set these `data-*` attributes (including `data-no-track`) on the `<script>` tag and they will be applied to the injected `<jb-credit>`.
 
@@ -103,6 +111,8 @@ By default, the embed tracks **impressions** (when visible) and **clicks**. It a
 - Page URL + title, referrer, and UTM parameters
 - Embed configuration (variant, size, theme, position, alignment, version, auto vs manual)
 - Device context (viewport size, device type), language, and timezone offset
+- Session-aware telemetry (`session_id`, `page_view_id`) for better unique session reporting
+- Rule evaluation / replacement telemetry (`replacement_applied`, `replacement_skipped`, `error`)
 - Heartbeat pings (about once per hour while the page is open/visible) to track active sites
 
 Disable analytics per-embed with `data-no-track`.
@@ -183,7 +193,7 @@ Force dark theme:
 
 Auto-inject with options:
 ```html
-<script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small" data-no-track></script>
+<script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small" data-site="client-marketing-site" data-page-group="landing" data-experiment="spring-cta-a"></script>
 ```
 
 Data-only variant (invisible, heartbeats only):

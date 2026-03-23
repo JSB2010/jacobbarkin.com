@@ -1,940 +1,301 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/components/ui/use-toast';
-import { ChevronLeft, ChevronRight, Code2, Eye, Globe, Loader2, MousePointer, Percent, RefreshCw, Users } from 'lucide-react';
-import { AdminShell } from '@/components/admin/admin-shell';
-import { CustomContentManager } from '@/components/admin/custom-content-manager';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, BarChart3, Download, Eye, Filter, Globe, Loader2, MousePointerClick, RefreshCw, Search, ShieldAlert, Users } from "lucide-react";
 
-// Type for embed analytics entry
-interface EmbedAnalytics {
-  id: string;
-  page_url: string;
-  page_host: string | null;
-  page_path: string | null;
-  page_title: string | null;
-  referrer: string | null;
-  referrer_host: string | null;
-  utm_source: string | null;
-  utm_medium: string | null;
-  utm_campaign: string | null;
-  utm_term: string | null;
-  utm_content: string | null;
-  user_agent: string | null;
-  ip_address: string | null;
-  event_type: string;
-  embed_version: string | null;
-  embed_variant: string | null;
-  embed_size: string | null;
-  embed_theme: string | null;
-  embed_position: string | null;
-  embed_align: string | null;
-  embed_instance_id: string | null;
-  is_auto: number | null;
-  language: string | null;
-  timezone_offset: number | null;
-  viewport_width: number | null;
-  viewport_height: number | null;
-  device_type: string | null;
-  connection_type: string | null;
-  created_at: string;
-}
+import { AdminShell } from "@/components/admin/admin-shell";
+import { EmbedLineChart } from "@/components/admin/embed-line-chart";
+import { EmbedRulesManager } from "@/components/admin/embed-rules-manager";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
 
-// Type for aggregated stats
-interface EmbedStats {
+type OverviewResponse = {
+  overview: {
+    current: {
+      loads: number;
+      impressions: number;
+      clicks: number;
+      ctr: number;
+      heartbeats: number;
+      errors: number;
+      replacement_applied: number;
+      replacement_skipped: number;
+      active_installations: number;
+      unique_sessions: number;
+    };
+    deltas: Record<string, number>;
+    top_movers: { page_host: string; impressions: number; clicks: number; heartbeats: number }[];
+    alerts: { installation_id: string; page_host: string; last_seen: string; last_embed_version: string | null; event_count: number }[];
+  };
+  filters: {
+    hosts: string[];
+    variants: string[];
+    devices: string[];
+    versions: string[];
+  };
+};
+
+type TimeseriesPoint = {
+  date: string;
+  loads: number;
   impressions: number;
   clicks: number;
   ctr: number;
-  unique_pages: number;
-  unique_domains: number;
-  unique_visitors: number;
-  auto_impressions: number;
-  auto_clicks: number;
-}
+  heartbeats: number;
+  errors: number;
+  active_installations: number;
+};
 
-interface TopPage {
-  page_url: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopReferrer {
-  referrer: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopDomain {
+type Site = {
+  installation_id: string;
+  site_key: string | null;
   page_host: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopVariant {
-  embed_variant: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopDevice {
-  device_type: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopCampaign {
-  utm_campaign: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface TopVersion {
-  embed_version: string;
-  impressions: number;
-  clicks: number;
-}
-
-interface HeartbeatSite {
-  page_host: string;
-  first_seen: string;
+  label: string | null;
+  environment: string;
   last_seen: string;
   last_page_url: string | null;
-  last_page_title: string | null;
-  last_referrer: string | null;
   last_embed_version: string | null;
   last_embed_variant: string | null;
-  last_embed_size: string | null;
-  last_embed_theme: string | null;
-  last_embed_position: string | null;
-  last_embed_align: string | null;
-  last_is_auto: number | null;
-  last_language: string | null;
-  last_timezone_offset: number | null;
-  last_viewport_width: number | null;
-  last_viewport_height: number | null;
+  last_is_auto: number;
   last_device_type: string | null;
-  last_connection_type: string | null;
+  event_count: number;
+  impression_count: number;
+  click_count: number;
   heartbeat_count: number;
-}
+};
 
-interface HeartbeatStats {
-  total_sites: number;
-  new_sites: number;
-  active_24h: number;
-  active_7d: number;
-  active_30d: number;
-  active_90d: number;
-}
-
-interface BreakdownRow {
-  key: string;
-  label: string;
-  sublabel?: string;
+type VariantRow = {
+  embed_variant?: string;
+  embed_version?: string;
+  page_host?: string;
   impressions: number;
   clicks: number;
-}
+  heartbeats?: number;
+};
 
-function BreakdownTable({
-  rows,
-  isLoading,
-  emptyLabel,
-}: {
-  rows: BreakdownRow[];
-  isLoading: boolean;
-  emptyLabel: string;
-}) {
+type EventRow = {
+  id: string;
+  created_at: string;
+  event_name: string;
+  page_host: string | null;
+  page_url: string;
+  page_title: string | null;
+  referrer_host: string | null;
+  utm_campaign: string | null;
+  embed_variant: string | null;
+  embed_version: string | null;
+  device_type: string | null;
+  installation_id: string;
+  rule_id: string | null;
+  template_id: string | null;
+  action_type: string | null;
+  load_ms: number | null;
+  render_ms: number | null;
+  error_code: string | null;
+  session_id: string;
+};
+
+function formatDelta(value: number | undefined) {
+  const delta = Number(value || 0);
+  const positive = delta >= 0;
+  const Icon = positive ? ArrowUp : ArrowDown;
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Label</TableHead>
-            <TableHead className="text-right">Impressions</TableHead>
-            <TableHead className="text-right">Clicks</TableHead>
-            <TableHead className="text-right">CTR</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={4} className="h-16 text-center">
-                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-              </TableCell>
-            </TableRow>
-          ) : rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="h-16 text-center text-sm text-muted-foreground">
-                {emptyLabel}
-              </TableCell>
-            </TableRow>
-          ) : (
-            rows.map((row) => (
-              <TableRow key={row.key}>
-                <TableCell>
-                  <div className="font-medium truncate max-w-[220px]" title={row.label}>
-                    {row.label}
-                  </div>
-                  {row.sublabel ? (
-                    <div className="text-xs text-muted-foreground truncate max-w-[220px]" title={row.sublabel}>
-                      {row.sublabel}
-                    </div>
-                  ) : null}
-                </TableCell>
-                <TableCell className="text-right">{row.impressions.toLocaleString()}</TableCell>
-                <TableCell className="text-right">{row.clicks.toLocaleString()}</TableCell>
-                <TableCell className="text-right">{row.impressions ? `${((row.clicks / row.impressions) * 100).toFixed(1)}%` : '0.0%'}</TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <span className={`inline-flex items-center gap-1 text-xs ${positive ? "text-emerald-600" : "text-rose-600"}`}>
+      <Icon className="h-3.5 w-3.5" />
+      {Math.abs(delta * 100).toFixed(1)}%
+    </span>
   );
 }
 
+function formatDate(value: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function formatRelativeTime(value: string) {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return value;
+  const diffMinutes = Math.round((Date.now() - time) / 60000);
+  if (diffMinutes < 60) return `${Math.max(diffMinutes, 1)}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays}d ago`;
+}
+
+function downloadCsv(filename: string, rows: Record<string, string | number | null | undefined>[]) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [
+    headers.join(","),
+    ...rows.map((row) =>
+      headers
+        .map((header) => {
+          const raw = row[header];
+          const value = raw === null || raw === undefined ? "" : String(raw);
+          return `"${value.replaceAll('"', '""')}"`;
+        })
+        .join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function EmbedAnalyticsPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [analytics, setAnalytics] = useState<EmbedAnalytics[]>([]);
-  const [stats, setStats] = useState<EmbedStats>({
-    impressions: 0,
-    clicks: 0,
-    ctr: 0,
-    unique_pages: 0,
-    unique_domains: 0,
-    unique_visitors: 0,
-    auto_impressions: 0,
-    auto_clicks: 0,
-  });
-  const [topPages, setTopPages] = useState<TopPage[]>([]);
-  const [topReferrers, setTopReferrers] = useState<TopReferrer[]>([]);
-  const [topDomains, setTopDomains] = useState<TopDomain[]>([]);
-  const [topVariants, setTopVariants] = useState<TopVariant[]>([]);
-  const [topDevices, setTopDevices] = useState<TopDevice[]>([]);
-  const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
-  const [topVersions, setTopVersions] = useState<TopVersion[]>([]);
-  const [heartbeatSites, setHeartbeatSites] = useState<HeartbeatSite[]>([]);
-  const [heartbeatStats, setHeartbeatStats] = useState<HeartbeatStats>({
-    total_sites: 0,
-    new_sites: 0,
-    active_24h: 0,
-    active_7d: 0,
-    active_30d: 0,
-    active_90d: 0,
-  });
-  const [heartbeatTotal, setHeartbeatTotal] = useState(0);
-  const [heartbeatError, setHeartbeatError] = useState<string | null>(null);
-  const [totalRecords, setTotalRecords] = useState(0);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [days, setDays] = useState("30");
+  const [host, setHost] = useState("__all__");
+  const [variant, setVariant] = useState("__all__");
+  const [device, setDevice] = useState("__all__");
+  const [version, setVersion] = useState("__all__");
+  const [installMethod, setInstallMethod] = useState("__all__");
+  const [query, setQuery] = useState("");
+  const [overview, setOverview] = useState<OverviewResponse["overview"] | null>(null);
+  const [filterOptions, setFilterOptions] = useState<OverviewResponse["filters"]>({ hosts: [], variants: [], devices: [], versions: [] });
+  const [series, setSeries] = useState<TimeseriesPoint[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [sitesTotal, setSitesTotal] = useState(0);
+  const [variantRows, setVariantRows] = useState<VariantRow[]>([]);
+  const [versionRows, setVersionRows] = useState<VariantRow[]>([]);
+  const [bestHosts, setBestHosts] = useState<VariantRow[]>([]);
+  const [worstHosts, setWorstHosts] = useState<VariantRow[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [eventsTotal, setEventsTotal] = useState(0);
 
-  // Pagination state
-  const [limit] = useState(20);
-  const [offset, setOffset] = useState(0);
-  const [page, setPage] = useState(1);
+  const params = useMemo(() => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("days", days);
+    if (host !== "__all__") searchParams.set("host", host);
+    if (variant !== "__all__") searchParams.set("variant", variant);
+    if (device !== "__all__") searchParams.set("device", device);
+    if (version !== "__all__") searchParams.set("version", version);
+    if (installMethod !== "__all__") searchParams.set("installMethod", installMethod);
+    if (query.trim()) searchParams.set("q", query.trim());
+    searchParams.set("limit", "50");
+    return searchParams.toString();
+  }, [days, host, variant, device, version, installMethod, query]);
 
-  // Filter state
-  const [days, setDays] = useState('30');
-  const [heartbeatStatusFilter, setHeartbeatStatusFilter] = useState('all');
-  const [heartbeatSearch, setHeartbeatSearch] = useState('');
-  const heartbeatLimit = 25;
-
-  // Fetch analytics from API
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
-    setHeartbeatError(null);
-
     try {
-      const handleUnauthorized = () => {
-        toast({
-          title: 'Session expired',
-          description: 'Please sign in again to access analytics.',
-          variant: 'destructive',
-        });
-        router.push('/sign-in');
-      };
+      const [overviewResponse, timeseriesResponse, sitesResponse, variantsResponse, eventsResponse] = await Promise.all([
+        fetch(`/api/embed-report/overview?${params}`),
+        fetch(`/api/embed-report/timeseries?${params}`),
+        fetch(`/api/embed-report/sites?${params}`),
+        fetch(`/api/embed-report/variants?${params}`),
+        fetch(`/api/embed-report/events?${params}`),
+      ]);
 
-      const params = new URLSearchParams();
-      params.set('limit', limit.toString());
-      params.set('offset', offset.toString());
-      params.set('days', days);
-
-      const response = await fetch(`/api/embed-analytics?${params.toString()}`);
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        throw new Error('Failed to fetch analytics');
+      if ([overviewResponse, timeseriesResponse, sitesResponse, variantsResponse, eventsResponse].some((response) => !response.ok)) {
+        throw new Error("Failed to load one or more embed report endpoints");
       }
 
-      const result = await response.json();
-      setAnalytics(result.analytics || []);
-      setStats(result.stats || {
-        impressions: 0,
-        clicks: 0,
-        ctr: 0,
-        unique_pages: 0,
-        unique_domains: 0,
-        unique_visitors: 0,
-        auto_impressions: 0,
-        auto_clicks: 0,
+      const [overviewJson, timeseriesJson, sitesJson, variantsJson, eventsJson] = await Promise.all([
+        overviewResponse.json(),
+        timeseriesResponse.json(),
+        sitesResponse.json(),
+        variantsResponse.json(),
+        eventsResponse.json(),
+      ]);
+
+      setOverview(overviewJson.overview || null);
+      setFilterOptions(overviewJson.filters || { hosts: [], variants: [], devices: [], versions: [] });
+      setSeries(timeseriesJson.series || []);
+      setSites(sitesJson.sites || []);
+      setSitesTotal(Number(sitesJson.total || 0));
+      setVariantRows(variantsJson.variants || []);
+      setVersionRows(variantsJson.versions || []);
+      setBestHosts(variantsJson.best_hosts || []);
+      setWorstHosts(variantsJson.worst_hosts || []);
+      setEvents(eventsJson.events || []);
+      setEventsTotal(Number(eventsJson.total || 0));
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Embed reports failed",
+        description: "One or more report endpoints could not be loaded.",
+        variant: "destructive",
       });
-      setTopPages(result.top_pages || []);
-      setTopReferrers(result.top_referrers || []);
-      setTopDomains(result.top_domains || []);
-      setTopVariants(result.top_variants || []);
-      setTopDevices(result.top_devices || []);
-      setTopCampaigns(result.top_campaigns || []);
-      setTopVersions(result.top_versions || []);
-      setTotalRecords(result.total || 0);
-
-      const heartbeatParams = new URLSearchParams();
-      heartbeatParams.set('limit', heartbeatLimit.toString());
-      heartbeatParams.set('offset', '0');
-      heartbeatParams.set('days', days);
-
-      const heartbeatResponse = await fetch(`/api/embed-heartbeat?${heartbeatParams.toString()}`);
-      if (!heartbeatResponse.ok) {
-        if (heartbeatResponse.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        setHeartbeatError('An error occurred while fetching heartbeat data');
-      } else {
-        const heartbeatResult = await heartbeatResponse.json();
-        setHeartbeatSites(heartbeatResult.sites || []);
-        setHeartbeatStats(heartbeatResult.stats || {
-          total_sites: 0,
-          new_sites: 0,
-          active_24h: 0,
-          active_7d: 0,
-          active_30d: 0,
-          active_90d: 0,
-        });
-        setHeartbeatTotal(heartbeatResult.total || 0);
-      }
-    } catch (err: unknown) {
-      setError('An error occurred while fetching analytics');
-      console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [limit, offset, days, heartbeatLimit, router, toast]);
+  }, [params, toast]);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchAll();
+  }, [fetchAll]);
 
-  const handlePageChange = (newPage: number) => {
-    const totalPages = Math.ceil(totalRecords / limit);
-    if (newPage < 1 || newPage > totalPages) return;
-    setPage(newPage);
-    setOffset((newPage - 1) * limit);
-  };
+  const chartImpressions = series.map((point) => ({ date: point.date, value: point.impressions }));
+  const chartClicks = series.map((point) => ({ date: point.date, value: point.clicks }));
+  const chartActiveSites = series.map((point) => ({ date: point.date, value: point.active_installations }));
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
-  const extractDomain = (url: string | null, fallbackHost?: string | null) => {
-    if (fallbackHost) return fallbackHost;
-    if (!url) return '-';
-    if (url === '(direct)') return 'Direct / None';
-    try {
-      return new URL(url).hostname;
-    } catch {
-      return url.substring(0, 50);
-    }
-  };
-
-  const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
-
-  const normalizeEventType = (eventType: string) => (eventType === 'view' ? 'impression' : eventType);
-
-  const handleDaysChange = (value: string) => {
-    setDays(value);
-    setPage(1);
-    setOffset(0);
-  };
-
-  const getCtr = (impressions: number, clicks: number) => {
-    if (!impressions) return '0.0%';
-    return formatPercent(clicks / impressions);
-  };
-
-  const formatTimezoneOffset = (offset: number | null) => {
-    if (offset === null || Number.isNaN(offset)) return '-';
-    const sign = offset <= 0 ? '+' : '-';
-    const abs = Math.abs(offset);
-    const hours = Math.floor(abs / 60).toString().padStart(2, '0');
-    const minutes = Math.floor(abs % 60).toString().padStart(2, '0');
-    return `UTC${sign}${hours}:${minutes}`;
-  };
-
-  const formatUtm = (entry: EmbedAnalytics) => {
-    const parts = [
-      entry.utm_source && `src:${entry.utm_source}`,
-      entry.utm_medium && `med:${entry.utm_medium}`,
-      entry.utm_campaign && `camp:${entry.utm_campaign}`,
-    ].filter(Boolean);
-    return parts.length ? parts.join(' • ') : null;
-  };
-
-  const formatEmbedMeta = (entry: EmbedAnalytics) => {
-    const parts = [
-      entry.embed_variant,
-      entry.embed_size,
-      entry.embed_position,
-      entry.embed_theme,
-      entry.embed_align,
-    ].filter(Boolean);
-    return parts.length ? parts.join(' • ') : 'default';
-  };
-
-  const formatViewport = (entry: EmbedAnalytics) => {
-    if (entry.viewport_width && entry.viewport_height) {
-      return `${entry.viewport_width}×${entry.viewport_height}`;
-    }
-    return '-';
-  };
-
-  const formatHeartbeatViewport = (entry: HeartbeatSite) => {
-    if (entry.last_viewport_width && entry.last_viewport_height) {
-      return `${entry.last_viewport_width}×${entry.last_viewport_height}`;
-    }
-    return '-';
-  };
-
-  const formatRelativeTime = (dateString: string) => {
-    const time = new Date(dateString).getTime();
-    if (Number.isNaN(time)) return '-';
-    const diffMs = Date.now() - time;
-    const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 60) return `${Math.max(minutes, 1)}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const daysAgo = Math.floor(hours / 24);
-    if (daysAgo < 7) return `${daysAgo}d ago`;
-    return formatDate(dateString);
-  };
-
-  const getHeartbeatStatus = (lastSeen: string) => {
-    const time = new Date(lastSeen).getTime();
-    if (Number.isNaN(time)) {
-      return { id: 'unknown', label: 'Unknown', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' };
-    }
-    const diffHours = (Date.now() - time) / (1000 * 60 * 60);
-    if (diffHours <= 24) {
-      return { id: 'active', label: 'Active', className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
-    }
-    if (diffHours <= 24 * 30) {
-      return { id: 'stale', label: 'Stale', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' };
-    }
-    if (diffHours <= 24 * 90) {
-      return { id: 'dormant', label: 'Dormant', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' };
-    }
-    return { id: 'offline', label: 'Offline', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' };
-  };
-
-  const formatHeartbeatMeta = (entry: HeartbeatSite) => {
-    const parts = [
-      entry.last_embed_variant,
-      entry.last_embed_size,
-      entry.last_embed_position,
-      entry.last_embed_theme,
-      entry.last_embed_align,
-    ].filter(Boolean);
-    return parts.length ? parts.join(' • ') : 'default';
-  };
-
-  const manualImpressions = Math.max(stats.impressions - stats.auto_impressions, 0);
-  const manualClicks = Math.max(stats.clicks - stats.auto_clicks, 0);
-  const autoShare = stats.impressions ? stats.auto_impressions / stats.impressions : 0;
-  const manualShare = stats.impressions ? manualImpressions / stats.impressions : 0;
-  const heartbeatStale = Math.max(heartbeatStats.total_sites - heartbeatStats.active_24h, 0);
-
-  const heartbeatQuery = heartbeatSearch.trim().toLowerCase();
-  const heartbeatFilteredSites = heartbeatSites.filter((site) => {
-    const status = getHeartbeatStatus(site.last_seen);
-    if (heartbeatStatusFilter !== 'all' && status.id !== heartbeatStatusFilter) {
-      return false;
-    }
-    if (!heartbeatQuery) return true;
-    const haystack = [
-      site.page_host,
-      site.last_page_url,
-      site.last_page_title,
-    ].filter(Boolean).join(' ').toLowerCase();
-    return haystack.includes(heartbeatQuery);
-  });
-
-  const topDomainRows: BreakdownRow[] = topDomains.map((entry) => ({
-    key: entry.page_host,
-    label: entry.page_host === '(unknown)' ? 'Unknown domain' : entry.page_host,
-    impressions: entry.impressions,
-    clicks: entry.clicks,
-  }));
-
-  const topVariantRows: BreakdownRow[] = topVariants.map((entry) => ({
-    key: entry.embed_variant,
-    label: entry.embed_variant === '(unknown)' ? 'Unknown variant' : entry.embed_variant,
-    impressions: entry.impressions,
-    clicks: entry.clicks,
-  }));
-
-  const topDeviceRows: BreakdownRow[] = topDevices.map((entry) => ({
-    key: entry.device_type,
-    label: entry.device_type === '(unknown)' ? 'Unknown device' : entry.device_type,
-    impressions: entry.impressions,
-    clicks: entry.clicks,
-  }));
-
-  const topCampaignRows: BreakdownRow[] = topCampaigns.map((entry) => ({
-    key: entry.utm_campaign,
-    label: entry.utm_campaign === '(none)' ? 'No campaign' : entry.utm_campaign,
-    impressions: entry.impressions,
-    clicks: entry.clicks,
-  }));
-
-  const topVersionRows: BreakdownRow[] = topVersions.map((entry) => ({
-    key: entry.embed_version,
-    label: entry.embed_version === '(unknown)' ? 'Unknown version' : entry.embed_version,
-    impressions: entry.impressions,
-    clicks: entry.clicks,
+  const eventCsvRows = events.map((event) => ({
+    created_at: event.created_at,
+    event_name: event.event_name,
+    page_host: event.page_host,
+    page_url: event.page_url,
+    page_title: event.page_title,
+    referrer_host: event.referrer_host,
+    utm_campaign: event.utm_campaign,
+    embed_variant: event.embed_variant,
+    embed_version: event.embed_version,
+    device_type: event.device_type,
+    installation_id: event.installation_id,
+    rule_id: event.rule_id,
+    template_id: event.template_id,
+    action_type: event.action_type,
+    load_ms: event.load_ms,
+    render_ms: event.render_ms,
+    error_code: event.error_code,
+    session_id: event.session_id,
   }));
 
   return (
     <AdminShell
-      title="Embed Analytics"
-      description="Track embed reach, heartbeats, and engagement"
-      icon={Code2}
-    >
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Impressions</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Eye className="h-6 w-6 text-blue-500" />
-              {stats.impressions.toLocaleString()}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Clicks</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <MousePointer className="h-6 w-6 text-green-500" />
-              {stats.clicks.toLocaleString()}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>CTR</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Percent className="h-6 w-6 text-purple-500" />
-              {formatPercent(stats.ctr)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unique Visitors</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Users className="h-6 w-6 text-rose-500" />
-              {stats.unique_visitors.toLocaleString()}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unique Pages</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Globe className="h-6 w-6 text-amber-500" />
-              {stats.unique_pages.toLocaleString()}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unique Sites</CardDescription>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Globe className="h-6 w-6 text-teal-500" />
-              {stats.unique_domains.toLocaleString()}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Heartbeat Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Sites</CardDescription>
-            <CardTitle className="text-2xl">{heartbeatStats.total_sites.toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active 24h</CardDescription>
-            <CardTitle className="text-2xl">{heartbeatStats.active_24h.toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Active 7d</CardDescription>
-            <CardTitle className="text-2xl">{heartbeatStats.active_7d.toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>New in {days}d</CardDescription>
-            <CardTitle className="text-2xl">{heartbeatStats.new_sites.toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Stale 24h+</CardDescription>
-            <CardTitle className="text-2xl">{heartbeatStale.toLocaleString()}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {heartbeatError && (
-        <div className="p-3 mb-4 bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-amber-800 dark:text-amber-300 text-sm">
-          {heartbeatError}
+      title="Embed Intelligence"
+      description="Overview, site health, performance, rules, and raw event exploration for the credit embed."
+      icon={BarChart3}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchAll} disabled={isLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
         </div>
-      )}
-
+      }
+    >
       <Card className="mb-6">
-        <CardHeader>
-          <div className="flex flex-col gap-4">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <CardTitle>Heartbeat Sites</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Global Filters
+              </CardTitle>
               <CardDescription>
-                Sites that pinged in the last {days} days
+                Apply filters once and keep overview, site health, performance, and event explorer aligned.
               </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  value={heartbeatSearch}
-                  onChange={(event) => setHeartbeatSearch(event.target.value)}
-                  placeholder="Search domains or pages"
-                  className="w-full sm:w-[220px] h-9"
-                />
-                <Select value={heartbeatStatusFilter} onValueChange={setHeartbeatStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-9">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="active">Active (24h)</SelectItem>
-                    <SelectItem value="stale">Stale (24h-30d)</SelectItem>
-                    <SelectItem value="dormant">Dormant (30-90d)</SelectItem>
-                    <SelectItem value="offline">Offline (90d+)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Showing {heartbeatFilteredSites.length} of {heartbeatTotal} sites
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Site</TableHead>
-                  <TableHead className="w-[160px]">Last Seen</TableHead>
-                  <TableHead className="w-[160px]">First Seen</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px] text-right">Heartbeats</TableHead>
-                  <TableHead className="w-[220px]">Last Embed</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-20 text-center">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : heartbeatFilteredSites.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-20 text-center text-sm text-muted-foreground">
-                      {heartbeatSites.length === 0 ? 'No heartbeat data yet' : 'No sites match your filters'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  heartbeatFilteredSites.map((site) => {
-                    const status = getHeartbeatStatus(site.last_seen);
-                    return (
-                      <TableRow key={site.page_host}>
-                        <TableCell>
-                          <div className="font-medium truncate max-w-[220px]" title={site.page_host}>
-                            {site.page_host}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[220px]" title={site.last_page_url || ''}>
-                            {site.last_page_title || site.last_page_url || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <div className="font-medium">{formatRelativeTime(site.last_seen)}</div>
-                          <div className="text-muted-foreground">{formatDate(site.last_seen)}</div>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <div className="font-medium">{formatRelativeTime(site.first_seen)}</div>
-                          <div className="text-muted-foreground">{formatDate(site.first_seen)}</div>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.className}`}>
-                            {status.label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-medium">
-                          {site.heartbeat_count.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-xs font-medium truncate max-w-[200px]" title={formatHeartbeatMeta(site)}>
-                            {formatHeartbeatMeta(site)}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {site.last_embed_version ? `v${site.last_embed_version}` : 'version unknown'} • {site.last_is_auto === 1 ? 'auto' : site.last_is_auto === 0 ? 'manual' : 'unknown'}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {(site.last_device_type || 'unknown')} • {formatHeartbeatViewport(site)}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Pages / Referrers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Pages</CardTitle>
-            <CardDescription>Most active pages for your embed</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Page</TableHead>
-                    <TableHead className="text-right">Impressions</TableHead>
-                    <TableHead className="text-right">Clicks</TableHead>
-                    <TableHead className="text-right">CTR</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-16 text-center">
-                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : topPages.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-16 text-center text-sm text-muted-foreground">
-                        No page data yet
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    topPages.map((entry) => (
-                      <TableRow key={entry.page_url}>
-                        <TableCell>
-                          <div className="font-medium truncate max-w-[220px]" title={entry.page_url}>
-                            {extractDomain(entry.page_url)}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[220px]" title={entry.page_url}>
-                            {entry.page_url}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{entry.impressions.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{entry.clicks.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{getCtr(entry.impressions, entry.clicks)}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Referrers</CardTitle>
-            <CardDescription>Where visitors come from</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Referrer</TableHead>
-                    <TableHead className="text-right">Impressions</TableHead>
-                    <TableHead className="text-right">Clicks</TableHead>
-                    <TableHead className="text-right">CTR</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-16 text-center">
-                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : topReferrers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-16 text-center text-sm text-muted-foreground">
-                        No referrer data yet
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    topReferrers.map((entry) => (
-                      <TableRow key={entry.referrer}>
-                        <TableCell>
-                          <div className="font-medium truncate max-w-[220px]" title={entry.referrer}>
-                            {extractDomain(entry.referrer)}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[220px]" title={entry.referrer}>
-                            {entry.referrer === '(direct)' ? 'No referrer' : entry.referrer}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{entry.impressions.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{entry.clicks.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{getCtr(entry.impressions, entry.clicks)}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Install Method + Breakdowns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Install Methods</CardTitle>
-            <CardDescription>Auto-inject vs manual embeds</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Auto</span>
-                <span className="font-medium">
-                  {stats.auto_impressions.toLocaleString()} impressions • {getCtr(stats.auto_impressions, stats.auto_clicks)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Manual</span>
-                <span className="font-medium">
-                  {manualImpressions.toLocaleString()} impressions • {getCtr(manualImpressions, manualClicks)}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-blue-500" style={{ width: `${Math.round(autoShare * 100)}%` }} />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formatPercent(autoShare)} auto • {formatPercent(manualShare)} manual
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Domains</CardTitle>
-            <CardDescription>Sites embedding your credit</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BreakdownTable rows={topDomainRows} isLoading={isLoading} emptyLabel="No domain data yet" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Variants</CardTitle>
-            <CardDescription>Most used embed styles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BreakdownTable rows={topVariantRows} isLoading={isLoading} emptyLabel="No variant data yet" />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Devices</CardTitle>
-            <CardDescription>Where visitors view the embed</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BreakdownTable rows={topDeviceRows} isLoading={isLoading} emptyLabel="No device data yet" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Campaigns</CardTitle>
-            <CardDescription>UTM campaign performance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BreakdownTable rows={topCampaignRows} isLoading={isLoading} emptyLabel="No campaign data yet" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Top Versions</CardTitle>
-            <CardDescription>Embed script adoption</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BreakdownTable rows={topVersionRows} isLoading={isLoading} emptyLabel="No version data yet" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Table Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <CardTitle>Embed Analytics</CardTitle>
-              <CardDescription>
-                Track where your credit embed is being used
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Select value={days} onValueChange={handleDaysChange}>
-                <SelectTrigger className="w-[130px] h-9">
-                  <SelectValue placeholder="Time Range" />
-                </SelectTrigger>
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+              <Select value={days} onValueChange={setDays}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="7">Last 7 days</SelectItem>
                   <SelectItem value="30">Last 30 days</SelectItem>
@@ -942,142 +303,431 @@ export default function EmbedAnalyticsPage() {
                   <SelectItem value="365">Last year</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={fetchAnalytics} disabled={isLoading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+              <Select value={host} onValueChange={setHost}>
+                <SelectTrigger><SelectValue placeholder="Host" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All hosts</SelectItem>
+                  {filterOptions.hosts.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={variant} onValueChange={setVariant}>
+                <SelectTrigger><SelectValue placeholder="Variant" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All variants</SelectItem>
+                  {filterOptions.variants.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={device} onValueChange={setDevice}>
+                <SelectTrigger><SelectValue placeholder="Device" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All devices</SelectItem>
+                  {filterOptions.devices.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={version} onValueChange={setVersion}>
+                <SelectTrigger><SelectValue placeholder="Version" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All versions</SelectItem>
+                  {filterOptions.versions.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={installMethod} onValueChange={setInstallMethod}>
+                <SelectTrigger><SelectValue placeholder="Install method" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All install methods</SelectItem>
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
-
         <CardContent>
-          {error && (
-            <div className="p-3 mb-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-800 dark:text-red-300 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[160px]">Date</TableHead>
-                  <TableHead>Page</TableHead>
-                  <TableHead className="w-[200px]">Referrer / UTM</TableHead>
-                  <TableHead className="w-[100px]">Event</TableHead>
-                  <TableHead className="w-[200px]">Embed</TableHead>
-                  <TableHead className="w-[200px]">Visitor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                      <span className="mt-2 text-sm text-muted-foreground">Loading analytics...</span>
-                    </TableCell>
-                  </TableRow>
-                ) : analytics.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <span className="text-sm text-muted-foreground">No analytics data found</span>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  analytics.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-mono text-xs">
-                        {formatDate(entry.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium truncate max-w-[260px]" title={entry.page_url}>
-                          {extractDomain(entry.page_url, entry.page_host)}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[260px]" title={entry.page_title || entry.page_url}>
-                          {entry.page_title || entry.page_path || entry.page_url}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs font-medium truncate max-w-[180px]" title={entry.referrer || ''}>
-                          {extractDomain(entry.referrer, entry.referrer_host)}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]" title={entry.referrer || ''}>
-                          {formatUtm(entry) || (entry.referrer ? entry.referrer : 'No referrer')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          entry.event_type === 'click'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                        }`}>
-                          {entry.event_type === 'click' ? <MousePointer className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-                          {normalizeEventType(entry.event_type)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs font-medium truncate max-w-[180px]" title={formatEmbedMeta(entry)}>
-                          {formatEmbedMeta(entry)}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {entry.embed_version ? `v${entry.embed_version}` : 'version unknown'} • {entry.is_auto === 1 ? 'auto' : entry.is_auto === 0 ? 'manual' : 'unknown'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs font-medium truncate max-w-[180px]">
-                          {(entry.device_type || 'unknown')} • {formatViewport(entry)}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {entry.language || '-'} • {formatTimezoneOffset(entry.timezone_offset)}{entry.connection_type ? ` • ${entry.connection_type}` : ''}
-                        </div>
-                        <div className="font-mono text-xs truncate max-w-[180px]">
-                          {entry.ip_address || '-'}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
-              Showing {offset + 1}-{Math.min(offset + limit, totalRecords)} of {totalRecords} records
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1 || isLoading}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <span className="text-sm">
-                Page {page} of {Math.max(1, Math.ceil(totalRecords / limit))}
-              </span>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page >= Math.ceil(totalRecords / limit) || isLoading}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Search sites or event pages"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Custom Content Manager */}
-      <div className="mt-6">
-        <CustomContentManager />
-      </div>
+      {isLoading && !overview ? (
+        <div className="flex h-48 items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : null}
+
+      {overview ? (
+        <>
+          <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Impressions</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-3xl">
+                  <Eye className="h-6 w-6 text-sky-500" />
+                  {overview.current.impressions.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>{formatDelta(overview.deltas.impressions)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Clicks</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-3xl">
+                  <MousePointerClick className="h-6 w-6 text-emerald-500" />
+                  {overview.current.clicks.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>{formatDelta(overview.deltas.clicks)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Unique Sessions</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-3xl">
+                  <Users className="h-6 w-6 text-violet-500" />
+                  {overview.current.unique_sessions.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>{formatDelta(overview.deltas.unique_sessions)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Active Installations</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-3xl">
+                  <Globe className="h-6 w-6 text-amber-500" />
+                  {overview.current.active_installations.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>{formatDelta(overview.deltas.heartbeats)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Error Events</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-3xl">
+                  <ShieldAlert className="h-6 w-6 text-rose-500" />
+                  {overview.current.errors.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>{formatDelta(overview.deltas.errors)}</CardContent>
+            </Card>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6 grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="sites">Sites</TabsTrigger>
+              <TabsTrigger value="performance">Performance</TabsTrigger>
+              <TabsTrigger value="rules">Rules</TabsTrigger>
+              <TabsTrigger value="explorer">Explorer</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid gap-4 xl:grid-cols-3">
+                <EmbedLineChart title="Impressions" data={chartImpressions} color="#0ea5e9" />
+                <EmbedLineChart title="Clicks" data={chartClicks} color="#10b981" />
+                <EmbedLineChart title="Active installations" data={chartActiveSites} color="#f59e0b" />
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Movers</CardTitle>
+                    <CardDescription>Highest-volume hosts across the current filter set.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Host</TableHead>
+                            <TableHead className="text-right">Impr.</TableHead>
+                            <TableHead className="text-right">Clicks</TableHead>
+                            <TableHead className="text-right">Heartbeats</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {overview.top_movers.map((item) => (
+                            <TableRow key={item.page_host}>
+                              <TableCell className="font-medium">{item.page_host || "(unknown)"}</TableCell>
+                              <TableCell className="text-right">{Number(item.impressions || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{Number(item.clicks || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{Number(item.heartbeats || 0).toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Operational Alerts</CardTitle>
+                    <CardDescription>Oldest last-seen installations first.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {overview.alerts.map((alert) => (
+                      <div key={alert.installation_id} className="rounded-xl border p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium">{alert.page_host || alert.installation_id}</div>
+                          <Badge variant="outline">{alert.last_embed_version || "unknown version"}</Badge>
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          Last seen {formatRelativeTime(alert.last_seen)} · {Number(alert.event_count || 0).toLocaleString()} events
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sites">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Installations</CardTitle>
+                  <CardDescription>{sitesTotal.toLocaleString()} installations matched the current filters.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Site</TableHead>
+                          <TableHead>Last Seen</TableHead>
+                          <TableHead>Embed</TableHead>
+                          <TableHead className="text-right">Events</TableHead>
+                          <TableHead className="text-right">Impr.</TableHead>
+                          <TableHead className="text-right">Clicks</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sites.map((site) => (
+                          <TableRow key={site.installation_id}>
+                            <TableCell>
+                              <div className="font-medium">{site.label || site.page_host}</div>
+                              <div className="text-xs text-muted-foreground">{site.last_page_url || site.installation_id}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{formatRelativeTime(site.last_seen)}</div>
+                              <div className="text-xs text-muted-foreground">{formatDate(site.last_seen)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">{site.last_embed_variant || "unknown"} · {site.last_embed_version || "unknown"}</div>
+                              <div className="text-xs text-muted-foreground">{site.last_is_auto === 1 ? "auto" : "manual"} · {site.last_device_type || "unknown device"}</div>
+                            </TableCell>
+                            <TableCell className="text-right">{site.event_count.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{site.impression_count.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{site.click_count.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="performance" className="space-y-6">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Variant Comparison</CardTitle>
+                    <CardDescription>CTR and usage by credit variant.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Variant</TableHead>
+                            <TableHead className="text-right">Impr.</TableHead>
+                            <TableHead className="text-right">Clicks</TableHead>
+                            <TableHead className="text-right">CTR</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {variantRows.map((row) => {
+                            const impressions = Number(row.impressions || 0);
+                            const clicks = Number(row.clicks || 0);
+                            return (
+                              <TableRow key={row.embed_variant}>
+                                <TableCell>{row.embed_variant || "(unknown)"}</TableCell>
+                                <TableCell className="text-right">{impressions.toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{clicks.toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{impressions > 0 ? `${((clicks / impressions) * 100).toFixed(1)}%` : "0.0%"}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Version Adoption</CardTitle>
+                    <CardDescription>Current version spread within the filtered window.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Version</TableHead>
+                            <TableHead className="text-right">Impr.</TableHead>
+                            <TableHead className="text-right">Clicks</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {versionRows.map((row) => (
+                            <TableRow key={row.embed_version}>
+                              <TableCell>{row.embed_version || "(unknown)"}</TableCell>
+                              <TableCell className="text-right">{Number(row.impressions || 0).toLocaleString()}</TableCell>
+                              <TableCell className="text-right">{Number(row.clicks || 0).toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Best CTR Hosts</CardTitle>
+                    <CardDescription>Highest-converting hosts with traffic.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Host</TableHead>
+                            <TableHead className="text-right">CTR</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {bestHosts.map((row) => (
+                            <TableRow key={`best-${row.page_host}`}>
+                              <TableCell>{row.page_host || "(unknown)"}</TableCell>
+                              <TableCell className="text-right">
+                                {Number(row.impressions || 0) > 0 ? `${((Number(row.clicks || 0) / Number(row.impressions || 0)) * 100).toFixed(1)}%` : "0.0%"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Worst CTR Hosts</CardTitle>
+                    <CardDescription>Lowest-converting hosts with traffic.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Host</TableHead>
+                            <TableHead className="text-right">CTR</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {worstHosts.map((row) => (
+                            <TableRow key={`worst-${row.page_host}`}>
+                              <TableCell>{row.page_host || "(unknown)"}</TableCell>
+                              <TableCell className="text-right">
+                                {Number(row.impressions || 0) > 0 ? `${((Number(row.clicks || 0) / Number(row.impressions || 0)) * 100).toFixed(1)}%` : "0.0%"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="rules">
+              <EmbedRulesManager />
+            </TabsContent>
+
+            <TabsContent value="explorer">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <CardTitle>Event Explorer</CardTitle>
+                      <CardDescription>
+                        {eventsTotal.toLocaleString()} matching events in the current window.
+                      </CardDescription>
+                    </div>
+                    <Button variant="outline" onClick={() => downloadCsv(`embed-events-${Date.now()}.csv`, eventCsvRows)}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Page</TableHead>
+                          <TableHead>Embed</TableHead>
+                          <TableHead>Rule</TableHead>
+                          <TableHead>Perf</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {events.map((event) => (
+                          <TableRow key={event.id}>
+                            <TableCell className="text-xs font-mono">{formatDate(event.created_at)}</TableCell>
+                            <TableCell>
+                              <div className="font-medium capitalize">{event.event_name.replaceAll("_", " ")}</div>
+                              <div className="text-xs text-muted-foreground">{event.device_type || "unknown device"} · {event.utm_campaign || "no campaign"}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{event.page_host || "(unknown)"}</div>
+                              <div className="max-w-[260px] truncate text-xs text-muted-foreground">{event.page_title || event.page_url}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{event.embed_variant || "unknown"} · {event.embed_version || "unknown"}</div>
+                              <div className="text-xs text-muted-foreground">{event.installation_id}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{event.rule_id || "—"}</div>
+                              <div className="text-xs text-muted-foreground">{event.template_id || event.action_type || "—"}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{event.load_ms ?? "—"} / {event.render_ms ?? "—"} ms</div>
+                              <div className="text-xs text-muted-foreground">{event.error_code || event.session_id.slice(0, 16)}</div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : null}
     </AdminShell>
   );
 }

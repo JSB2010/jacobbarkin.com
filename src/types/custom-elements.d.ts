@@ -12,6 +12,10 @@ declare module 'react' {
           'data-size'?: 'small' | 'default' | 'large';
           'data-align'?: 'left' | 'right' | 'center';
           'data-no-track'?: string | boolean;
+          'data-site'?: string;
+          'data-page-group'?: string;
+          'data-experiment'?: string;
+          'data-debug'?: string | boolean;
         },
         HTMLElement
       >;
