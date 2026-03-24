@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Mail, Github, Linkedin } from 'lucide-react';
+import { Mail } from 'lucide-react';
+import { FaGithub, FaLinkedinIn } from 'react-icons/fa6';
 
 interface SocialIconProps {
   href: string;
@@ -58,7 +59,7 @@ type SpecificIconProps = Omit<SocialIconProps, 'icon' | 'label' | 'href'> & { hr
 export const GitHubIcon = ({ href, ...props }: SpecificIconProps) => (
   <SocialIcon
     href={href || "https://github.com/JSB2010"}
-    icon={<Github />}
+    icon={<FaGithub />}
     label="GitHub"
     {...props}
   />
@@ -67,7 +68,7 @@ export const GitHubIcon = ({ href, ...props }: SpecificIconProps) => (
 export const LinkedInIcon = ({ href, ...props }: SpecificIconProps) => (
   <SocialIcon
     href={href || "https://www.linkedin.com/in/jacob-barkin/"}
-    icon={<Linkedin />}
+    icon={<FaLinkedinIn />}
     label="LinkedIn"
     {...props}
   />

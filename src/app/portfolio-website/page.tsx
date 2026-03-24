@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Code,
   ExternalLink,
-  Github,
   Layers,
   Palette,
   Smartphone,
@@ -13,6 +12,7 @@ import {
   Sun,
   Zap
 } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import { SiNextdotjs, SiReact, SiTailwindcss, SiTypescript, SiAppwrite } from "react-icons/si";
 
 // Import Aceternity UI components
@@ -68,7 +68,7 @@ export default function PortfolioWebsitePage() {
         cta={{
           text: "View Source",
           href: "https://github.com/JSB2010/jacobbarkin.com",
-          icon: <Github className="ml-2 h-4 w-4" />,
+          icon: <FaGithub className="ml-2 h-4 w-4" />,
           external: true
         }}
       />
@@ -514,7 +514,7 @@ export default function PortfolioWebsitePage() {
                   <div className="flex flex-wrap gap-4 justify-center">
                     <Link href="https://github.com/JSB2010/jacobbarkin.com" target="_blank" rel="noopener noreferrer">
                       <Button className="gap-2">
-                        <Github className="h-4 w-4" />
+                        <FaGithub className="h-4 w-4" />
                         View Source Code
                       </Button>
                     </Link>

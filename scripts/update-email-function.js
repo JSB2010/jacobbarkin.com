@@ -2,9 +2,9 @@
 const { Client, Functions } = require('node-appwrite');
 const fs = require('fs');
 const path = require('path');
-const archiver = require('archiver');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
+const execFile = promisify(require('child_process').execFile);
 
 // Appwrite configuration - load from environment variables
 require('dotenv').config({ path: '.env.local' });
@@ -35,35 +35,14 @@ async function createFunctionZip() {
   const sourceDir = path.join(__dirname, '../functions/email-notification-updated');
   const outputFile = path.join(__dirname, '../functions/email-notification-updated.zip');
 
-  // Create a file to stream archive data to
-  const output = fs.createWriteStream(outputFile);
-  const archive = archiver('zip', {
-    zlib: { level: 9 } // Sets the compression level
+  fs.rmSync(outputFile, { force: true });
+
+  await execFile('zip', ['-r', '-q', outputFile, '.'], {
+    cwd: sourceDir
   });
 
-  // Listen for all archive data to be written
-  const closePromise = new Promise((resolve, reject) => {
-    output.on('close', () => {
-      console.log(`Function zip created: ${archive.pointer()} total bytes`);
-      resolve(outputFile);
-    });
-
-    archive.on('error', (err) => {
-      reject(err);
-    });
-  });
-
-  // Pipe archive data to the file
-  archive.pipe(output);
-
-  // Add the source directory contents to the archive
-  archive.directory(sourceDir, false);
-
-  // Finalize the archive
-  await archive.finalize();
-
-  // Wait for the archive to be written
-  return closePromise;
+  console.log(`Function zip created: ${fs.statSync(outputFile).size} total bytes`);
+  return outputFile;
 }
 
 // Function to update the email notification function
@@ -71,16 +50,6 @@ async function updateFunction() {
   console.log('Updating email notification function...');
 
   try {
-    // Install required dependencies
-    console.log('Installing required dependencies...');
-    try {
-      await exec('npm install archiver --no-save');
-      console.log('Dependencies installed.');
-    } catch (error) {
-      console.error('Error installing dependencies:', error);
-      throw error;
-    }
-
     // Create function zip file
     const zipFile = await createFunctionZip();
 

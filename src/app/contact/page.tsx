@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ContactFormCloudflare } from "@/components/contact/contact-form-cloudflare";
-import { Mail, Github, Linkedin } from "lucide-react";
+import { Mail } from "lucide-react";
+import { FaGithub, FaLinkedinIn } from "react-icons/fa6";
 import { LazyLoad } from "@/components/ui/lazy-load";
 import { PageHero } from "@/components/ui/page-hero";
 
@@ -87,7 +88,7 @@ export default function ContactPage() {
                   />
 
                   <ContactCard
-                    icon={<Linkedin className="h-6 w-6" />}
+                    icon={<FaLinkedinIn className="h-6 w-6" />}
                     title="LinkedIn"
                     description="Connect with me professionally and stay updated on my career journey."
                     actionText="Connect on LinkedIn"
@@ -96,7 +97,7 @@ export default function ContactPage() {
                   />
 
                   <ContactCard
-                    icon={<Github className="h-6 w-6" />}
+                    icon={<FaGithub className="h-6 w-6" />}
                     title="GitHub"
                     description="Check out my code repositories and development projects."
                     actionText="Follow on GitHub"

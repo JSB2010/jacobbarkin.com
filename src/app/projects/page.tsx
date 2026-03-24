@@ -2,7 +2,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Github } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import { ProjectCard as GitHubProjectCard } from "@/components/project-card";
 import { fetchUserRepositories, transformRepoToProjectCard } from "@/lib/github";
 
@@ -224,7 +225,7 @@ export default async function ProjectsPage() {
                 className="border-primary/20 hover:bg-primary/5 text-xs sm:text-sm h-9 sm:h-10 mt-3 md:mt-0"
               >
                 <Link href="https://github.com/JSB2010" target="_blank" rel="noopener noreferrer">
-                  <Github className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  <FaGithub className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                   View All Repositories
                 </Link>
               </Button>
@@ -240,7 +241,7 @@ export default async function ProjectsPage() {
               <div className="text-center py-10">
                 <div className="bg-card rounded-xl p-12 shadow-md text-center">
                   <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Github className="h-10 w-10 text-primary" />
+                    <FaGithub className="h-10 w-10 text-primary" />
                   </div>
                   <h2 className="text-2xl font-bold mb-4">GitHub Repositories</h2>
                   <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -248,7 +249,7 @@ export default async function ProjectsPage() {
                   </p>
                   <Button asChild size="lg">
                     <Link href="https://github.com/JSB2010" target="_blank" rel="noopener noreferrer">
-                      <Github className="mr-2 h-5 w-5" />
+                      <FaGithub className="mr-2 h-5 w-5" />
                       Visit My GitHub
                     </Link>
                   </Button>
@@ -336,7 +337,7 @@ function ProjectCard({ project }: Readonly<{ project: FeaturedProject }>) {
 
           {project.github && (
             <div className="flex items-center text-xs sm:text-sm text-muted-foreground mt-auto">
-              <Github className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <FaGithub className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>View on GitHub</span>
             </div>
           )}

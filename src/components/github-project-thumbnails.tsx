@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MovingBorder } from "@/components/ui/aceternity/moving-border";
-import { Github } from "lucide-react";
+import { FaGithub } from "react-icons/fa6";
 import { LanguageImage } from "@/components/language-images";
 
 // Generate a unique hash from a string
@@ -147,7 +147,7 @@ export function GitHubProjectThumbnail({
 
       {/* GitHub icon overlay in top right */}
       <div className="absolute top-4 right-4 bg-black/40 dark:bg-black/60 p-2 rounded-full backdrop-blur-sm shadow-sm z-10">
-        <Github className="h-4 w-4 text-white" />
+        <FaGithub className="h-4 w-4 text-white" />
       </div>
 
       {/* Language indicator in bottom left */}
@@ -159,5 +159,4 @@ export function GitHubProjectThumbnail({
     </div>
   );
 }
-
 
