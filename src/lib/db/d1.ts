@@ -20,6 +20,15 @@ interface CloudflareEnv {
 let localDb: D1Database | null = null;
 let localDbInitError: Error | null = null;
 
+const importOptionalModule = <T = unknown>(specifier: string): Promise<T> => {
+  const dynamicImport = new Function(
+    "moduleSpecifier",
+    "return import(moduleSpecifier);",
+  ) as (moduleSpecifier: string) => Promise<T>;
+
+  return dynamicImport(specifier);
+};
+
 class LocalPreparedStatement implements D1PreparedStatement {
   private stmt: {
     get: (...values: unknown[]) => unknown;
@@ -77,7 +86,7 @@ async function getLocalD1Database(): Promise<D1Database | null> {
     let Database: LocalDatabaseConstructor | null = null;
 
     try {
-      const sqliteModule = await import("node:sqlite");
+      const sqliteModule = await importOptionalModule<{ DatabaseSync?: unknown }>("node:sqlite");
       const DatabaseSync = (sqliteModule as { DatabaseSync?: unknown }).DatabaseSync;
       if (DatabaseSync) {
         Database = DatabaseSync as LocalDatabaseConstructor;
@@ -88,7 +97,7 @@ async function getLocalD1Database(): Promise<D1Database | null> {
 
     if (!Database) {
       try {
-        const sqliteModule = await import("better-sqlite3");
+        const sqliteModule = await importOptionalModule<{ default?: unknown }>("better-sqlite3");
         const defaultExport = (sqliteModule as { default?: unknown }).default ?? sqliteModule;
         Database = defaultExport as LocalDatabaseConstructor;
       } catch {
