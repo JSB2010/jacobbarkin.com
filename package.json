@@ -9,7 +9,7 @@
     "dev:no-turbo": "bun run d1:pull && NEXT_DEV_USE_LOCAL_D1=1 bun scripts/generate-embed-instructions.mjs && NEXT_DEV_USE_LOCAL_D1=1 node node_modules/next/dist/bin/next dev",
     "dev:no-pull:no-turbo": "NEXT_DEV_USE_LOCAL_D1=1 bun scripts/generate-embed-instructions.mjs && NEXT_DEV_USE_LOCAL_D1=1 node node_modules/next/dist/bin/next dev",
     "clean": "rm -rf .next .open-next out",
-    "build": "bun scripts/generate-embed-instructions.mjs && next build",
+    "build": "bun scripts/generate-embed-instructions.mjs && next build --webpack",
     "build:worker": "bun scripts/generate-embed-instructions.mjs && opennextjs-cloudflare build",
     "build:cf": "bun run build:worker",
     "start": "next start",
