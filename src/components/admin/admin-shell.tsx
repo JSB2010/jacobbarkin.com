@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useClerk, useUser } from "@clerk/nextjs";
 import type { LucideIcon } from "lucide-react";
-import { Code2, LogOut, MessageSquare } from "lucide-react";
+import { Code2, LogOut, MessageSquare, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -29,6 +29,12 @@ const adminNavItems: AdminNavItem[] = [
     label: "Embed Intelligence",
     icon: Code2,
     isActive: (pathname) => pathname.startsWith("/admin/embed-analytics"),
+  },
+  {
+    href: "/admin/account",
+    label: "Account Security",
+    icon: ShieldCheck,
+    isActive: (pathname) => pathname.startsWith("/admin/account"),
   },
 ];
 
@@ -84,6 +90,8 @@ export function AdminShell({ title, description, icon: Icon, actions, children }
 
               <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg">
                 <UserButton
+                  userProfileMode="navigation"
+                  userProfileUrl="/admin/account"
                   appearance={{
                     elements: {
                       avatarBox: "w-9 h-9",
@@ -98,6 +106,8 @@ export function AdminShell({ title, description, icon: Icon, actions, children }
 
               <div className="sm:hidden">
                 <UserButton
+                  userProfileMode="navigation"
+                  userProfileUrl="/admin/account"
                   appearance={{
                     elements: {
                       avatarBox: "w-10 h-10",

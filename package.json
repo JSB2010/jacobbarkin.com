@@ -22,6 +22,7 @@
     "dev:remote": "bun run build:worker && bunx wrangler dev --remote",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "typecheck": "next typegen && tsc --project tsconfig.typecheck.json --noEmit --incremental false",
+    "test:admin-account-access": "node scripts/test-admin-account-access.js",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "optimize-images": "bun scripts/optimize-images.js",
     "optimize-all-images": "bun scripts/optimize-all-images.js",
