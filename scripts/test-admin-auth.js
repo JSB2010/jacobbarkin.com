@@ -7,6 +7,7 @@ const adminAuthPath = join(root, "src/lib/admin/auth.ts");
 const adminLayoutPath = join(root, "src/app/admin/layout.tsx");
 const accountPagePath = join(root, "src/app/admin/account/[[...account]]/page.tsx");
 const packageJsonPath = join(root, "package.json");
+const nextConfigPath = join(root, "next.config.mjs");
 
 function assert(condition, message) {
   if (!condition) {
@@ -23,6 +24,7 @@ const adminShell = readFileSync(adminShellPath, "utf8");
 const adminAuth = readFileSync(adminAuthPath, "utf8");
 const adminLayout = readFileSync(adminLayoutPath, "utf8");
 const packageJson = readFileSync(packageJsonPath, "utf8");
+const nextConfig = readFileSync(nextConfigPath, "utf8");
 
 assert(
   !adminShell.includes('href: "/admin/account"') && !adminShell.includes('userProfileUrl="/admin/account"'),
@@ -45,5 +47,7 @@ assert(!adminAuth.includes("currentUser"), "Admin auth helper should treat signe
 assert(adminLayout.includes("getAdminAuth") && !adminLayout.includes("notFound"), "Admin layout must only require a signed-in Clerk user");
 assert(packageJson.includes("test:admin-auth"), "Package scripts must expose the admin auth regression check");
 assert(!packageJson.includes("test:admin-account-access"), "Old embedded account regression script should be removed");
+assert(nextConfig.includes("https://clerk.jacobbarkin.com"), "CSP must allow the production Clerk FAPI domain");
+assert(nextConfig.includes("https://challenges.cloudflare.com"), "CSP must allow Clerk bot-protection challenges");
 
 console.log("Admin auth, account portal, and sign-out wiring look correct.");
