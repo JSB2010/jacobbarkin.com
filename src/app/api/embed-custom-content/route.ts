@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getD1Database } from '@/lib/db/d1';
-import { auth } from '@clerk/nextjs/server';
+import { requireAdmin } from '@/lib/admin/auth';
 
 // CORS headers for public GET endpoint
 const corsHeaders = {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Admin endpoint: list all rules
     if (listAll) {
-      const { userId } = await auth();
+      const userId = await requireAdmin();
       
       if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new custom content rule (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await requireAdmin();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
 // PUT - Update custom content rule (admin only)
 export async function PUT(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await requireAdmin();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -302,7 +302,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Remove custom content rule (admin only)
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userId = await requireAdmin();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

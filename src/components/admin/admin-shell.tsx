@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { UserButton, useClerk, useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 import type { LucideIcon } from "lucide-react";
-import { Code2, LogOut, MessageSquare, ShieldCheck } from "lucide-react";
+import { Code2, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+const ACCOUNT_PORTAL_USER_URL =
+  "https://accounts.jacobbarkin.com/user?redirect_url=https%3A%2F%2Fjacobbarkin.com%2Fadmin%2Fdashboard";
 
 type AdminNavItem = {
   href: string;
@@ -30,12 +33,6 @@ const adminNavItems: AdminNavItem[] = [
     icon: Code2,
     isActive: (pathname) => pathname.startsWith("/admin/embed-analytics"),
   },
-  {
-    href: "/admin/account",
-    label: "Account Security",
-    icon: ShieldCheck,
-    isActive: (pathname) => pathname.startsWith("/admin/account"),
-  },
 ];
 
 type AdminShellProps = {
@@ -48,25 +45,6 @@ type AdminShellProps = {
 
 export function AdminShell({ title, description, icon: Icon, actions, children }: AdminShellProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user } = useUser();
-  const { signOut } = useClerk();
-  const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const displayName = user?.fullName || user?.primaryEmailAddress?.emailAddress || "Administrator";
-
-  const handleSignOut = async () => {
-    if (isSigningOut) return;
-    setIsSigningOut(true);
-    try {
-      await signOut({ redirectUrl: "/" });
-    } catch (error) {
-      console.error("Sign out failed:", error);
-      router.push("/sign-in");
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,47 +63,23 @@ export function AdminShell({ title, description, icon: Icon, actions, children }
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 justify-between lg:justify-end">
+            <div className="flex flex-wrap items-center gap-3 justify-between lg:ml-auto lg:justify-end">
               {actions}
 
-              <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg">
+              <div className="ml-auto rounded-md border bg-background px-3 py-2 shadow-xs">
                 <UserButton
+                  showName
                   userProfileMode="navigation"
-                  userProfileUrl="/admin/account"
+                  userProfileUrl={ACCOUNT_PORTAL_USER_URL}
                   appearance={{
                     elements: {
-                      avatarBox: "w-9 h-9",
-                    },
-                  }}
-                />
-                <div className="text-sm">
-                  <p className="font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">Administrator</p>
-                </div>
-              </div>
-
-              <div className="sm:hidden">
-                <UserButton
-                  userProfileMode="navigation"
-                  userProfileUrl="/admin/account"
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-10 h-10",
+                      userButtonBox: "gap-3",
+                      userButtonAvatarBox: "h-7 w-7",
+                      userButtonOuterIdentifier: "font-medium text-foreground max-w-48 truncate",
                     },
                   }}
                 />
               </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
             </div>
           </div>
         </div>

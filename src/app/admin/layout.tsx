@@ -1,7 +1,7 @@
 import { Metadata } from "next";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Toaster } from "@/components/ui/toaster";
+import { getAdminAuth } from "@/lib/admin/auth";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | Jacob Barkin",
@@ -17,10 +17,10 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId } = await auth();
+  const admin = await getAdminAuth();
 
   // Redirect to sign-in if not authenticated
-  if (!userId) {
+  if (!admin.userId) {
     redirect("/sign-in");
   }
 

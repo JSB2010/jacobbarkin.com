@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { requireAdmin } from "@/lib/admin/auth";
 import { getD1Database } from "@/lib/db/d1";
 import {
   buildSessionFingerprint,
@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
 
 // GET - Retrieve heartbeat summary (admin only)
 export async function GET(request: NextRequest) {
-  const { userId } = await auth();
+  const userId = await requireAdmin();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,11 +1,10 @@
 import type { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 
+import { requireAdmin as requireConfiguredAdmin } from "@/lib/admin/auth";
 import type { D1Database } from "@/lib/db/d1";
 
 export async function requireAdmin() {
-  const { userId } = await auth();
-  return userId;
+  return requireConfiguredAdmin();
 }
 
 export function getReportFilters(request: NextRequest) {

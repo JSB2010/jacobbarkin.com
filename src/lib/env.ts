@@ -31,9 +31,6 @@ const serverEnvSchema = z.object({
   // Resend email configuration
   RESEND_API_KEY: z.string().optional(),
 
-  // Admin configuration
-  ADMIN_EMAIL: z.string().email().default('jacobsamuelbarkin@gmail.com'),
-
   // GitHub configuration
   GITHUB_TOKEN: z.string().optional(),
 });
@@ -69,7 +66,6 @@ const processServerEnv = () => {
   const serverEnv = {
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
   };
 
