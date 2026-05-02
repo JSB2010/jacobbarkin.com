@@ -4,13 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
-import { ProjectCard as GitHubProjectCard } from "@/components/project-card";
-import { fetchUserRepositories, transformRepoToProjectCard } from "@/lib/github";
 
 import { ResponsiveImage } from "@/components/ui/responsive-image";
 import { LazyLoad } from "@/components/ui/lazy-load";
 import { PageHero } from "@/components/ui/page-hero";
 import { ProjectThumbnail, ProjectThumbnailType } from "@/components/project-thumbnails";
+import { GitHubProjectsSection } from "@/components/projects/github-projects-section";
 
 import "./projects-fixed.css";
 
@@ -127,14 +126,6 @@ export default async function ProjectsPage() {
   const featuredProjects = projects.filter(project => project.featured);
   const otherProjects = projects.filter(project => !project.featured);
 
-  // Fetch GitHub repositories
-  const repos = await fetchUserRepositories();
-
-  // Transform GitHub repos to project cards
-  const githubProjects = repos
-    .filter(repo => !repo.fork && !repo.archived) // Filter out forks and archived repos
-    .map(transformRepoToProjectCard);
-
   return (
     <>
       {/* Hero Section */}
@@ -211,53 +202,7 @@ export default async function ProjectsPage() {
 
       {/* GitHub Projects */}
       <LazyLoad>
-        <section className="py-10 sm:py-14 md:py-20">
-          <div className="container px-4 sm:px-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 mb-8 sm:mb-10 md:mb-12">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold">GitHub Projects</h2>
-                <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Open source contributions and personal repositories</p>
-              </div>
-
-              <Button
-                asChild
-                variant="outline"
-                className="border-primary/20 hover:bg-primary/5 text-xs sm:text-sm h-9 sm:h-10 mt-3 md:mt-0"
-              >
-                <Link href="https://github.com/JSB2010" target="_blank" rel="noopener noreferrer">
-                  <FaGithub className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                  View All Repositories
-                </Link>
-              </Button>
-            </div>
-
-            {githubProjects.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                {githubProjects.map((project) => (
-                  <GitHubProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <div className="bg-card rounded-xl p-12 shadow-md text-center">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FaGithub className="h-10 w-10 text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-4">GitHub Repositories</h2>
-                  <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-                    We couldn&apos;t fetch your GitHub repositories at this time. Please check back later.
-                  </p>
-                  <Button asChild size="lg">
-                    <Link href="https://github.com/JSB2010" target="_blank" rel="noopener noreferrer">
-                      <FaGithub className="mr-2 h-5 w-5" />
-                      Visit My GitHub
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        <GitHubProjectsSection />
       </LazyLoad>
     </>
   );

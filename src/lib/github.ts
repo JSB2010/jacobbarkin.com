@@ -109,7 +109,7 @@ export function transformRepoToProjectCard(repo: GitHubRepo): ProjectCard {
     description: repo.description,
     image: generateRepoImage(repo),
     language: repo.language,
-    url: repo.homepage ?? repo.html_url,
+    url: repo.homepage?.trim() ? repo.homepage : repo.html_url,
     githubUrl: repo.html_url,
     stars: repo.stargazers_count,
     forks: repo.forks_count,

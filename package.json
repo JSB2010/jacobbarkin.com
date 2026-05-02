@@ -23,6 +23,7 @@
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "typecheck": "next typegen && tsc --project tsconfig.typecheck.json --noEmit --incremental false",
     "test:admin-auth": "node scripts/test-admin-auth.js",
+    "test:projects-github": "node scripts/test-projects-github.js",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "optimize-images": "bun scripts/optimize-images.js",
     "optimize-all-images": "bun scripts/optimize-all-images.js",
