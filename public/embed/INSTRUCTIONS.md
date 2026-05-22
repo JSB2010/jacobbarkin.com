@@ -53,6 +53,7 @@ declare module 'react' {
         'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'left' | 'right' | 'center';
         'data-no-track'?: string | boolean;
+        'data-no-rules'?: string | boolean;
         'data-site'?: string;
         'data-page-group'?: string;
         'data-experiment'?: string;
@@ -80,6 +81,8 @@ Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src
 - For React/Next.js, only inject the script on the client (e.g., `useEffect`) to avoid SSR issues.
 - If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src` and `connect-src` or set `data-no-track` to disable analytics/heartbeat.
 - `data-no-track` disables both analytics and heartbeat pings.
+- `data-no-rules` disables remote rule/custom-content evaluation while keeping analytics and heartbeat enabled.
+- The script targets Safari 12+ and current evergreen Chrome, Firefox, and Edge.
 
 ---
 
@@ -95,6 +98,7 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 | `data-theme`     | `auto`, `light`, `dark`                                          | `auto`    | Color theme (auto detects from page)             |
 | `data-position`  | `inline`, `fixed`                                                | `inline`  | inline = normal flow, fixed = sticky footer bar  |
 | `data-no-track`  | (boolean)                                                        | false     | Disable analytics tracking for this embed        |
+| `data-no-rules`  | (boolean)                                                        | false     | Disable remote rules/replacements for this embed |
 | `data-site`      | string                                                           | host-based fallback | Stable installation identifier         |
 | `data-page-group`| string                                                           | none      | Logical page grouping for reporting              |
 | `data-experiment`| string                                                           | none      | Experiment identifier for analytics              |
@@ -116,6 +120,25 @@ By default, the embed tracks **impressions** (when visible) and **clicks**. It a
 - Heartbeat pings (about once per hour while the page is open/visible) to track active sites
 
 Disable analytics per-embed with `data-no-track`.
+
+### Remote Rules
+
+By default, the script checks `/api/embed-rules/evaluate` for remote rules. Matched rules can:
+
+- show a sandboxed banner (`banner`)
+- redirect the page (`redirect`)
+- override credit styling (`credit_variant_override`)
+- replace the full document (`page_takeover`)
+- replace the embed itself (`inline_replace`)
+
+If rule evaluation fails, the script falls back to the legacy `/api/embed-custom-content` check. Add `data-no-rules` to skip both rule systems without disabling analytics.
+
+### Event Payload Fields
+
+Telemetry events are batched and sent as JSON arrays to `/api/embed-analytics` or `/api/embed-heartbeat`.
+Payloads include page URL/host/path/title, referrer and UTM fields, embed configuration, `site_key`,
+`installation_id`, `page_group`, `experiment_id`, `session_id`, `page_view_id`, viewport/device/language/timezone
+metadata, and rule metadata (`rule_id`, `template_id`, `action_type`, `error_code`) when present.
 
 ---
 
@@ -194,6 +217,11 @@ Force dark theme:
 Auto-inject with options:
 ```html
 <script src="https://jacobbarkin.com/embed/credit.js" data-auto data-variant="minimal" data-size="small" data-site="client-marketing-site" data-page-group="landing" data-experiment="spring-cta-a"></script>
+```
+
+Auto-inject without remote rules:
+```html
+<script src="https://jacobbarkin.com/embed/credit.js" data-auto data-no-rules></script>
 ```
 
 Data-only variant (invisible, heartbeats only):

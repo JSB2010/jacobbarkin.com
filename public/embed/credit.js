@@ -22,6 +22,7 @@
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
  *   data-no-track - Disable analytics tracking
+ *   data-no-rules - Disable remote rule/custom-content evaluation only
  *   data-site - Stable installation identifier
  *   data-page-group - Logical reporting group for this page
  *   data-experiment - Experiment identifier for analytics
@@ -36,10 +37,10 @@
   'use strict';
 
   const currentScript = document.currentScript;
-  const autoInject = currentScript?.hasAttribute('data-auto');
+  const autoInject = currentScript && currentScript.hasAttribute('data-auto');
   const VERSION = '3.0.0';
   const DEFAULT_SITE_URL = 'https://jacobbarkin.com';
-  const scriptUrl = currentScript?.src ? new URL(currentScript.src, window.location.href) : null;
+  const scriptUrl = currentScript && currentScript.src ? new URL(currentScript.src, window.location.href) : null;
   const API_BASE = scriptUrl && scriptUrl.origin === window.location.origin ? scriptUrl.origin : (scriptUrl ? scriptUrl.origin : DEFAULT_SITE_URL);
   const SITE_URL = scriptUrl ? scriptUrl.origin : DEFAULT_SITE_URL;
 
@@ -94,6 +95,22 @@
     return source && source.getAttribute ? source.getAttribute(name) : null;
   }
 
+  function hasGlobalFlag(name) {
+    const source = getGlobalEmbedSource();
+    return Boolean(
+      (currentScript && currentScript.hasAttribute && currentScript.hasAttribute(name)) ||
+      (source && source.hasAttribute && source.hasAttribute(name))
+    );
+  }
+
+  function onReady(callback) {
+    if (document.body) {
+      callback();
+      return;
+    }
+    document.addEventListener('DOMContentLoaded', callback, { once: true });
+  }
+
   function isDebugEnabled(element) {
     return Boolean(
       (element && element.hasAttribute && element.hasAttribute('data-debug')) ||
@@ -106,6 +123,45 @@
     try {
       console.info('[jb-credit]', message, data || '');
     } catch {}
+  }
+
+  function replaceDocument(html) {
+    if (!html || !document.open || !document.write || !document.close) return false;
+    document.open();
+    document.write(html);
+    document.close();
+    return true;
+  }
+
+  function appendBanner(html) {
+    if (!html || !document.createElement) return false;
+    const frame = document.createElement('iframe');
+    frame.setAttribute('title', 'JB credit banner');
+    frame.setAttribute('sandbox', 'allow-same-origin');
+    frame.setAttribute('scrolling', 'no');
+    frame.style.position = 'fixed';
+    frame.style.top = '0';
+    frame.style.left = '0';
+    frame.style.width = '100%';
+    frame.style.height = '180px';
+    frame.style.border = '0';
+    frame.style.zIndex = '2147483647';
+    frame.srcdoc = html;
+    if (!document.body) {
+      onReady(() => {
+        if (document.body) document.body.appendChild(frame);
+      });
+      return true;
+    }
+    document.body.appendChild(frame);
+    return true;
+  }
+
+  function applyInlineReplacement(result, element) {
+    if (!element || !result.html) return false;
+    if (!element.shadowRoot) return false;
+    element.shadowRoot.innerHTML = result.html;
+    return true;
   }
 
   function applyRuleResult(result, element) {
@@ -125,27 +181,15 @@
     }
 
     if (result.html && result.action_type === 'banner') {
-      const frame = document.createElement('iframe');
-      frame.setAttribute('title', 'JB credit banner');
-      frame.setAttribute('sandbox', 'allow-same-origin');
-      frame.setAttribute('scrolling', 'no');
-      frame.style.position = 'fixed';
-      frame.style.top = '0';
-      frame.style.left = '0';
-      frame.style.width = '100%';
-      frame.style.height = '180px';
-      frame.style.border = '0';
-      frame.style.zIndex = '2147483647';
-      frame.srcdoc = result.html;
-      document.body.appendChild(frame);
-      return true;
+      return appendBanner(result.html);
     }
 
-    if (result.html) {
-      document.open();
-      document.write(result.html);
-      document.close();
-      return true;
+    if (result.html && result.action_type === 'inline_replace') {
+      return applyInlineReplacement(result, element);
+    }
+
+    if (result.html && result.action_type === 'page_takeover') {
+      return replaceDocument(result.html);
     }
 
     return false;
@@ -153,16 +197,18 @@
 
   // Check for rules-based replacement on page load.
   async function checkCustomContent() {
+    if (hasGlobalFlag('data-no-rules')) return false;
     try {
       const pageUrl = window.location.href;
       const pageHost = window.location.hostname;
       const pageParts = getUrlParts(pageUrl);
       const siteKey = getGlobalDataAttribute('data-site');
+      const referrerParts = getUrlParts(document.referrer || '');
+      const supportsAbort = typeof AbortController !== 'undefined';
+      const controller = supportsAbort ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-      
-      const response = await fetch(RULES_ENDPOINT, {
+      const fetchOptions = {
         method: 'POST',
         mode: 'cors',
         credentials: 'omit',
@@ -174,7 +220,7 @@
           host: pageHost,
           path: pageParts ? pageParts.path : '/',
           referrer: document.referrer || null,
-          referrer_host: getUrlParts(document.referrer || '')?.host || null,
+          referrer_host: referrerParts ? referrerParts.host : null,
           utm_source: pageParts ? pageParts.utm_source : null,
           utm_medium: pageParts ? pageParts.utm_medium : null,
           utm_campaign: pageParts ? pageParts.utm_campaign : null,
@@ -184,11 +230,12 @@
           site_key: siteKey,
           installation_id: deriveInstallationId(siteKey, pageHost),
           debug: currentScript && currentScript.hasAttribute('data-debug'),
-        }),
-        signal: controller.signal,
-      });
+        })
+      };
+      if (controller) fetchOptions.signal = controller.signal;
+      const response = await fetch(RULES_ENDPOINT, fetchOptions);
       
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (response.ok) {
         const result = await response.json();
@@ -202,12 +249,14 @@
           Analytics.flush(null);
           return true;
         }
-        Analytics.replacementSkipped(null, {
-          rule_id: result.rule_id || null,
-          template_id: result.template_id || null,
-          action_type: result.action_type || null,
-        });
-        Analytics.flush(null);
+        if (result && result.matched && result.action_type !== 'credit_variant_override' && result.action_type !== 'inline_replace') {
+          Analytics.replacementSkipped(null, {
+            rule_id: result.rule_id || null,
+            template_id: result.template_id || null,
+            action_type: result.action_type || null,
+          });
+          Analytics.flush(null);
+        }
         return false;
       }
     } catch (err) {
@@ -245,7 +294,7 @@
   (function runEarlyCheck() {
     // Check if custom content feature should run
     // Only run on pages where the script is actually embedded
-    if (document.currentScript || document.querySelector('jb-credit')) {
+    if (!hasGlobalFlag('data-no-rules') && (document.currentScript || document.querySelector('jb-credit'))) {
       // Run check asynchronously without blocking
       checkCustomContent().catch(() => {
         // Errors are already handled in checkCustomContent
@@ -314,8 +363,10 @@
     const state = window.__jbHeartbeat || {
       element: null,
       timer: null,
+      startTimer: null,
       initialized: false,
       visibilityBound: false,
+      visibilityHandler: null,
     };
 
     state.element = element;
@@ -335,6 +386,10 @@
           clearInterval(state.timer);
           state.timer = null;
         }
+        if (state.startTimer) {
+          clearTimeout(state.startTimer);
+          state.startTimer = null;
+        }
         return;
       }
       if (document.visibilityState === 'hidden') return;
@@ -342,9 +397,10 @@
     };
 
     const init = () => {
-      if (state.timer) return;
+      if (state.timer || state.startTimer) return;
       const delay = 5000 + Math.floor(Math.random() * HEARTBEAT_JITTER_MS);
-      setTimeout(() => {
+      state.startTimer = setTimeout(() => {
+        state.startTimer = null;
         sendHeartbeat();
         state.timer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
       }, delay);
@@ -359,12 +415,33 @@
 
     if (!state.visibilityBound) {
       state.visibilityBound = true;
-      document.addEventListener('visibilitychange', () => {
+      state.visibilityHandler = () => {
         if (document.visibilityState === 'visible') {
           sendHeartbeat();
         }
-      });
+      };
+      document.addEventListener('visibilitychange', state.visibilityHandler);
     }
+  }
+
+  function releaseHeartbeat(element) {
+    const state = window.__jbHeartbeat;
+    if (!state || state.element !== element) return;
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+    if (state.startTimer) {
+      clearTimeout(state.startTimer);
+      state.startTimer = null;
+    }
+    if (state.visibilityBound && state.visibilityHandler && document.removeEventListener) {
+      document.removeEventListener('visibilitychange', state.visibilityHandler);
+    }
+    state.element = null;
+    state.initialized = false;
+    state.visibilityBound = false;
+    state.visibilityHandler = null;
   }
 
   // Analytics tracking (simplified for D1)
@@ -397,7 +474,7 @@
       Object.keys(batches).forEach((endpoint) => {
         const payload = JSON.stringify(batches[endpoint]);
         try {
-          if (navigator.sendBeacon) {
+          if (navigator && navigator.sendBeacon && typeof Blob !== 'undefined') {
             const blob = new Blob([payload], { type: 'application/json' });
             if (navigator.sendBeacon(endpoint, blob)) {
               debugLog(element, 'Flushed event batch', { endpoint, count: batches[endpoint].length });
@@ -420,7 +497,7 @@
 
     send(eventType, element, endpoint, extraData) {
       // Skip if tracking disabled
-      if (element?.hasAttribute('data-no-track')) return;
+      if (element && element.hasAttribute && element.hasAttribute('data-no-track')) return;
       if (!element && currentScript && currentScript.hasAttribute('data-no-track')) return;
 
       // Skip localhost/development
@@ -493,10 +570,14 @@
     Analytics.flush(null);
   });
 
-  class JBCredit extends HTMLElement {
+  const BaseHTMLElement = typeof HTMLElement !== 'undefined' ? HTMLElement : class {};
+
+  class JBCredit extends BaseHTMLElement {
     constructor() {
       super();
-      this.attachShadow({ mode: 'open' });
+      if (this.attachShadow) {
+        this.attachShadow({ mode: 'open' });
+      }
       this.animationFrame = null;
       this.gradientPosition = { x: 0, y: 0 };
       this.isHovered = false;
@@ -504,6 +585,10 @@
       this.impressionTracked = false;
       this.loadTracked = false;
       this.interactivityInitialized = false;
+      this.themeObserver = null;
+      this.mediaQueryList = null;
+      this.mediaQueryHandler = null;
+      this.interactionHandlers = [];
     }
 
     static get observedAttributes() {
@@ -513,10 +598,22 @@
     connectedCallback() {
       const renderStart = typeof performance !== 'undefined' ? performance.now() : Date.now();
       try {
-        if (window.__jbRuleEvaluation && window.__jbRuleEvaluation.matched) {
-          applyRuleResult(window.__jbRuleEvaluation, this);
+        let elementRuleApplied = false;
+        const ruleEvaluation = window.__jbRuleEvaluation;
+        if (ruleEvaluation && ruleEvaluation.matched &&
+            (ruleEvaluation.action_type === 'credit_variant_override' || ruleEvaluation.action_type === 'inline_replace')) {
+          elementRuleApplied = applyRuleResult(ruleEvaluation, this);
+          if (elementRuleApplied) {
+            Analytics.replacementApplied(this, {
+              rule_id: ruleEvaluation.rule_id || null,
+              template_id: ruleEvaluation.template_id || null,
+              action_type: ruleEvaluation.action_type || null,
+            });
+          }
         }
-        this.refresh();
+        if (!elementRuleApplied) {
+          this.refresh();
+        }
         if (!this.loadTracked && !this.hasAttribute('data-no-track')) {
           this.loadTracked = true;
           Analytics.load(this, {
@@ -568,7 +665,7 @@
       }
 
       // Track clicks
-      const chip = this.shadowRoot?.querySelector('.jb-credit-chip');
+      const chip = this.shadowRoot ? this.shadowRoot.querySelector('.jb-credit-chip') : null;
       if (chip && !chip.__jbClickBound) {
         chip.__jbClickBound = true;
         chip.addEventListener('click', () => {
@@ -582,6 +679,16 @@
     disconnectedCallback() {
       if (this.themeObserver) {
         this.themeObserver.disconnect();
+        this.themeObserver = null;
+      }
+      if (this.mediaQueryList && this.mediaQueryHandler) {
+        if (this.mediaQueryList.removeEventListener) {
+          this.mediaQueryList.removeEventListener('change', this.mediaQueryHandler);
+        } else if (this.mediaQueryList.removeListener) {
+          this.mediaQueryList.removeListener(this.mediaQueryHandler);
+        }
+        this.mediaQueryList = null;
+        this.mediaQueryHandler = null;
       }
       if (this.impressionObserver) {
         this.impressionObserver.disconnect();
@@ -589,7 +696,20 @@
       }
       if (this.animationFrame) {
         cancelAnimationFrame(this.animationFrame);
+        this.animationFrame = null;
       }
+      this.removeInteractionHandlers();
+      this.interactivityInitialized = false;
+      releaseHeartbeat(this);
+    }
+
+    removeInteractionHandlers() {
+      this.interactionHandlers.forEach((binding) => {
+        if (binding.target && binding.target.removeEventListener) {
+          binding.target.removeEventListener(binding.type, binding.handler);
+        }
+      });
+      this.interactionHandlers = [];
     }
 
     attributeChangedCallback() {
@@ -603,10 +723,13 @@
       const html = document.documentElement;
       const body = document.body;
 
-      if (html.classList.contains('dark') || body.classList.contains('dark') ||
-          html.getAttribute('data-theme') === 'dark' ||
-          body.getAttribute('data-theme') === 'dark' ||
-          html.getAttribute('data-mode') === 'dark') {
+      const htmlClassList = html && html.classList;
+      const bodyClassList = body && body.classList;
+      if ((htmlClassList && htmlClassList.contains && htmlClassList.contains('dark')) ||
+          (bodyClassList && bodyClassList.contains && bodyClassList.contains('dark')) ||
+          (html && html.getAttribute && html.getAttribute('data-theme') === 'dark') ||
+          (body && body.getAttribute && body.getAttribute('data-theme') === 'dark') ||
+          (html && html.getAttribute && html.getAttribute('data-mode') === 'dark')) {
         return 'dark';
       }
 
@@ -626,26 +749,36 @@
     }
 
     setupThemeObserver() {
+      if (this.themeObserver || typeof MutationObserver === 'undefined') return;
       this.themeObserver = new MutationObserver(() => {
         this.refresh();
       });
 
-      this.themeObserver.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class', 'data-theme', 'data-mode']
-      });
+      if (document.documentElement) {
+        this.themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class', 'data-theme', 'data-mode']
+        });
+      }
 
       if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+        this.mediaQueryHandler = () => {
           if (this.getAttribute('data-theme') === 'auto' || !this.getAttribute('data-theme')) {
             this.refresh();
           }
-        });
+        };
+        if (this.mediaQueryList.addEventListener) {
+          this.mediaQueryList.addEventListener('change', this.mediaQueryHandler);
+        } else if (this.mediaQueryList.addListener) {
+          this.mediaQueryList.addListener(this.mediaQueryHandler);
+        }
       }
     }
 
     setupInteractivity() {
       if (this.interactivityInitialized) return;
+      if (!this.shadowRoot) return;
       const chip = this.shadowRoot.querySelector('.jb-credit-chip');
       const glowBg = this.shadowRoot.querySelector('.glow-bg');
 
@@ -657,26 +790,35 @@
       const glowColor = isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(59, 130, 246, 0.35)';
 
       // Mouse move for glow follow effect on the chip
-      chip.addEventListener('mousemove', (e) => {
+      const mouseMoveHandler = (e) => {
         const rect = chip.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
         // Immediate update, no transition on the background itself
         glowBg.style.background = `radial-gradient(80px circle at ${x}px ${y}px, ${glowColor}, transparent 70%)`;
-      });
+      };
 
-      chip.addEventListener('mouseleave', () => {
+      const mouseLeaveHandler = () => {
         glowBg.style.background = 'transparent';
-      });
+      };
+
+      chip.addEventListener('mousemove', mouseMoveHandler);
+      chip.addEventListener('mouseleave', mouseLeaveHandler);
+      this.interactionHandlers.push({ target: chip, type: 'mousemove', handler: mouseMoveHandler });
+      this.interactionHandlers.push({ target: chip, type: 'mouseleave', handler: mouseLeaveHandler });
     }
 
     refresh() {
+      this.removeInteractionHandlers();
+      this.interactivityInitialized = false;
       this.render();
       const chip = this.shadowRoot && this.shadowRoot.querySelector('.jb-credit-chip');
       if (chip && !chip.__jbInteractivityDeferred) {
         chip.__jbInteractivityDeferred = true;
-        chip.addEventListener('pointerenter', () => this.setupInteractivity(), { once: true });
+        const pointerEnterHandler = () => this.setupInteractivity();
+        chip.addEventListener('pointerenter', pointerEnterHandler, { once: true });
+        this.interactionHandlers.push({ target: chip, type: 'pointerenter', handler: pointerEnterHandler });
       }
       this.setupTracking();
     }
@@ -1033,7 +1175,7 @@
 
       // Data-only variant: completely invisible, no UI
       if (variant === 'data-only') {
-        this.shadowRoot.innerHTML = `
+        const dataOnlyHtml = `
           <style>
             :host {
               display: none !important;
@@ -1043,6 +1185,12 @@
             }
           </style>
         `;
+        if (this.shadowRoot) {
+          this.shadowRoot.innerHTML = dataOnlyHtml;
+        } else {
+          this.innerHTML = '';
+          this.style.display = 'none';
+        }
         return;
       }
 
@@ -1053,7 +1201,7 @@
       // Show text for most variants (not logo-only)
       const showText = variant !== 'logo';
 
-      this.shadowRoot.innerHTML = `
+      const html = `
         <style>${this.getStyles(theme, position, align, variant, size)}</style>
         <div class="jb-credit-wrapper" role="contentinfo" aria-label="Site designed by Jacob Barkin">
           <a href="${SITE_URL}" target="_blank" rel="noopener noreferrer" class="jb-credit-chip" title="Visit Jacob Barkin's website">
@@ -1067,22 +1215,27 @@
           </a>
         </div>
       `;
+      if (this.shadowRoot) {
+        this.shadowRoot.innerHTML = html;
+      } else {
+        this.innerHTML = `<a href="${SITE_URL}" target="_blank" rel="noopener noreferrer">Designed by Jacob Barkin</a>`;
+      }
     }
   }
 
   // Register the custom element
-  if (!customElements.get('jb-credit')) {
+  if (typeof customElements !== 'undefined' && customElements.define && !customElements.get('jb-credit')) {
     customElements.define('jb-credit', JBCredit);
   }
 
   // Auto-inject if data-auto attribute is present
   if (autoInject) {
-    document.addEventListener('DOMContentLoaded', () => {
+    onReady(() => {
       const credit = document.createElement('jb-credit');
       credit.setAttribute('data-auto', '');
 
       // Copy attributes from script tag
-      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track', 'data-site', 'data-page-group', 'data-experiment', 'data-debug'];
+      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-no-track', 'data-no-rules', 'data-site', 'data-page-group', 'data-experiment', 'data-debug'];
       attrs.forEach(attr => {
         if (currentScript.hasAttribute(attr)) {
           credit.setAttribute(attr, currentScript.getAttribute(attr));
@@ -1096,7 +1249,8 @@
   // Expose version
   window.JBCredit = {
     version: VERSION,
-    element: JBCredit
+    element: JBCredit,
+    analytics: Analytics
   };
 
 })();

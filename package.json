@@ -35,6 +35,7 @@
     "test:health": "bun scripts/test-health-endpoint.js",
     "test:health:prod": "bun scripts/test-health-endpoint.js https://jacobbarkin.com/api/healthz",
     "optimize-dependencies": "bun scripts/optimize-dependencies.js",
+    "test:embed": "node scripts/test-embed-credit.js",
     "security-scan": "bun audit && bun run lint",
     "analyze-bundle": "ANALYZE=true bun run build"
   },
