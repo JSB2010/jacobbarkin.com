@@ -33,6 +33,10 @@ const serverEnvSchema = z.object({
 
   // GitHub configuration
   GITHUB_TOKEN: z.string().optional(),
+
+  // Gemini HTML generation
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
 });
 
 // Process client-side environment variables
@@ -67,6 +71,8 @@ const processServerEnv = () => {
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
   };
 
   try {

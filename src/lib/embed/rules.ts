@@ -66,12 +66,10 @@ function matchesConditions(conditions: EmbedRuleConditionSet, context: EmbedRule
 }
 
 async function resolveTemplate(db: D1Database, templateId: string | null) {
-  const systemTemplate = getSystemTemplateById(templateId);
-  if (systemTemplate) return systemTemplate;
   if (!templateId) return null;
-  return (
-    await db.prepare(`SELECT * FROM embed_templates WHERE id = ? LIMIT 1`).bind(templateId).first<EmbedTemplate>()
-  ) || null;
+  const customTemplate = await db.prepare(`SELECT * FROM embed_templates WHERE id = ? LIMIT 1`).bind(templateId).first<EmbedTemplate>();
+  if (customTemplate) return customTemplate;
+  return getSystemTemplateById(templateId);
 }
 
 export async function listRules(db: D1Database) {

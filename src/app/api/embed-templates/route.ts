@@ -20,8 +20,14 @@ export async function GET() {
     `SELECT * FROM embed_templates ORDER BY is_system DESC, updated_at DESC`
   ).all();
 
+  const dbById = new Map((dbTemplates.results || []).map((template) => [(template as { id: string }).id, template]));
   const merged = [
-    ...SYSTEM_TEMPLATES,
+    ...SYSTEM_TEMPLATES.map((systemTemplate) => ({
+      ...systemTemplate,
+      ...(dbById.get(systemTemplate.id) || {}),
+      id: systemTemplate.id,
+      is_system: 1,
+    })),
     ...((dbTemplates.results || []).filter((template) => !SYSTEM_TEMPLATES.some((system) => system.id === (template as { id: string }).id))),
   ];
 

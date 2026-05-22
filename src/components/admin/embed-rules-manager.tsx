@@ -1,8 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Code2, Eye, FilePlus2, Pencil, PlayCircle, Plus, Save, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Code2,
+  Copy,
+  Eye,
+  FilePlus2,
+  Filter,
+  Globe,
+  Layers3,
+  LayoutTemplate,
+  Pencil,
+  PlayCircle,
+  Plus,
+  Save,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +36,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,9 +45,11 @@ type Template = {
   name: string;
   category: string;
   description: string | null;
+  schema_json: string | null;
   render_mode: string;
   config_json: string | null;
   html_shell: string | null;
+  css_theme: string | null;
   is_system: number;
   version: number;
 };
@@ -47,10 +74,25 @@ type Rule = {
   errors?: number;
 };
 
+type SiteOption = {
+  installation_id: string;
+  site_key: string | null;
+  page_host: string;
+  label: string | null;
+  last_page_url: string | null;
+};
+
+type TargetMode = "known_site" | "domain" | "exact_url" | "path_prefix";
+
+type RuleTargetDraft = {
+  mode: TargetMode;
+  knownSiteHost: string;
+  domain: string;
+  exactUrl: string;
+  pathPrefix: string;
+};
+
 type RuleConditionDraft = {
-  exactUrls: string;
-  hosts: string;
-  pathPrefixes: string;
   pathRegex: string;
   queryContains: string;
   referrerHosts: string;
@@ -78,6 +120,29 @@ type RuleActionDraft = {
   legalText: string;
 };
 
+type TemplateDraft = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  schema_json: string;
+  render_mode: string;
+  html_shell: string;
+  css_theme: string;
+  config_json: string;
+  version: number;
+};
+
+type WizardStep = "target" | "content" | "review";
+type ContentMode = "template" | "custom_html" | "ai_html";
+type AiStyle = "jacob_barkin" | "none";
+type AiMessage = {
+  role: "user" | "assistant";
+  content: string;
+  html?: string;
+  notes?: string[];
+};
+
 const defaultRule: Rule = {
   id: "",
   name: "",
@@ -86,19 +151,24 @@ const defaultRule: Rule = {
   match_type: "conditions",
   conditions_json: "{}",
   action_type: "page_takeover",
-  template_id: "system:maintenance",
+  template_id: "system:enhanced-credit",
   unsafe_html: "",
-  config_json: "{}",
+  config_json: JSON.stringify({ surface: "takeover", title: "Custom template", body: "Template body" }, null, 2),
   rollout_percent: 100,
   start_at: "",
   end_at: "",
   notes: "",
 };
 
+const defaultTargetDraft: RuleTargetDraft = {
+  mode: "domain",
+  knownSiteHost: "",
+  domain: "",
+  exactUrl: "",
+  pathPrefix: "/",
+};
+
 const defaultConditionDraft: RuleConditionDraft = {
-  exactUrls: "",
-  hosts: "",
-  pathPrefixes: "",
   pathRegex: "",
   queryContains: "",
   referrerHosts: "",
@@ -114,26 +184,51 @@ const defaultConditionDraft: RuleConditionDraft = {
 
 const defaultActionDraft: RuleActionDraft = {
   redirectUrl: "",
-  creditVariant: "",
-  creditTheme: "",
-  creditSize: "",
-  creditAlign: "",
-  title: "Scheduled maintenance",
-  body: "We will be back shortly.",
-  accentLabel: "",
-  ctaLabel: "Status page",
-  ctaHref: "#",
+  creditVariant: "chip",
+  creditTheme: "auto",
+  creditSize: "md",
+  creditAlign: "center",
+  title: "Designed by Jacob Barkin",
+  body: "A focused credit card for product design, frontend systems, and polished delivery.",
+  accentLabel: "Credit",
+  ctaLabel: "View work",
+  ctaHref: "https://jacobbarkin.com/projects",
   legalText: "",
 };
 
-const defaultTemplate = {
+const defaultTemplate: TemplateDraft = {
+  id: "",
   name: "",
   category: "custom",
   description: "",
+  schema_json: JSON.stringify({ title: "string", body: "string" }, null, 2),
   render_mode: "unsafe_html",
   html_shell: "<!DOCTYPE html><html><body><main><h1>Custom template</h1></main></body></html>",
+  css_theme: "sky",
   config_json: "{}",
+  version: 1,
 };
+
+const actionLabels: Record<string, string> = {
+  banner: "Banner",
+  inline_replace: "Inline replace",
+  page_takeover: "Page takeover",
+  redirect: "Redirect",
+  credit_variant_override: "Credit style",
+};
+
+const targetModeLabels: Record<TargetMode, string> = {
+  known_site: "Known site",
+  domain: "Domain",
+  exact_url: "Exact URL",
+  path_prefix: "Path prefix",
+};
+
+const wizardSteps: { id: WizardStep; label: string; description: string }[] = [
+  { id: "target", label: "Target", description: "Choose domain and action" },
+  { id: "content", label: "Content", description: "Pick template or custom HTML" },
+  { id: "review", label: "Review", description: "Preview and save" },
+];
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -150,6 +245,10 @@ function safeParseObject(value: string | null) {
   } catch {
     return {};
   }
+}
+
+function stringifyPayload(value: unknown) {
+  return JSON.stringify(value, null, 2);
 }
 
 function parseLineList(value: string) {
@@ -204,17 +303,52 @@ function joinQueryObject(value: unknown) {
     .join("\n");
 }
 
-function getConditionDraft(rule: Rule): RuleConditionDraft {
+function normalizeRule(rule: Rule) {
+  return {
+    ...defaultRule,
+    ...rule,
+    start_at: rule.start_at || "",
+    end_at: rule.end_at || "",
+    unsafe_html: rule.unsafe_html || "",
+    notes: rule.notes || "",
+    conditions_json: rule.conditions_json || "{}",
+    config_json: rule.config_json || "{}",
+  };
+}
+
+function getTargetDraft(rule: Rule): RuleTargetDraft {
   const conditions = safeParseObject(rule.conditions_json);
-  const exactUrlList = [
+  const exactUrls = [
     ...(typeof conditions.exact_url === "string" && conditions.exact_url.trim() ? [conditions.exact_url] : []),
     ...(Array.isArray(conditions.exact_urls) ? conditions.exact_urls : []),
   ].filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  const hosts = joinList(conditions.hosts);
+  const pathPrefixes = joinList(conditions.path_prefixes);
+
+  if (exactUrls.length > 0) {
+    return { ...defaultTargetDraft, mode: "exact_url", exactUrl: exactUrls.join("\n") };
+  }
+
+  if (pathPrefixes) {
+    return {
+      ...defaultTargetDraft,
+      mode: "path_prefix",
+      domain: hosts,
+      pathPrefix: pathPrefixes,
+    };
+  }
+
+  if (hosts) {
+    return { ...defaultTargetDraft, mode: "domain", domain: hosts };
+  }
+
+  return defaultTargetDraft;
+}
+
+function getConditionDraft(rule: Rule): RuleConditionDraft {
+  const conditions = safeParseObject(rule.conditions_json);
 
   return {
-    exactUrls: exactUrlList.join("\n"),
-    hosts: joinList(conditions.hosts),
-    pathPrefixes: joinList(conditions.path_prefixes),
     pathRegex: typeof conditions.path_regex === "string" ? conditions.path_regex : "",
     queryContains: joinQueryObject(conditions.query_contains),
     referrerHosts: joinList(conditions.referrer_hosts),
@@ -240,27 +374,41 @@ function getActionDraft(rule: Rule, template: Template | null): RuleActionDraft 
 
   return {
     redirectUrl: readString(config.redirect_url),
-    creditVariant: readString(config.variant),
-    creditTheme: readString(config.theme),
-    creditSize: readString(config.size),
-    creditAlign: readString(config.align),
+    creditVariant: readString(config.variant, defaultActionDraft.creditVariant),
+    creditTheme: readString(config.theme, defaultActionDraft.creditTheme),
+    creditSize: readString(config.size, defaultActionDraft.creditSize),
+    creditAlign: readString(config.align, defaultActionDraft.creditAlign),
     title: readString(templateConfig.title, readString(templateDefaults.title, defaultActionDraft.title)),
     body: readString(templateConfig.body, readString(templateDefaults.body, defaultActionDraft.body)),
-    accentLabel: readString(templateConfig.accentLabel, readString(templateDefaults.accentLabel)),
+    accentLabel: readString(templateConfig.accentLabel, readString(templateDefaults.accentLabel, defaultActionDraft.accentLabel)),
     ctaLabel: readString(templateConfig.ctaLabel, readString(templateDefaults.ctaLabel, defaultActionDraft.ctaLabel)),
     ctaHref: readString(templateConfig.ctaHref, readString(templateDefaults.ctaHref, defaultActionDraft.ctaHref)),
     legalText: readString(templateConfig.legalText, readString(templateDefaults.legalText)),
   };
 }
 
-function buildConditionsJson(draft: RuleConditionDraft) {
-  const exactUrls = parseLineList(draft.exactUrls);
+function buildConditionsObject(target: RuleTargetDraft, draft: RuleConditionDraft) {
   const conditions: Record<string, unknown> = {};
 
-  if (exactUrls.length === 1) conditions.exact_url = exactUrls[0];
-  if (exactUrls.length > 1) conditions.exact_urls = exactUrls;
-  if (parseLineList(draft.hosts).length) conditions.hosts = parseLineList(draft.hosts);
-  if (parseLineList(draft.pathPrefixes).length) conditions.path_prefixes = parseLineList(draft.pathPrefixes);
+  if (target.mode === "known_site" && target.knownSiteHost.trim()) {
+    conditions.hosts = [target.knownSiteHost.trim()];
+  }
+
+  if (target.mode === "domain" && parseLineList(target.domain).length) {
+    conditions.hosts = parseLineList(target.domain);
+  }
+
+  if (target.mode === "exact_url") {
+    const exactUrls = parseLineList(target.exactUrl);
+    if (exactUrls.length === 1) conditions.exact_url = exactUrls[0];
+    if (exactUrls.length > 1) conditions.exact_urls = exactUrls;
+  }
+
+  if (target.mode === "path_prefix") {
+    if (parseLineList(target.domain).length) conditions.hosts = parseLineList(target.domain);
+    if (parseLineList(target.pathPrefix).length) conditions.path_prefixes = parseLineList(target.pathPrefix);
+  }
+
   if (draft.pathRegex.trim()) conditions.path_regex = draft.pathRegex.trim();
   if (Object.keys(parseQueryLines(draft.queryContains)).length) conditions.query_contains = parseQueryLines(draft.queryContains);
   if (parseLineList(draft.referrerHosts).length) conditions.referrer_hosts = parseLineList(draft.referrerHosts);
@@ -273,21 +421,25 @@ function buildConditionsJson(draft: RuleConditionDraft) {
   if (parseLineList(draft.siteKeys).length) conditions.site_keys = parseLineList(draft.siteKeys);
   if (parseNumberLineList(draft.timezoneOffsets).length) conditions.timezone_offsets = parseNumberLineList(draft.timezoneOffsets);
 
-  return JSON.stringify(conditions);
+  return conditions;
 }
 
-function buildConfigJson(rule: Rule, draft: RuleActionDraft) {
+function buildConditionsJson(target: RuleTargetDraft, draft: RuleConditionDraft) {
+  return stringifyPayload(buildConditionsObject(target, draft));
+}
+
+function buildConfigObject(rule: Rule, draft: RuleActionDraft) {
   if (rule.action_type === "redirect") {
-    return JSON.stringify(draft.redirectUrl.trim() ? { redirect_url: draft.redirectUrl.trim() } : {});
+    return draft.redirectUrl.trim() ? { redirect_url: draft.redirectUrl.trim() } : {};
   }
 
   if (rule.action_type === "credit_variant_override") {
-    return JSON.stringify({
+    return {
       ...(draft.creditVariant.trim() ? { variant: draft.creditVariant.trim() } : {}),
       ...(draft.creditTheme.trim() ? { theme: draft.creditTheme.trim() } : {}),
       ...(draft.creditSize.trim() ? { size: draft.creditSize.trim() } : {}),
       ...(draft.creditAlign.trim() ? { align: draft.creditAlign.trim() } : {}),
-    });
+    };
   }
 
   const templateConfig = {
@@ -299,7 +451,11 @@ function buildConfigJson(rule: Rule, draft: RuleActionDraft) {
     ...(draft.legalText.trim() ? { legalText: draft.legalText.trim() } : {}),
   };
 
-  return JSON.stringify(Object.keys(templateConfig).length > 0 ? { template_config: templateConfig } : {});
+  return Object.keys(templateConfig).length > 0 ? { template_config: templateConfig } : {};
+}
+
+function buildConfigJson(rule: Rule, draft: RuleActionDraft) {
+  return stringifyPayload(buildConfigObject(rule, draft));
 }
 
 function summarizeRuleConditions(rule: Rule) {
@@ -329,64 +485,140 @@ function getTemplateHelperText(template: Template | null) {
   }
 
   if (template.is_system === 1) {
-    return template.description || "System template with structured content fields below.";
+    return template.description || "System template with structured content fields.";
   }
 
-  return template.description || "Custom template selected. The content fields below mainly apply to system templates.";
+  return template.description || "Custom template selected. Structured fields may not apply.";
+}
+
+function getTemplateSurface(template: Template | null) {
+  const config = safeParseObject(template?.config_json || null);
+  const surface = typeof config.surface === "string" ? config.surface : "";
+  if (surface === "banner" || surface === "inline" || surface === "takeover") return surface;
+  if (template?.category === "banner") return "banner";
+  if (template?.category === "inline") return "inline";
+  return "takeover";
+}
+
+function actionSurface(actionType: string) {
+  if (actionType === "banner") return "banner";
+  if (actionType === "inline_replace") return "inline";
+  return "takeover";
+}
+
+function templateFitsAction(template: Template, actionType: string) {
+  if (actionType === "redirect" || actionType === "credit_variant_override") return false;
+  return getTemplateSurface(template) === actionSurface(actionType);
+}
+
+function getTemplateTone(template: Template) {
+  const surface = getTemplateSurface(template);
+  if (surface === "banner") return "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20";
+  if (surface === "inline") return "border-blue-200 bg-blue-50/70 dark:border-blue-900 dark:bg-blue-950/20";
+  if (template.category === "credit") return "border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/20";
+  if (template.category === "maintenance") return "border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/20";
+  if (template.category === "promo") return "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20";
+  if (template.category === "portfolio") return "border-violet-200 bg-violet-50/70 dark:border-violet-900 dark:bg-violet-950/20";
+  if (template.category === "legal") return "border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-950/20";
+  return "border-border bg-card";
+}
+
+function templateToDraft(template: Template): TemplateDraft {
+  return {
+    id: template.id,
+    name: template.name,
+    category: template.category,
+    description: template.description || "",
+    schema_json: template.schema_json || JSON.stringify({ title: "string", body: "string" }, null, 2),
+    render_mode: template.render_mode || "unsafe_html",
+    html_shell: template.html_shell || "",
+    css_theme: template.css_theme || "sky",
+    config_json: template.config_json || "{}",
+    version: template.version || 1,
+  };
 }
 
 export function EmbedRulesManager() {
   const { toast } = useToast();
   const [rules, setRules] = useState<Rule[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [sites, setSites] = useState<SiteOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState<WizardStep>("target");
+  const [contentMode, setContentMode] = useState<ContentMode>("template");
   const [editingRule, setEditingRule] = useState<Rule>(defaultRule);
+  const [targetDraft, setTargetDraft] = useState<RuleTargetDraft>(defaultTargetDraft);
   const [conditionDraft, setConditionDraft] = useState<RuleConditionDraft>(defaultConditionDraft);
   const [actionDraft, setActionDraft] = useState<RuleActionDraft>(defaultActionDraft);
+  const [aiStyle, setAiStyle] = useState<AiStyle>("jacob_barkin");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
+  const [aiError, setAiError] = useState("");
   const [templateDraft, setTemplateDraft] = useState(defaultTemplate);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [ruleSearch, setRuleSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("__all__");
+  const [actionFilter, setActionFilter] = useState("__all__");
   const [testUrl, setTestUrl] = useState("https://example.com/landing?utm_campaign=spring");
   const [testRuleId, setTestRuleId] = useState<string>("__any__");
+  const [draftPreviewUrl, setDraftPreviewUrl] = useState("https://example.com/");
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewExplain, setPreviewExplain] = useState<string[]>([]);
+  const [draftPreviewHtml, setDraftPreviewHtml] = useState<string>("");
+  const [draftPreviewExplain, setDraftPreviewExplain] = useState<string[]>([]);
   const [isTesting, setIsTesting] = useState(false);
+  const [isPreviewingDraft, setIsPreviewingDraft] = useState(false);
+  const [isGeneratingHtml, setIsGeneratingHtml] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [rawJsonMode, setRawJsonMode] = useState(false);
+  const [rawConditionsJson, setRawConditionsJson] = useState("{}");
+  const [rawConfigJson, setRawConfigJson] = useState("{}");
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === editingRule.template_id) || null,
     [templates, editingRule.template_id]
   );
 
-  const generatedConditionsJson = useMemo(() => buildConditionsJson(conditionDraft), [conditionDraft]);
-  const generatedConfigJson = useMemo(() => buildConfigJson(editingRule, actionDraft), [editingRule, actionDraft]);
+  const generatedConditionsJson = useMemo(
+    () => buildConditionsJson(targetDraft, conditionDraft),
+    [conditionDraft, targetDraft]
+  );
+  const generatedConfigJson = useMemo(
+    () => buildConfigJson(editingRule, actionDraft),
+    [actionDraft, editingRule]
+  );
+  const saveConditionsJson = rawJsonMode ? rawConditionsJson : generatedConditionsJson;
+  const saveConfigJson = rawJsonMode ? rawConfigJson : generatedConfigJson;
 
-  function openRuleEditor(rule: Rule) {
-    const normalizedRule = {
-      ...defaultRule,
-      ...rule,
-      start_at: rule.start_at || "",
-      end_at: rule.end_at || "",
-      unsafe_html: rule.unsafe_html || "",
-      notes: rule.notes || "",
-      conditions_json: rule.conditions_json || "{}",
-      config_json: rule.config_json || "{}",
-    };
-    const template = templates.find((item) => item.id === normalizedRule.template_id) || null;
+  const filteredRules = useMemo(() => {
+    const query = ruleSearch.trim().toLowerCase();
+    return rules.filter((rule) => {
+      const matchesQuery =
+        !query ||
+        rule.name.toLowerCase().includes(query) ||
+        (rule.template_id || "").toLowerCase().includes(query) ||
+        summarizeRuleConditions(rule).toLowerCase().includes(query);
+      const matchesStatus = statusFilter === "__all__" || rule.status === statusFilter;
+      const matchesAction = actionFilter === "__all__" || rule.action_type === actionFilter;
+      return matchesQuery && matchesStatus && matchesAction;
+    });
+  }, [actionFilter, ruleSearch, rules, statusFilter]);
 
-    setEditingRule(normalizedRule);
-    setConditionDraft(getConditionDraft(normalizedRule));
-    setActionDraft(getActionDraft(normalizedRule, template));
-    setDialogOpen(true);
-  }
+  const actionTemplates = useMemo(
+    () => templates.filter((template) => templateFitsAction(template, editingRule.action_type)),
+    [editingRule.action_type, templates]
+  );
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [rulesResponse, templatesResponse, reportResponse] = await Promise.all([
+      const [rulesResponse, templatesResponse, reportResponse, sitesResponse] = await Promise.all([
         fetch("/api/embed-rules"),
         fetch("/api/embed-templates"),
         fetch("/api/embed-report/rules"),
+        fetch("/api/embed-report/sites?days=365&limit=100"),
       ]);
 
       if (!rulesResponse.ok || !templatesResponse.ok || !reportResponse.ok) {
@@ -415,6 +647,13 @@ export function EmbedRulesManager() {
         }))
       );
       setTemplates(templatesJson.templates || []);
+
+      if (sitesResponse.ok) {
+        const sitesJson = await sitesResponse.json();
+        setSites(sitesJson.sites || []);
+      } else {
+        setSites([]);
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -425,23 +664,122 @@ export function EmbedRulesManager() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [toast]);
 
   useEffect(() => {
     loadAll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAll]);
 
-  async function saveRule() {
+  function resetComposer() {
+    setEditingRule(defaultRule);
+    setTargetDraft(defaultTargetDraft);
+    setConditionDraft(defaultConditionDraft);
+    setActionDraft(defaultActionDraft);
+    setDraftPreviewHtml("");
+    setDraftPreviewExplain([]);
+    setRawJsonMode(false);
+    setRawConditionsJson("{}");
+    setRawConfigJson("{}");
+    setContentMode("template");
+    setAiStyle("jacob_barkin");
+    setAiPrompt("");
+    setAiMessages([]);
+    setAiError("");
+    setWizardStep("target");
+    setComposerOpen(false);
+  }
+
+  function startNewRule() {
+    resetComposer();
+    setComposerOpen(true);
+  }
+
+  function openRuleEditor(rule: Rule) {
+    const normalizedRule = normalizeRule(rule);
+    const template = templates.find((item) => item.id === normalizedRule.template_id) || null;
+
+    setEditingRule(normalizedRule);
+    setTargetDraft(getTargetDraft(normalizedRule));
+    setConditionDraft(getConditionDraft(normalizedRule));
+    setActionDraft(getActionDraft(normalizedRule, template));
+    setRawConditionsJson(normalizedRule.conditions_json || "{}");
+    setRawConfigJson(normalizedRule.config_json || "{}");
+    setRawJsonMode(false);
+    setContentMode(normalizedRule.unsafe_html ? "custom_html" : "template");
+    setAiStyle("jacob_barkin");
+    setAiPrompt("");
+    setAiMessages([]);
+    setAiError("");
+    setWizardStep("target");
+    setComposerOpen(true);
+    setDraftPreviewHtml("");
+    setDraftPreviewExplain([]);
+  }
+
+  function duplicateRule(rule: Rule) {
+    const normalizedRule = normalizeRule({
+      ...rule,
+      id: "",
+      name: `${rule.name} copy`,
+      status: "draft",
+    });
+    openRuleEditor(normalizedRule);
+  }
+
+  function applyTemplate(templateId: string | null) {
+    const template = templates.find((item) => item.id === templateId) || null;
+    setEditingRule((current) => ({ ...current, template_id: templateId }));
+    setActionDraft((current) => {
+      const defaults = getActionDraft({ ...defaultRule, template_id: templateId, config_json: "{}" }, template);
+      return {
+        ...current,
+        title: defaults.title,
+        body: defaults.body,
+        accentLabel: defaults.accentLabel,
+        ctaLabel: defaults.ctaLabel,
+        ctaHref: defaults.ctaHref,
+        legalText: defaults.legalText,
+      };
+    });
+  }
+
+  function openTemplateEditor(template: Template) {
+    setEditingTemplateId(template.id);
+    setTemplateDraft(templateToDraft(template));
+    setTemplateDialogOpen(true);
+  }
+
+  function duplicateTemplate(template: Template) {
+    setEditingTemplateId(null);
+    setTemplateDraft({
+      ...templateToDraft(template),
+      id: "",
+      name: `${template.name} copy`,
+    });
+    setTemplateDialogOpen(true);
+  }
+
+  function validateRawJson() {
+    if (!rawJsonMode) return true;
+    JSON.parse(rawConditionsJson || "{}");
+    if (rawConfigJson) JSON.parse(rawConfigJson);
+    return true;
+  }
+
+  async function saveRule(statusOverride?: string) {
     setIsSaving(true);
     try {
+      validateRawJson();
+      const status = statusOverride || editingRule.status || "draft";
       const response = await fetch("/api/embed-rules", {
         method: editingRule.id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...editingRule,
-          conditions_json: generatedConditionsJson,
-          config_json: generatedConfigJson,
+          status,
+          name: editingRule.name.trim() || `${targetModeLabels[targetDraft.mode]} rule`,
+          conditions_json: saveConditionsJson,
+          config_json: saveConfigJson,
           start_at: editingRule.start_at || null,
           end_at: editingRule.end_at || null,
           unsafe_html: editingRule.unsafe_html || null,
@@ -451,19 +789,16 @@ export function EmbedRulesManager() {
       if (!response.ok) throw new Error("Failed to save rule");
 
       toast({
-        title: editingRule.id ? "Rule updated" : "Rule created",
+        title: editingRule.id ? "Rule updated" : status === "active" ? "Rule activated" : "Rule created",
         description: "The rule was saved successfully.",
       });
-      setDialogOpen(false);
-      setEditingRule(defaultRule);
-      setConditionDraft(defaultConditionDraft);
-      setActionDraft(defaultActionDraft);
+      resetComposer();
       await loadAll();
     } catch (error) {
       console.error(error);
       toast({
         title: "Could not save rule",
-        description: "Check the form fields and try again.",
+        description: rawJsonMode ? "Check the raw JSON fields and try again." : "Check the form fields and try again.",
         variant: "destructive",
       });
     } finally {
@@ -473,11 +808,15 @@ export function EmbedRulesManager() {
 
   async function saveTemplate() {
     try {
+      if (templateDraft.schema_json) JSON.parse(templateDraft.schema_json || "{}");
       JSON.parse(templateDraft.config_json || "{}");
       const response = await fetch("/api/embed-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templateDraft),
+        body: JSON.stringify({
+          ...templateDraft,
+          id: templateDraft.id || undefined,
+        }),
       });
 
       if (!response.ok) throw new Error("Failed to save template");
@@ -486,6 +825,7 @@ export function EmbedRulesManager() {
         description: "The template is now available for rules.",
       });
       setTemplateDialogOpen(false);
+      setEditingTemplateId(null);
       setTemplateDraft(defaultTemplate);
       await loadAll();
     } catch (error) {
@@ -541,6 +881,127 @@ export function EmbedRulesManager() {
     }
   }
 
+  async function previewDraftRule() {
+    setIsPreviewingDraft(true);
+    try {
+      validateRawJson();
+      const response = await fetch("/api/embed-rules/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: draftPreviewUrl,
+          rule: {
+            ...editingRule,
+            conditions_json: saveConditionsJson,
+            config_json: saveConfigJson,
+            unsafe_html: editingRule.unsafe_html || null,
+          },
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to preview draft");
+      const result = await response.json();
+      setDraftPreviewHtml(result.html || "");
+      setDraftPreviewExplain(result.explain || []);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Draft preview failed",
+        description: rawJsonMode ? "Check the raw JSON fields and try again." : "Could not render this draft rule.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreviewingDraft(false);
+    }
+  }
+
+  async function generateAiHtml() {
+    const prompt = aiPrompt.trim();
+    if (!prompt) {
+      toast({
+        title: "Prompt required",
+        description: "Describe what the custom content should say or do.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const nextMessages: AiMessage[] = [
+      ...aiMessages,
+      {
+        role: "user",
+        content: prompt,
+      },
+    ];
+
+    setIsGeneratingHtml(true);
+    setAiError("");
+    try {
+      const response = await fetch("/api/embed-rules/generate-html", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          style: aiStyle,
+          surface: actionSurface(editingRule.action_type),
+          action_type: editingRule.action_type,
+          current_html: editingRule.unsafe_html || "",
+          target: {
+            mode: targetDraft.mode,
+            known_site_host: targetDraft.knownSiteHost,
+            domain: targetDraft.domain,
+            exact_url: targetDraft.exactUrl,
+            path_prefix: targetDraft.pathPrefix,
+            conditions: buildConditionsObject(targetDraft, conditionDraft),
+          },
+          messages: nextMessages.map((message) => ({
+            role: message.role,
+            content: message.role === "assistant" && message.html
+              ? `${message.content}\n\nHTML:\n${message.html}`
+              : message.content,
+          })),
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || "HTML generation failed");
+      }
+
+      const html = typeof result.html === "string" ? result.html : "";
+      const summary = typeof result.summary === "string" ? result.summary : "Generated a custom HTML revision.";
+      const notes = Array.isArray(result.notes)
+        ? result.notes.filter((note: unknown): note is string => typeof note === "string")
+        : [];
+
+      setEditingRule((current) => ({ ...current, unsafe_html: html }));
+      setAiMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: summary,
+          html,
+          notes,
+        },
+      ]);
+      setAiPrompt("");
+      toast({
+        title: "HTML generated",
+        description: "The draft now uses the generated custom HTML.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not generate HTML.";
+      setAiError(message);
+      toast({
+        title: "AI generation failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingHtml(false);
+    }
+  }
+
+  const composerTitle = editingRule.id ? "Edit rule" : "Create rule";
+
   return (
     <Card>
       <CardHeader>
@@ -548,354 +1009,94 @@ export function EmbedRulesManager() {
           <div>
             <CardTitle>Rules and Templates</CardTitle>
             <CardDescription>
-              Manage safer replacement rules, test matches, and preview template output in a sandbox.
+              Add a rule to a site quickly, then open advanced targeting only when it is needed.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => openRuleEditor(defaultRule)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Rule
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{editingRule.id ? "Edit rule" : "Create rule"}</DialogTitle>
-                  <DialogDescription>
-                    Define where this rule runs, what it should do, and how the replacement should look.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-2 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input value={editingRule.name} onChange={(event) => setEditingRule((current) => ({ ...current, name: event.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={editingRule.status} onValueChange={(value) => setEditingRule((current) => ({ ...current, status: value }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="preview">Preview</SelectItem>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Priority</Label>
-                    <Input type="number" value={editingRule.priority} onChange={(event) => setEditingRule((current) => ({ ...current, priority: Number(event.target.value || 100) }))} />
-                    <p className="text-xs text-muted-foreground">Lower numbers run first when multiple rules could match the same page.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Action</Label>
-                    <Select value={editingRule.action_type} onValueChange={(value) => setEditingRule((current) => ({ ...current, action_type: value }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="banner">Banner</SelectItem>
-                        <SelectItem value="inline_replace">Inline replace</SelectItem>
-                        <SelectItem value="page_takeover">Page takeover</SelectItem>
-                        <SelectItem value="redirect">Redirect</SelectItem>
-                        <SelectItem value="credit_variant_override">Credit variant override</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Choose whether the rule shows a notice, replaces content, redirects traffic, or restyles the credit embed.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Template</Label>
-                    <Select
-                      value={editingRule.template_id || "__none__"}
-                      onValueChange={(value) => {
-                        const templateId = value === "__none__" ? null : value;
-                        const template = templates.find((item) => item.id === templateId) || null;
-                        setEditingRule((current) => ({ ...current, template_id: templateId }));
-                        setActionDraft((current) => {
-                          const defaults = getActionDraft({ ...defaultRule, template_id: templateId, config_json: "{}" }, template);
-                          return {
-                            ...current,
-                            title: current.title || defaults.title,
-                            body: current.body || defaults.body,
-                            accentLabel: current.accentLabel || defaults.accentLabel,
-                            ctaLabel: current.ctaLabel || defaults.ctaLabel,
-                            ctaHref: current.ctaHref || defaults.ctaHref,
-                            legalText: current.legalText || defaults.legalText,
-                          };
-                        });
-                      }}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Choose a template" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No template</SelectItem>
-                        {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">{getTemplateHelperText(selectedTemplate)}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Rollout Percent</Label>
-                    <Input type="number" min="0" max="100" value={editingRule.rollout_percent} onChange={(event) => setEditingRule((current) => ({ ...current, rollout_percent: Number(event.target.value || 100) }))} />
-                    <p className="text-xs text-muted-foreground">Use less than 100 to stage a partial rollout before turning the rule fully on.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Start At</Label>
-                    <Input type="datetime-local" value={editingRule.start_at || ""} onChange={(event) => setEditingRule((current) => ({ ...current, start_at: event.target.value }))} />
-                    <p className="text-xs text-muted-foreground">Optional. Leave empty to let the rule start immediately when active.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>End At</Label>
-                    <Input type="datetime-local" value={editingRule.end_at || ""} onChange={(event) => setEditingRule((current) => ({ ...current, end_at: event.target.value }))} />
-                    <p className="text-xs text-muted-foreground">Optional. Leave empty if the rule should continue until you pause it.</p>
-                  </div>
-
-                  <div className="space-y-4 rounded-xl border p-4 md:col-span-2">
-                    <div>
-                      <h3 className="text-sm font-semibold">Where This Rule Runs</h3>
-                      <p className="text-xs text-muted-foreground">Only fill the matchers you need. Every filled section must match for the rule to fire.</p>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Exact URLs</Label>
-                        <Textarea className="min-h-[96px]" placeholder="One full URL per line" value={conditionDraft.exactUrls} onChange={(event) => setConditionDraft((current) => ({ ...current, exactUrls: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Best for one-off pages that should match exactly.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Hosts / Domains</Label>
-                        <Textarea className="min-h-[96px]" placeholder={"example.com\nwww.example.com"} value={conditionDraft.hosts} onChange={(event) => setConditionDraft((current) => ({ ...current, hosts: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Use one host per line to cover an entire site.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Path Prefixes</Label>
-                        <Textarea className="min-h-[96px]" placeholder={"/pricing\n/blog/"} value={conditionDraft.pathPrefixes} onChange={(event) => setConditionDraft((current) => ({ ...current, pathPrefixes: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Matches every path that starts with one of these values.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Path Regex</Label>
-                        <Input placeholder="^/products/.+" value={conditionDraft.pathRegex} onChange={(event) => setConditionDraft((current) => ({ ...current, pathRegex: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Advanced matcher for cases where simple prefixes are not enough.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Query Params</Label>
-                        <Textarea className="min-h-[96px]" placeholder={"utm_campaign=spring-launch\nref=partner-a"} value={conditionDraft.queryContains} onChange={(event) => setConditionDraft((current) => ({ ...current, queryContains: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">One <code>key=value</code> rule per line. All listed values must be present.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Referrer Hosts</Label>
-                        <Textarea className="min-h-[96px]" placeholder={"google.com\nnews.ycombinator.com"} value={conditionDraft.referrerHosts} onChange={(event) => setConditionDraft((current) => ({ ...current, referrerHosts: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Use this when the rule should match only traffic from specific referrers.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 rounded-xl border p-4 md:col-span-2">
-                    <div>
-                      <h3 className="text-sm font-semibold">Traffic Filters</h3>
-                      <p className="text-xs text-muted-foreground">Optional refinements for campaigns, device types, languages, or known installations.</p>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>UTM Sources</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"google\nnewsletter"} value={conditionDraft.utmSources} onChange={(event) => setConditionDraft((current) => ({ ...current, utmSources: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>UTM Mediums</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"cpc\nemail"} value={conditionDraft.utmMediums} onChange={(event) => setConditionDraft((current) => ({ ...current, utmMediums: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>UTM Campaigns</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"spring-launch\nhomepage-test"} value={conditionDraft.utmCampaigns} onChange={(event) => setConditionDraft((current) => ({ ...current, utmCampaigns: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Device Types</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"desktop\nmobile\ntablet"} value={conditionDraft.deviceTypes} onChange={(event) => setConditionDraft((current) => ({ ...current, deviceTypes: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Languages</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"en-US\nen"} value={conditionDraft.languages} onChange={(event) => setConditionDraft((current) => ({ ...current, languages: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Timezone Offsets</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"-300\n-240"} value={conditionDraft.timezoneOffsets} onChange={(event) => setConditionDraft((current) => ({ ...current, timezoneOffsets: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Minutes from UTC. Useful for rough geo targeting by browser timezone.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Site Keys</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"marketing-site\ncustomer-portal"} value={conditionDraft.siteKeys} onChange={(event) => setConditionDraft((current) => ({ ...current, siteKeys: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Installation IDs</Label>
-                        <Textarea className="min-h-[84px]" placeholder={"marketing-site\nexample-com"} value={conditionDraft.installationIds} onChange={(event) => setConditionDraft((current) => ({ ...current, installationIds: event.target.value }))} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 rounded-xl border p-4 md:col-span-2">
-                    <div>
-                      <h3 className="text-sm font-semibold">What This Rule Does</h3>
-                      <p className="text-xs text-muted-foreground">Fields change based on the action so admins can edit behavior directly instead of writing JSON by hand.</p>
-                    </div>
-
-                    {editingRule.action_type === "redirect" ? (
-                      <div className="space-y-2">
-                        <Label>Redirect URL</Label>
-                        <Input placeholder="https://status.example.com" value={actionDraft.redirectUrl} onChange={(event) => setActionDraft((current) => ({ ...current, redirectUrl: event.target.value }))} />
-                        <p className="text-xs text-muted-foreground">Visitors matching this rule will be sent here immediately.</p>
-                      </div>
-                    ) : editingRule.action_type === "credit_variant_override" ? (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Variant</Label>
-                          <Input placeholder="minimal" value={actionDraft.creditVariant} onChange={(event) => setActionDraft((current) => ({ ...current, creditVariant: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Theme</Label>
-                          <Input placeholder="light" value={actionDraft.creditTheme} onChange={(event) => setActionDraft((current) => ({ ...current, creditTheme: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Size</Label>
-                          <Input placeholder="sm" value={actionDraft.creditSize} onChange={(event) => setActionDraft((current) => ({ ...current, creditSize: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Align</Label>
-                          <Input placeholder="left" value={actionDraft.creditAlign} onChange={(event) => setActionDraft((current) => ({ ...current, creditAlign: event.target.value }))} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2 md:col-span-2">
-                          <Label>Headline</Label>
-                          <Input value={actionDraft.title} onChange={(event) => setActionDraft((current) => ({ ...current, title: event.target.value }))} />
-                          <p className="text-xs text-muted-foreground">Main title shown inside the selected system template.</p>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label>Body Copy</Label>
-                          <Textarea className="min-h-[110px]" value={actionDraft.body} onChange={(event) => setActionDraft((current) => ({ ...current, body: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Accent Label</Label>
-                          <Input placeholder="New" value={actionDraft.accentLabel} onChange={(event) => setActionDraft((current) => ({ ...current, accentLabel: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>CTA Label</Label>
-                          <Input placeholder="Learn more" value={actionDraft.ctaLabel} onChange={(event) => setActionDraft((current) => ({ ...current, ctaLabel: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label>CTA URL</Label>
-                          <Input placeholder="https://jacobbarkin.com/projects" value={actionDraft.ctaHref} onChange={(event) => setActionDraft((current) => ({ ...current, ctaHref: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label>Legal / Footer Text</Label>
-                          <Input placeholder="Optional fine print or ownership note" value={actionDraft.legalText} onChange={(event) => setActionDraft((current) => ({ ...current, legalText: event.target.value }))} />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">Generated rule payload</p>
-                      <p className="mt-1">The rule engine still stores JSON, but the form generates it for you automatically.</p>
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div>
-                          <p className="mb-1 font-medium text-foreground">Conditions</p>
-                          <pre className="overflow-x-auto rounded-md border bg-background p-3 text-[11px]">{generatedConditionsJson}</pre>
-                        </div>
-                        <div>
-                          <p className="mb-1 font-medium text-foreground">Action Config</p>
-                          <pre className="overflow-x-auto rounded-md border bg-background p-3 text-[11px]">{generatedConfigJson}</pre>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Unsafe HTML Override</Label>
-                    <Textarea
-                      className="min-h-[160px] font-mono text-xs"
-                      placeholder="Optional advanced override. Leave empty to use the selected template."
-                      value={editingRule.unsafe_html || ""}
-                      onChange={(event) => setEditingRule((current) => ({ ...current, unsafe_html: event.target.value }))}
-                    />
-                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>Unsafe HTML bypasses structured rendering. Use it only when a system or structured template cannot express the output you need.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Notes</Label>
-                    <Textarea value={editingRule.notes || ""} onChange={(event) => setEditingRule((current) => ({ ...current, notes: event.target.value }))} />
-                  </div>
+          <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingTemplateId(null);
+                  setTemplateDraft(defaultTemplate);
+                }}
+              >
+                <FilePlus2 className="mr-2 h-4 w-4" />
+                New Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingTemplateId ? "Edit template" : "Create template"}</DialogTitle>
+                <DialogDescription>
+                  Save reusable template content. System templates can be customized here without changing the database schema.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-2 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Template ID</Label>
+                  <Input
+                    placeholder="Leave empty for a new ID"
+                    value={templateDraft.id}
+                    onChange={(event) => setTemplateDraft((current) => ({ ...current, id: event.target.value }))}
+                    disabled={Boolean(editingTemplateId)}
+                  />
                 </div>
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={saveRule} disabled={isSaving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Saving..." : "Save Rule"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <FilePlus2 className="mr-2 h-4 w-4" />
-                  New Template
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create template</DialogTitle>
-                  <DialogDescription>Save a reusable custom template for future rules.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-2 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input value={templateDraft.name} onChange={(event) => setTemplateDraft((current) => ({ ...current, name: event.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Input value={templateDraft.category} onChange={(event) => setTemplateDraft((current) => ({ ...current, category: event.target.value }))} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Description</Label>
-                    <Input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Render Mode</Label>
-                    <Select value={templateDraft.render_mode} onValueChange={(value) => setTemplateDraft((current) => ({ ...current, render_mode: value }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unsafe_html">Unsafe HTML</SelectItem>
-                        <SelectItem value="structured">Structured</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Config JSON</Label>
-                    <Textarea value={templateDraft.config_json} onChange={(event) => setTemplateDraft((current) => ({ ...current, config_json: event.target.value }))} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>HTML Shell</Label>
-                    <Textarea className="min-h-[180px] font-mono text-xs" value={templateDraft.html_shell} onChange={(event) => setTemplateDraft((current) => ({ ...current, html_shell: event.target.value }))} />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input value={templateDraft.name} onChange={(event) => setTemplateDraft((current) => ({ ...current, name: event.target.value }))} />
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={saveTemplate}>Save Template</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Input value={templateDraft.category} onChange={(event) => setTemplateDraft((current) => ({ ...current, category: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <Select value={templateDraft.css_theme} onValueChange={(value) => setTemplateDraft((current) => ({ ...current, css_theme: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sky">Sky</SelectItem>
+                      <SelectItem value="emerald">Emerald</SelectItem>
+                      <SelectItem value="violet">Violet</SelectItem>
+                      <SelectItem value="slate">Slate</SelectItem>
+                      <SelectItem value="gray">Gray</SelectItem>
+                      <SelectItem value="amber">Amber</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Description</Label>
+                  <Input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Render Mode</Label>
+                  <Select value={templateDraft.render_mode} onValueChange={(value) => setTemplateDraft((current) => ({ ...current, render_mode: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unsafe_html">Unsafe HTML</SelectItem>
+                      <SelectItem value="structured">Structured</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Config JSON</Label>
+                  <Textarea value={templateDraft.config_json} onChange={(event) => setTemplateDraft((current) => ({ ...current, config_json: event.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Schema JSON</Label>
+                  <Textarea value={templateDraft.schema_json} onChange={(event) => setTemplateDraft((current) => ({ ...current, schema_json: event.target.value }))} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>HTML Shell</Label>
+                  <Textarea className="min-h-[180px] font-mono text-xs" value={templateDraft.html_shell} onChange={(event) => setTemplateDraft((current) => ({ ...current, html_shell: event.target.value }))} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>Cancel</Button>
+                <Button onClick={saveTemplate}>{editingTemplateId ? "Save Template" : "Create Template"}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
 
@@ -908,64 +1109,788 @@ export function EmbedRulesManager() {
           </TabsList>
 
           <TabsContent value="rules">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rule</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead className="text-right">Priority</TableHead>
-                    <TableHead className="text-right">Applied</TableHead>
-                    <TableHead className="text-right">Errors</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <div className="grid gap-4 xl:grid-cols-[minmax(340px,0.9fr),minmax(460px,1.1fr)]">
+              <div className="order-2 space-y-4 xl:order-1">
+                <div className="rounded-lg border bg-card p-4">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Layers3 className="h-4 w-4 text-primary" />
+                        Saved rules
+                      </div>
+                      <p className="text-xs text-muted-foreground">{filteredRules.length} of {rules.length} shown</p>
+                    </div>
+                    <Button size="sm" onClick={startNewRule}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      New Rule
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-2 lg:grid-cols-[1fr,140px,160px]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        className="pl-9"
+                        placeholder="Search rules"
+                        value={ruleSearch}
+                        onChange={(event) => setRuleSearch(event.target.value)}
+                      />
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">All status</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="preview">Preview</SelectItem>
+                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="paused">Paused</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={actionFilter} onValueChange={setActionFilter}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">All actions</SelectItem>
+                        {Object.entries(actionLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">Loading rules...</TableCell>
-                    </TableRow>
-                  ) : rules.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">No rules yet</TableCell>
-                    </TableRow>
+                    <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">Loading rules...</div>
+                  ) : filteredRules.length === 0 ? (
+                    <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">No matching rules</div>
                   ) : (
-                    rules.map((rule) => (
-                      <TableRow key={rule.id}>
-                        <TableCell>
-                          <div className="font-medium">{rule.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {rule.template_id || "No template"} · {summarizeRuleConditions(rule)} {rule.start_at ? `· starts ${formatDate(rule.start_at)}` : ""}
+                    filteredRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className={`rounded-lg border bg-card p-4 transition-colors ${editingRule.id === rule.id ? "border-primary/60 bg-primary/5" : "hover:bg-muted/40"}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="truncate font-medium">{rule.name}</div>
+                              <Badge variant={rule.status === "active" ? "default" : "outline"}>{rule.status}</Badge>
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {actionLabels[rule.action_type] || rule.action_type} · {rule.template_id || "No template"}
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {summarizeRuleConditions(rule)}
+                              {rule.start_at ? ` · starts ${formatDate(rule.start_at)}` : ""}
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              <span>{Number(rule.replacements_applied || 0).toLocaleString()} applied</span>
+                              <span>·</span>
+                              <span>{Number(rule.errors || 0).toLocaleString()} errors</span>
+                              <span>·</span>
+                              <span>priority {rule.priority}</span>
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell><Badge variant={rule.status === "active" ? "default" : "outline"}>{rule.status}</Badge></TableCell>
-                        <TableCell>{rule.action_type}</TableCell>
-                        <TableCell className="text-right">{rule.priority}</TableCell>
-                        <TableCell className="text-right">{Number(rule.replacements_applied || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{Number(rule.errors || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openRuleEditor(rule)}>
+                          <div className="flex shrink-0 flex-col gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openRuleEditor(rule)} aria-label={`Edit ${rule.name}`}>
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => deleteRule(rule.id)}>
+                            <Button variant="outline" size="sm" onClick={() => duplicateRule(rule)} aria-label={`Duplicate ${rule.name}`}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => deleteRule(rule.id)} aria-label={`Delete ${rule.name}`}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </div>
                     ))
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </div>
+
+              <div className="order-1 xl:order-2">
+                <div className={`sticky top-36 rounded-lg bg-card p-4 ${composerOpen ? "space-y-4 border-2 border-primary/30 shadow-sm shadow-primary/10" : "border border-dashed"}`}>
+                  {!composerOpen ? (
+                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 text-center">
+                      <div className="rounded-full bg-primary/10 p-4 text-primary">
+                        <LayoutTemplate className="h-7 w-7" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">No rule editor open</h3>
+                        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                          Existing rules stay on the left. Open a clearly separated guided editor only when you are creating or editing a rule.
+                        </p>
+                      </div>
+                      <Button onClick={startNewRule}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Rule
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        {composerTitle}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Pick the site, choose the behavior, preview, and save.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={resetComposer}>
+                      Close
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {wizardSteps.map((step, index) => {
+                      const active = wizardStep === step.id;
+                      return (
+                        <button
+                          key={step.id}
+                          type="button"
+                          onClick={() => setWizardStep(step.id)}
+                          className={`rounded-lg border p-3 text-left transition-colors ${active ? "border-primary bg-primary/10 text-primary" : "bg-background hover:border-primary/40"}`}
+                        >
+                          <div className="flex items-center gap-2 text-sm font-semibold">
+                            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                              {index + 1}
+                            </span>
+                            {step.label}
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{step.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {wizardStep === "target" ? (
+                    <>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Rule name</Label>
+                      <Input
+                        placeholder="Homepage credit update"
+                        value={editingRule.name}
+                        onChange={(event) => setEditingRule((current) => ({ ...current, name: event.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select value={editingRule.status} onValueChange={(value) => setEditingRule((current) => ({ ...current, status: value }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="preview">Preview</SelectItem>
+                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Action</Label>
+                      <Select
+                        value={editingRule.action_type}
+                        onValueChange={(value) => {
+                          const nextTemplate = templates.find((template) => templateFitsAction(template, value)) || null;
+                          setEditingRule((current) => ({
+                            ...current,
+                            action_type: value,
+                            template_id: value === "redirect" || value === "credit_variant_override" ? current.template_id : nextTemplate?.id || null,
+                          }));
+                          if (nextTemplate) {
+                            setActionDraft(getActionDraft({ ...defaultRule, template_id: nextTemplate.id, config_json: "{}" }, nextTemplate));
+                          }
+                        }}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="page_takeover">Page takeover</SelectItem>
+                          <SelectItem value="banner">Banner</SelectItem>
+                          <SelectItem value="inline_replace">Inline replace</SelectItem>
+                          <SelectItem value="redirect">Redirect</SelectItem>
+                          <SelectItem value="credit_variant_override">Credit style override</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Globe className="h-4 w-4 text-primary" />
+                      Target
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-[180px,1fr]">
+                      <div className="space-y-2">
+                        <Label>Match by</Label>
+                        <Select value={targetDraft.mode} onValueChange={(value) => setTargetDraft((current) => ({ ...current, mode: value as TargetMode }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="known_site">Known site</SelectItem>
+                            <SelectItem value="domain">Domain</SelectItem>
+                            <SelectItem value="exact_url">Exact URL</SelectItem>
+                            <SelectItem value="path_prefix">Path prefix</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {targetDraft.mode === "known_site" ? (
+                        <div className="space-y-2">
+                          <Label>Site</Label>
+                          <Select value={targetDraft.knownSiteHost || "__none__"} onValueChange={(value) => setTargetDraft((current) => ({ ...current, knownSiteHost: value === "__none__" ? "" : value }))}>
+                            <SelectTrigger><SelectValue placeholder="Choose a tracked site" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Choose a tracked site</SelectItem>
+                              {sites.map((site) => (
+                                <SelectItem key={site.installation_id} value={site.page_host}>
+                                  {site.label || site.page_host}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : null}
+
+                      {targetDraft.mode === "domain" ? (
+                        <div className="space-y-2">
+                          <Label>Domain</Label>
+                          <Textarea
+                            className="min-h-[72px]"
+                            placeholder={"example.com\nwww.example.com"}
+                            value={targetDraft.domain}
+                            onChange={(event) => setTargetDraft((current) => ({ ...current, domain: event.target.value }))}
+                          />
+                        </div>
+                      ) : null}
+
+                      {targetDraft.mode === "exact_url" ? (
+                        <div className="space-y-2">
+                          <Label>Exact URL</Label>
+                          <Textarea
+                            className="min-h-[72px]"
+                            placeholder="https://example.com/pricing"
+                            value={targetDraft.exactUrl}
+                            onChange={(event) => setTargetDraft((current) => ({ ...current, exactUrl: event.target.value }))}
+                          />
+                        </div>
+                      ) : null}
+
+                      {targetDraft.mode === "path_prefix" ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Domain</Label>
+                            <Textarea
+                              className="min-h-[72px]"
+                              placeholder="example.com"
+                              value={targetDraft.domain}
+                              onChange={(event) => setTargetDraft((current) => ({ ...current, domain: event.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Path prefix</Label>
+                            <Textarea
+                              className="min-h-[72px]"
+                              placeholder={"/pricing\n/blog/"}
+                              value={targetDraft.pathPrefix}
+                              onChange={(event) => setTargetDraft((current) => ({ ...current, pathPrefix: event.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button onClick={() => setWizardStep("content")}>
+                      Continue to content
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                    </>
+                  ) : null}
+
+                  {wizardStep === "content" ? (
+                    <>
+                  {editingRule.action_type !== "redirect" && editingRule.action_type !== "credit_variant_override" ? (
+                    <div className="grid gap-2 lg:grid-cols-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setContentMode("template");
+                          setEditingRule((current) => ({ ...current, unsafe_html: "" }));
+                        }}
+                        className={`rounded-lg border p-3 text-left transition-colors ${contentMode === "template" ? "border-primary bg-primary/10" : "bg-background hover:border-primary/40"}`}
+                      >
+                        <div className="font-medium">Use a premade template</div>
+                        <p className="mt-1 text-xs text-muted-foreground">Start from a Jacob Barkin styled template and edit the content fields.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setContentMode("custom_html")}
+                        className={`rounded-lg border p-3 text-left transition-colors ${contentMode === "custom_html" ? "border-primary bg-primary/10" : "bg-background hover:border-primary/40"}`}
+                      >
+                        <div className="font-medium">Create custom HTML</div>
+                        <p className="mt-1 text-xs text-muted-foreground">Paste a custom page, banner, or inline replacement when templates are not enough.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setContentMode("ai_html")}
+                        className={`rounded-lg border p-3 text-left transition-colors ${contentMode === "ai_html" ? "border-primary bg-primary/10" : "bg-background hover:border-primary/40"}`}
+                      >
+                        <div className="flex items-center gap-2 font-medium">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          AI-written content
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">Describe the custom content and iterate on the generated HTML.</p>
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {contentMode === "custom_html" && editingRule.action_type !== "redirect" && editingRule.action_type !== "credit_variant_override" ? (
+                    <div className="space-y-2 rounded-lg border p-3">
+                      <Label>Custom HTML</Label>
+                      <Textarea
+                        className="min-h-[260px] font-mono text-xs"
+                        placeholder="Paste the HTML that should be rendered for this rule."
+                        value={editingRule.unsafe_html || ""}
+                        onChange={(event) => setEditingRule((current) => ({ ...current, unsafe_html: event.target.value }))}
+                      />
+                    </div>
+                  ) : null}
+
+                  {contentMode === "ai_html" && editingRule.action_type !== "redirect" && editingRule.action_type !== "credit_variant_override" ? (
+                    <div className="space-y-4 rounded-lg border p-3">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            AI HTML generator
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Gemini will generate a {actionSurface(editingRule.action_type)} draft and keep this chat as revision context.
+                          </p>
+                        </div>
+                        <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+                          <Button
+                            type="button"
+                            variant={aiStyle === "jacob_barkin" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setAiStyle("jacob_barkin")}
+                          >
+                            Jacob Barkin style
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={aiStyle === "none" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setAiStyle("none")}
+                          >
+                            No style
+                          </Button>
+                        </div>
+                      </div>
+
+                      {aiMessages.length > 0 ? (
+                        <div className="space-y-2">
+                          {aiMessages.map((message, index) => (
+                            <div
+                              key={`${message.role}-${index}`}
+                              className={`rounded-lg border p-3 text-sm ${
+                                message.role === "assistant"
+                                  ? "border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/20"
+                                  : "bg-muted/50"
+                              }`}
+                            >
+                              <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+                                {message.role === "assistant" ? "Gemini" : "You"}
+                              </div>
+                              <p className="whitespace-pre-wrap">{message.content}</p>
+                              {message.notes?.length ? (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {message.notes.map((note) => (
+                                    <Badge key={note} variant="secondary">{note}</Badge>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-2">
+                        <Label>{editingRule.unsafe_html ? "Revision prompt" : "Generation prompt"}</Label>
+                        <Textarea
+                          className="min-h-[120px]"
+                          placeholder="Example: Create a full-page launch notice for this client site with a clear headline, short body copy, and a button back to jacobbarkin.com/projects."
+                          value={aiPrompt}
+                          onChange={(event) => setAiPrompt(event.target.value)}
+                        />
+                      </div>
+
+                      {aiError ? (
+                        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                          {aiError}
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          The generated HTML is applied to this draft and can still be edited before saving.
+                        </p>
+                        <Button onClick={generateAiHtml} disabled={isGeneratingHtml || !aiPrompt.trim()}>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          {isGeneratingHtml ? "Generating..." : editingRule.unsafe_html ? "Generate revision" : "Generate HTML"}
+                        </Button>
+                      </div>
+
+                      {editingRule.unsafe_html ? (
+                        <div className="space-y-2">
+                          <Label>Generated HTML</Label>
+                          <Textarea
+                            className="min-h-[220px] font-mono text-xs"
+                            value={editingRule.unsafe_html || ""}
+                            onChange={(event) => setEditingRule((current) => ({ ...current, unsafe_html: event.target.value }))}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {contentMode === "template" || editingRule.action_type === "redirect" || editingRule.action_type === "credit_variant_override" ? (
+                    <>
+                  {editingRule.action_type !== "redirect" && editingRule.action_type !== "credit_variant_override" ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <Label>Template</Label>
+                          <p className="text-xs text-muted-foreground">{getTemplateHelperText(selectedTemplate)}</p>
+                        </div>
+                      </div>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {actionTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            type="button"
+                            onClick={() => applyTemplate(template.id)}
+                            className={`rounded-lg border p-3 text-left transition-colors ${getTemplateTone(template)} ${editingRule.template_id === template.id ? "ring-2 ring-primary" : "hover:border-primary/50"}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="font-medium">{template.name}</div>
+                              <Badge variant="secondary">{template.category}</Badge>
+                            </div>
+                            <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                              {template.description || "Reusable system template."}
+                            </p>
+                          </button>
+                        ))}
+                        {actionTemplates.length === 0 ? (
+                          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground md:col-span-2">
+                            No templates match this action yet. Use custom HTML or create a template with a matching surface in its config JSON.
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <div className="text-sm font-medium">Rule content</div>
+                    {editingRule.action_type === "redirect" ? (
+                      <div className="space-y-2">
+                        <Label>Redirect URL</Label>
+                        <Input
+                          placeholder="https://status.example.com"
+                          value={actionDraft.redirectUrl}
+                          onChange={(event) => setActionDraft((current) => ({ ...current, redirectUrl: event.target.value }))}
+                        />
+                      </div>
+                    ) : editingRule.action_type === "credit_variant_override" ? (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Variant</Label>
+                          <Select value={actionDraft.creditVariant || "__custom__"} onValueChange={(value) => setActionDraft((current) => ({ ...current, creditVariant: value === "__custom__" ? "" : value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="chip">Chip</SelectItem>
+                              <SelectItem value="minimal">Minimal</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="__custom__">Custom value</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Theme</Label>
+                          <Select value={actionDraft.creditTheme || "__custom__"} onValueChange={(value) => setActionDraft((current) => ({ ...current, creditTheme: value === "__custom__" ? "" : value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="auto">Auto</SelectItem>
+                              <SelectItem value="light">Light</SelectItem>
+                              <SelectItem value="dark">Dark</SelectItem>
+                              <SelectItem value="__custom__">Custom value</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Size</Label>
+                          <Select value={actionDraft.creditSize || "__custom__"} onValueChange={(value) => setActionDraft((current) => ({ ...current, creditSize: value === "__custom__" ? "" : value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="__custom__">Custom value</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Align</Label>
+                          <Select value={actionDraft.creditAlign || "__custom__"} onValueChange={(value) => setActionDraft((current) => ({ ...current, creditAlign: value === "__custom__" ? "" : value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="left">Left</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="right">Right</SelectItem>
+                              <SelectItem value="__custom__">Custom value</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Headline</Label>
+                          <Input value={actionDraft.title} onChange={(event) => setActionDraft((current) => ({ ...current, title: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Body copy</Label>
+                          <Textarea className="min-h-[92px]" value={actionDraft.body} onChange={(event) => setActionDraft((current) => ({ ...current, body: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Accent label</Label>
+                          <Input placeholder="New" value={actionDraft.accentLabel} onChange={(event) => setActionDraft((current) => ({ ...current, accentLabel: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CTA label</Label>
+                          <Input placeholder="Learn more" value={actionDraft.ctaLabel} onChange={(event) => setActionDraft((current) => ({ ...current, ctaLabel: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CTA URL</Label>
+                          <Input placeholder="https://jacobbarkin.com/projects" value={actionDraft.ctaHref} onChange={(event) => setActionDraft((current) => ({ ...current, ctaHref: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Footer text</Label>
+                          <Input placeholder="Optional fine print" value={actionDraft.legalText} onChange={(event) => setActionDraft((current) => ({ ...current, legalText: event.target.value }))} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                    </>
+                  ) : null}
+
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                    <Button variant="outline" onClick={() => setWizardStep("target")}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to target
+                    </Button>
+                    <Button onClick={() => setWizardStep("review")}>
+                      Continue to review
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                    </>
+                  ) : null}
+
+                  {wizardStep === "review" ? (
+                    <>
+                  <Accordion type="single" collapsible className="rounded-lg border px-3">
+                    <AccordionItem value="advanced" className="border-none">
+                      <AccordionTrigger className="hover:no-underline">
+                        <span className="flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-primary" />
+                          Advanced targeting and payload
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-4">
+                          <div className="space-y-2">
+                            <Label>Priority</Label>
+                            <Input type="number" value={editingRule.priority} onChange={(event) => setEditingRule((current) => ({ ...current, priority: Number(event.target.value || 100) }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Rollout %</Label>
+                            <Input type="number" min="0" max="100" value={editingRule.rollout_percent} onChange={(event) => setEditingRule((current) => ({ ...current, rollout_percent: Number(event.target.value || 100) }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Start at</Label>
+                            <Input type="datetime-local" value={editingRule.start_at || ""} onChange={(event) => setEditingRule((current) => ({ ...current, start_at: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>End at</Label>
+                            <Input type="datetime-local" value={editingRule.end_at || ""} onChange={(event) => setEditingRule((current) => ({ ...current, end_at: event.target.value }))} />
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Path regex</Label>
+                            <Input placeholder="^/products/.+" value={conditionDraft.pathRegex} onChange={(event) => setConditionDraft((current) => ({ ...current, pathRegex: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Query params</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"utm_campaign=spring\nref=partner-a"} value={conditionDraft.queryContains} onChange={(event) => setConditionDraft((current) => ({ ...current, queryContains: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Referrer hosts</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"google.com\nnews.ycombinator.com"} value={conditionDraft.referrerHosts} onChange={(event) => setConditionDraft((current) => ({ ...current, referrerHosts: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>UTM campaigns</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"spring-launch\nhomepage-test"} value={conditionDraft.utmCampaigns} onChange={(event) => setConditionDraft((current) => ({ ...current, utmCampaigns: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>UTM sources</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"google\nnewsletter"} value={conditionDraft.utmSources} onChange={(event) => setConditionDraft((current) => ({ ...current, utmSources: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>UTM mediums</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"cpc\nemail"} value={conditionDraft.utmMediums} onChange={(event) => setConditionDraft((current) => ({ ...current, utmMediums: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Device types</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"desktop\nmobile\ntablet"} value={conditionDraft.deviceTypes} onChange={(event) => setConditionDraft((current) => ({ ...current, deviceTypes: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Languages</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"en-US\nen"} value={conditionDraft.languages} onChange={(event) => setConditionDraft((current) => ({ ...current, languages: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Site keys</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"marketing-site\ncustomer-portal"} value={conditionDraft.siteKeys} onChange={(event) => setConditionDraft((current) => ({ ...current, siteKeys: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Installation IDs</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"install_123\ninstall_456"} value={conditionDraft.installationIds} onChange={(event) => setConditionDraft((current) => ({ ...current, installationIds: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Timezone offsets</Label>
+                            <Textarea className="min-h-[80px]" placeholder={"-300\n-240"} value={conditionDraft.timezoneOffsets} onChange={(event) => setConditionDraft((current) => ({ ...current, timezoneOffsets: event.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Notes</Label>
+                            <Textarea className="min-h-[80px]" value={editingRule.notes || ""} onChange={(event) => setEditingRule((current) => ({ ...current, notes: event.target.value }))} />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Unsafe HTML override</Label>
+                          <Textarea
+                            className="min-h-[130px] font-mono text-xs"
+                            placeholder="Optional advanced override. Leave empty to use the selected template."
+                            value={editingRule.unsafe_html || ""}
+                            onChange={(event) => setEditingRule((current) => ({ ...current, unsafe_html: event.target.value }))}
+                          />
+                          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                              <span>Unsafe HTML bypasses structured rendering. Use it only when a system or structured template cannot express the output you need.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 p-3">
+                          <div>
+                            <div className="text-sm font-medium">Generated JSON</div>
+                            <p className="text-xs text-muted-foreground">The rule engine still stores JSON. You can inspect it or take over raw editing.</p>
+                          </div>
+                          <Button variant={rawJsonMode ? "default" : "outline"} size="sm" onClick={() => {
+                            if (!rawJsonMode) {
+                              setRawConditionsJson(generatedConditionsJson);
+                              setRawConfigJson(generatedConfigJson);
+                            }
+                            setRawJsonMode((current) => !current);
+                          }}>
+                            <Code2 className="mr-2 h-4 w-4" />
+                            {rawJsonMode ? "Using raw JSON" : "Edit raw JSON"}
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Conditions JSON</Label>
+                            {rawJsonMode ? (
+                              <Textarea className="min-h-[180px] font-mono text-xs" value={rawConditionsJson} onChange={(event) => setRawConditionsJson(event.target.value)} />
+                            ) : (
+                              <pre className="max-h-[220px] overflow-auto rounded-md border bg-background p-3 text-xs">{generatedConditionsJson}</pre>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Action config JSON</Label>
+                            {rawJsonMode ? (
+                              <Textarea className="min-h-[180px] font-mono text-xs" value={rawConfigJson} onChange={(event) => setRawConfigJson(event.target.value)} />
+                            ) : (
+                              <pre className="max-h-[220px] overflow-auto rounded-md border bg-background p-3 text-xs">{generatedConfigJson}</pre>
+                            )}
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <div className="grid gap-3 md:grid-cols-[1fr,auto] md:items-end">
+                      <div className="space-y-2">
+                        <Label>Preview URL</Label>
+                        <Input value={draftPreviewUrl} onChange={(event) => setDraftPreviewUrl(event.target.value)} />
+                      </div>
+                      <Button onClick={previewDraftRule} disabled={isPreviewingDraft}>
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        {isPreviewingDraft ? "Previewing..." : "Preview draft"}
+                      </Button>
+                    </div>
+                    {draftPreviewExplain.length > 0 ? (
+                      <div className="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+                        {draftPreviewExplain.join(" · ")}
+                      </div>
+                    ) : null}
+                    <iframe
+                      title="Draft rule preview"
+                      sandbox="allow-same-origin"
+                      srcDoc={draftPreviewHtml || "<!DOCTYPE html><html><body style='font-family:system-ui;padding:24px;color:#64748b'>Preview this draft to see the rendered template.</body></html>"}
+                      className="h-[320px] w-full rounded-lg border bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <Button variant="outline" onClick={() => setWizardStep("content")} disabled={isSaving}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to content
+                    </Button>
+                    <Button variant="outline" onClick={() => saveRule("draft")} disabled={isSaving}>
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSaving ? "Saving..." : "Save draft"}
+                    </Button>
+                    <Button onClick={() => saveRule("active")} disabled={isSaving}>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      {isSaving ? "Saving..." : "Save & activate"}
+                    </Button>
+                  </div>
+                    </>
+                  ) : null}
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="templates">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {templates.map((template) => (
-                <div key={template.id} className="rounded-xl border p-4">
+                <div key={template.id} className={`rounded-lg border p-4 ${getTemplateTone(template)}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-medium">{template.name}</div>
                     <Badge variant={template.is_system === 1 ? "secondary" : "outline"}>
@@ -978,9 +1903,21 @@ export function EmbedRulesManager() {
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span>{template.category}</span>
                     <span>·</span>
+                    <span>{getTemplateSurface(template)}</span>
+                    <span>·</span>
                     <span>{template.render_mode}</span>
                     <span>·</span>
                     <span>v{template.version}</span>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openTemplateEditor(template)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => duplicateTemplate(template)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -989,7 +1926,7 @@ export function EmbedRulesManager() {
 
           <TabsContent value="test">
             <div className="grid gap-4 lg:grid-cols-[360px,1fr]">
-              <div className="space-y-4 rounded-xl border p-4">
+              <div className="space-y-4 rounded-lg border p-4">
                 <div className="space-y-2">
                   <Label>Test URL</Label>
                   <Input value={testUrl} onChange={(event) => setTestUrl(event.target.value)} />
@@ -1037,7 +1974,7 @@ export function EmbedRulesManager() {
                   title="Rule preview"
                   sandbox="allow-same-origin"
                   srcDoc={previewHtml || "<!DOCTYPE html><html><body style='font-family:system-ui;padding:24px'>Run a test to preview the rendered rule.</body></html>"}
-                  className="h-[560px] w-full rounded-xl border bg-white"
+                  className="h-[560px] w-full rounded-lg border bg-white"
                 />
               </div>
             </div>

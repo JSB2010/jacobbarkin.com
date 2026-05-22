@@ -4,8 +4,20 @@ import { getD1Database } from "@/lib/db/d1";
 import { evaluateRules } from "@/lib/embed/rules";
 import { getSystemTemplateById, renderTemplate } from "@/lib/embed/templates";
 import { requireAdmin } from "@/lib/embed/reporting";
-import type { EmbedRule } from "@/lib/embed/types";
-import { deriveInstallationId, getUrlParts, parseNumber, truncateText } from "@/lib/embed/utils";
+import type { EmbedRule, EmbedTemplate } from "@/lib/embed/types";
+import { deriveInstallationId, getUrlParts, parseNumber, safeJsonParse, truncateText } from "@/lib/embed/utils";
+
+function getTemplateConfigJson(value: string | null) {
+  if (!value) return null;
+  const parsed = safeJsonParse<Record<string, unknown>>(value, {});
+  const templateConfig = parsed.template_config;
+
+  if (templateConfig && typeof templateConfig === "object" && !Array.isArray(templateConfig)) {
+    return JSON.stringify(templateConfig);
+  }
+
+  return value;
+}
 
 export async function POST(request: NextRequest) {
   const userId = await requireAdmin();
@@ -53,15 +65,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "rule or rule_id is required" }, { status: 400 });
   }
 
-  const systemTemplate = getSystemTemplateById(truncateText(draftRule.template_id, 128));
+  const templateId = truncateText(draftRule.template_id, 128);
+  const customTemplate = templateId
+    ? await db.prepare(`SELECT * FROM embed_templates WHERE id = ? LIMIT 1`).bind(templateId).first<EmbedTemplate>()
+    : null;
+  const systemTemplate = customTemplate ? null : getSystemTemplateById(templateId);
+  const template = customTemplate || systemTemplate;
+  const configJson = typeof draftRule.config_json === "string" ? getTemplateConfigJson(draftRule.config_json) : null;
   const html =
     draftRule.unsafe_html ||
-    (systemTemplate ? renderTemplate(systemTemplate, typeof draftRule.config_json === "string" ? draftRule.config_json : null) : null);
+    (template ? renderTemplate(template, configJson) : null);
 
   return NextResponse.json({
     matched: true,
     rule_id: draftRule.id || null,
-    template_id: systemTemplate?.id || draftRule.template_id || null,
+    template_id: template?.id || draftRule.template_id || null,
     action_type: draftRule.action_type || "page_takeover",
     html,
     redirect_url: null,
