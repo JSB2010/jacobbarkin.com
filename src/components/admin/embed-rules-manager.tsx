@@ -36,6 +36,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
@@ -146,7 +147,7 @@ type AiMessage = {
 const defaultRule: Rule = {
   id: "",
   name: "",
-  status: "draft",
+  status: "paused",
   priority: 100,
   match_type: "conditions",
   conditions_json: "{}",
@@ -229,6 +230,19 @@ const wizardSteps: { id: WizardStep; label: string; description: string }[] = [
   { id: "content", label: "Content", description: "Pick template or custom HTML" },
   { id: "review", label: "Review", description: "Preview and save" },
 ];
+
+function isRuleEnabled(rule: Pick<Rule, "status">) {
+  return rule.status === "active";
+}
+
+function getRuleStateLabel(rule: Pick<Rule, "status" | "start_at" | "end_at">) {
+  if (isRuleEnabled(rule)) {
+    if (rule.start_at && Date.parse(rule.start_at) > Date.now()) return "Enabled, starts later";
+    if (rule.end_at && Date.parse(rule.end_at) < Date.now()) return "Ended";
+    return "Enabled";
+  }
+  return "Disabled";
+}
 
 function formatDate(value: string | null) {
   if (!value) return "-";
@@ -572,6 +586,7 @@ export function EmbedRulesManager() {
   const [isPreviewingDraft, setIsPreviewingDraft] = useState(false);
   const [isGeneratingHtml, setIsGeneratingHtml] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<string>>(new Set());
   const [rawJsonMode, setRawJsonMode] = useState(false);
   const [rawConditionsJson, setRawConditionsJson] = useState("{}");
   const [rawConfigJson, setRawConfigJson] = useState("{}");
@@ -600,7 +615,10 @@ export function EmbedRulesManager() {
         rule.name.toLowerCase().includes(query) ||
         (rule.template_id || "").toLowerCase().includes(query) ||
         summarizeRuleConditions(rule).toLowerCase().includes(query);
-      const matchesStatus = statusFilter === "__all__" || rule.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "__all__" ||
+        (statusFilter === "enabled" && isRuleEnabled(rule)) ||
+        (statusFilter === "disabled" && !isRuleEnabled(rule));
       const matchesAction = actionFilter === "__all__" || rule.action_type === actionFilter;
       return matchesQuery && matchesStatus && matchesAction;
     });
@@ -710,7 +728,7 @@ export function EmbedRulesManager() {
     setAiPrompt("");
     setAiMessages([]);
     setAiError("");
-    setWizardStep("target");
+    setWizardStep(normalizedRule.id ? "content" : "target");
     setComposerOpen(true);
     setDraftPreviewHtml("");
     setDraftPreviewExplain([]);
@@ -721,7 +739,7 @@ export function EmbedRulesManager() {
       ...rule,
       id: "",
       name: `${rule.name} copy`,
-      status: "draft",
+      status: "paused",
     });
     openRuleEditor(normalizedRule);
   }
@@ -770,7 +788,7 @@ export function EmbedRulesManager() {
     setIsSaving(true);
     try {
       validateRawJson();
-      const status = statusOverride || editingRule.status || "draft";
+      const status = statusOverride || editingRule.status || "paused";
       const response = await fetch("/api/embed-rules", {
         method: editingRule.id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -788,11 +806,27 @@ export function EmbedRulesManager() {
 
       if (!response.ok) throw new Error("Failed to save rule");
 
+      const wasEditingExisting = Boolean(editingRule.id);
+      const savedRule = {
+        ...editingRule,
+        status,
+        name: editingRule.name.trim() || `${targetModeLabels[targetDraft.mode]} rule`,
+        conditions_json: saveConditionsJson,
+        config_json: saveConfigJson,
+        start_at: editingRule.start_at || null,
+        end_at: editingRule.end_at || null,
+        unsafe_html: editingRule.unsafe_html || null,
+      };
+
       toast({
-        title: editingRule.id ? "Rule updated" : status === "active" ? "Rule activated" : "Rule created",
+        title: editingRule.id ? "Rule updated" : status === "active" ? "Rule enabled" : "Rule created disabled",
         description: "The rule was saved successfully.",
       });
-      resetComposer();
+      if (wasEditingExisting) {
+        setEditingRule(savedRule);
+      } else {
+        resetComposer();
+      }
       await loadAll();
     } catch (error) {
       console.error(error);
@@ -851,6 +885,45 @@ export function EmbedRulesManager() {
       return;
     }
     await loadAll();
+  }
+
+  async function updateRuleEnabled(rule: Rule, enabled: boolean) {
+    const nextStatus = enabled ? "active" : "paused";
+    setUpdatingStatusIds((current) => new Set(current).add(rule.id));
+    try {
+      const response = await fetch("/api/embed-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...rule,
+          status: nextStatus,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update rule status");
+
+      setRules((current) => current.map((item) => (item.id === rule.id ? { ...item, status: nextStatus } : item)));
+      if (editingRule.id === rule.id) {
+        setEditingRule((current) => ({ ...current, status: nextStatus }));
+      }
+      toast({
+        title: enabled ? "Rule enabled" : "Rule disabled",
+        description: `${rule.name} is now ${enabled ? "active" : "paused"}.`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Status update failed",
+        description: "The rule status could not be changed.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingStatusIds((current) => {
+        const next = new Set(current);
+        next.delete(rule.id);
+        return next;
+      });
+    }
   }
 
   async function runTest() {
@@ -1000,7 +1073,7 @@ export function EmbedRulesManager() {
     }
   }
 
-  const composerTitle = editingRule.id ? "Edit rule" : "Create rule";
+  const composerTitle = editingRule.id ? `Edit ${editingRule.name || "rule"}` : "Create rule";
 
   return (
     <Card>
@@ -1139,13 +1212,9 @@ export function EmbedRulesManager() {
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__all__">All status</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="preview">Preview</SelectItem>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
+                        <SelectItem value="__all__">All rules</SelectItem>
+                        <SelectItem value="enabled">Enabled</SelectItem>
+                        <SelectItem value="disabled">Disabled</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={actionFilter} onValueChange={setActionFilter}>
@@ -1175,7 +1244,7 @@ export function EmbedRulesManager() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <div className="truncate font-medium">{rule.name}</div>
-                              <Badge variant={rule.status === "active" ? "default" : "outline"}>{rule.status}</Badge>
+                              <Badge variant={isRuleEnabled(rule) ? "default" : "outline"}>{getRuleStateLabel(rule)}</Badge>
                             </div>
                             <div className="mt-1 text-xs text-muted-foreground">
                               {actionLabels[rule.action_type] || rule.action_type} · {rule.template_id || "No template"}
@@ -1192,16 +1261,31 @@ export function EmbedRulesManager() {
                               <span>priority {rule.priority}</span>
                             </div>
                           </div>
-                          <div className="flex shrink-0 flex-col gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openRuleEditor(rule)} aria-label={`Edit ${rule.name}`}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => duplicateRule(rule)} aria-label={`Duplicate ${rule.name}`}>
+                          <div className="flex shrink-0 flex-col items-end gap-3">
+                            <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {isRuleEnabled(rule) ? "On" : "Off"}
+                              </span>
+                              <Switch
+                                checked={isRuleEnabled(rule)}
+                                disabled={updatingStatusIds.has(rule.id)}
+                                onCheckedChange={(checked) => updateRuleEnabled(rule, checked)}
+                                className="h-5 w-9"
+                                aria-label={`${isRuleEnabled(rule) ? "Disable" : "Enable"} ${rule.name}`}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="default" size="sm" onClick={() => openRuleEditor(rule)} aria-label={`Edit ${rule.name}`}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => duplicateRule(rule)} aria-label={`Duplicate ${rule.name}`}>
                               <Copy className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => deleteRule(rule.id)} aria-label={`Delete ${rule.name}`}>
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => deleteRule(rule.id)} aria-label={`Delete ${rule.name}`}>
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1237,12 +1321,26 @@ export function EmbedRulesManager() {
                         {composerTitle}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Pick the site, choose the behavior, preview, and save.
+                        {editingRule.id
+                          ? "Editing this saved rule. Use Target only when you need to change where it applies."
+                          : "Pick the site, choose the behavior, preview, and save."}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={resetComposer}>
-                      Close
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-2">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {isRuleEnabled(editingRule) ? "Enabled" : "Disabled"}
+                        </span>
+                        <Switch
+                          checked={isRuleEnabled(editingRule)}
+                          onCheckedChange={(checked) => setEditingRule((current) => ({ ...current, status: checked ? "active" : "paused" }))}
+                          aria-label={`${isRuleEnabled(editingRule) ? "Disable" : "Enable"} draft rule`}
+                        />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={resetComposer}>
+                        Close
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid gap-2 md:grid-cols-3">
@@ -1277,20 +1375,6 @@ export function EmbedRulesManager() {
                         value={editingRule.name}
                         onChange={(event) => setEditingRule((current) => ({ ...current, name: event.target.value }))}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select value={editingRule.status} onValueChange={(value) => setEditingRule((current) => ({ ...current, status: value }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="preview">Preview</SelectItem>
-                          <SelectItem value="scheduled">Scheduled</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="paused">Paused</SelectItem>
-                          <SelectItem value="archived">Archived</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Action</Label>
@@ -1870,14 +1954,23 @@ export function EmbedRulesManager() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to content
                     </Button>
-                    <Button variant="outline" onClick={() => saveRule("draft")} disabled={isSaving}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save draft"}
-                    </Button>
-                    <Button onClick={() => saveRule("active")} disabled={isSaving}>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      {isSaving ? "Saving..." : "Save & activate"}
-                    </Button>
+                    {editingRule.id ? (
+                      <Button onClick={() => saveRule()} disabled={isSaving}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {isSaving ? "Saving..." : "Save changes"}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button variant="outline" onClick={() => saveRule("paused")} disabled={isSaving}>
+                          <Save className="mr-2 h-4 w-4" />
+                          {isSaving ? "Saving..." : "Save disabled"}
+                        </Button>
+                        <Button onClick={() => saveRule("active")} disabled={isSaving}>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          {isSaving ? "Saving..." : "Save & enable"}
+                        </Button>
+                      </>
+                    )}
                   </div>
                     </>
                   ) : null}
