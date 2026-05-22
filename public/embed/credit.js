@@ -125,12 +125,60 @@
     } catch {}
   }
 
-  function replaceDocument(html) {
-    if (!html || !document.open || !document.write || !document.close) return false;
-    document.open();
-    document.write(html);
-    document.close();
-    return true;
+  function extractTitleFromHtml(html) {
+    if (!html) return '';
+    const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    return match ? match[1].replace(/\s+/g, ' ').trim() : '';
+  }
+
+  function showTakeoverFrame(html) {
+    if (!html || !document.createElement) return false;
+
+    const mount = () => {
+      const host = document.body || document.documentElement;
+      if (!host) return false;
+
+      const existing = document.querySelector && document.querySelector('[data-jb-rule-takeover="true"]');
+      if (existing && existing.parentNode && existing.parentNode.removeChild) {
+        existing.parentNode.removeChild(existing);
+      }
+
+      const frame = document.createElement('iframe');
+      frame.setAttribute('title', extractTitleFromHtml(html) || 'Page notice');
+      frame.setAttribute('data-jb-rule-takeover', 'true');
+      frame.setAttribute('sandbox', 'allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation');
+      frame.style.position = 'fixed';
+      frame.style.inset = '0';
+      frame.style.width = '100vw';
+      frame.style.height = '100vh';
+      frame.style.border = '0';
+      frame.style.margin = '0';
+      frame.style.padding = '0';
+      frame.style.display = 'block';
+      frame.style.background = '#fff';
+      frame.style.zIndex = '2147483647';
+      frame.srcdoc = html;
+
+      try {
+        document.documentElement.style.overflow = 'hidden';
+        if (document.body) {
+          document.body.style.overflow = 'hidden';
+          document.body.style.margin = '0';
+        }
+        const title = extractTitleFromHtml(html);
+        if (title) document.title = title;
+      } catch {}
+
+      host.appendChild(frame);
+      return true;
+    };
+
+    if (!document.body) {
+      onReady(mount);
+      return true;
+    }
+
+    return mount();
   }
 
   function appendBanner(html) {
@@ -189,7 +237,7 @@
     }
 
     if (result.html && result.action_type === 'page_takeover') {
-      return replaceDocument(result.html);
+      return showTakeoverFrame(result.html);
     }
 
     return false;
@@ -478,8 +526,8 @@
             const blob = new Blob([payload], { type: 'application/json' });
             if (navigator.sendBeacon(endpoint, blob)) {
               debugLog(element, 'Flushed event batch', { endpoint, count: batches[endpoint].length });
-              return;
             }
+            return;
           }
           fetch(endpoint, {
             method: 'POST',

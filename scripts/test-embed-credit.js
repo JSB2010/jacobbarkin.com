@@ -5,7 +5,9 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 const scriptPath = path.join(repoRoot, "public/embed/credit.js");
+const middlewarePath = path.join(repoRoot, "src/middleware.ts");
 const source = fs.readFileSync(scriptPath, "utf8");
+const middlewareSource = fs.readFileSync(middlewarePath, "utf8");
 
 class FakeElement {
   constructor(tagName = "div") {
@@ -36,6 +38,12 @@ class FakeElement {
   appendChild(child) {
     child.parentNode = this;
     this.children.push(child);
+    return child;
+  }
+
+  removeChild(child) {
+    this.children = this.children.filter((item) => item !== child);
+    child.parentNode = null;
     return child;
   }
 
@@ -168,7 +176,7 @@ function makeContext(options = {}) {
       languages: ["en-US"],
       sendBeacon(endpoint, blob) {
         beacons.push({ endpoint, blob });
-        return true;
+        return options.sendBeaconResult !== undefined ? options.sendBeaconResult : true;
       },
     },
     location: new URL(options.pageUrl || "https://example.com/path?utm_campaign=spring"),
@@ -345,14 +353,56 @@ async function testRuleActionsAreExplicit() {
     fetchJson: { matched: true, action_type: "page_takeover", html: "<html><body>takeover</body></html>" },
   });
   await flushMicrotasks();
-  assert.equal(pageTakeover.context.document.openCalled, true, "page_takeover should replace the document");
-  assert.ok(pageTakeover.context.document.writeValue.includes("takeover"));
+  const takeoverFrame = pageTakeover.context.document.body.children.find((child) => child.tagName === "IFRAME");
+  assert.ok(takeoverFrame, "page_takeover should mount an isolated iframe overlay");
+  assert.equal(takeoverFrame.getAttribute("data-jb-rule-takeover"), "true");
+  assert.ok(takeoverFrame.srcdoc.includes("takeover"));
+  assert.equal(takeoverFrame.style.position, "fixed");
+  assert.equal(takeoverFrame.style.inset, "0");
+  assert.equal(pageTakeover.context.document.openCalled, false, "page_takeover should not use document.write after host app hydration");
 
   const inlineReplace = makeContext({
     fetchJson: { matched: true, action_type: "inline_replace", html: "<strong>inline</strong>" },
   });
   await flushMicrotasks();
   assert.equal(inlineReplace.context.document.openCalled, false, "inline_replace should not replace the whole document");
+}
+
+async function testBlockedBeaconDoesNotFallbackToFetch() {
+  const env = makeContext({ sendBeaconResult: false });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.connectedCallback();
+
+  env.context.JBCredit.analytics.impression(element);
+  env.context.JBCredit.analytics.flush(element);
+
+  assert.ok(env.beacons.length >= 1, "analytics should try sendBeacon first");
+  assert.equal(env.fetchCalls.length, 1, "failed sendBeacon should not retry analytics with fetch");
+  assert.equal(env.fetchCalls[0].input, "https://jacobbarkin.com/api/embed-rules/evaluate");
+}
+
+async function testPublicRuntimeEndpointsAreNotGloballyProtected() {
+  assert.match(
+    middlewareSource,
+    /pathname === "\/api\/embed-rules\/evaluate"/,
+    "rule evaluation endpoint must bypass global Clerk protection"
+  );
+  assert.match(
+    middlewareSource,
+    /pathname === "\/api\/embed-analytics" && \(req\.method === "POST" \|\| req\.method === "OPTIONS"\)/,
+    "analytics ingestion must bypass global Clerk protection"
+  );
+  assert.match(
+    middlewareSource,
+    /pathname === "\/api\/embed-heartbeat" && \(req\.method === "POST" \|\| req\.method === "OPTIONS"\)/,
+    "heartbeat ingestion must bypass global Clerk protection"
+  );
+  assert.match(
+    middlewareSource,
+    /url\.searchParams\.get\("list"\) !== "true"/,
+    "legacy public custom-content lookup must bypass global Clerk protection without exposing admin listing"
+  );
 }
 
 async function run() {
@@ -363,6 +413,8 @@ async function run() {
     testDataOnlyDoesNotRenderUiOrImpression,
     testAnalyticsPayloadAndDuplicateImpression,
     testRuleActionsAreExplicit,
+    testBlockedBeaconDoesNotFallbackToFetch,
+    testPublicRuntimeEndpointsAreNotGloballyProtected,
   ];
 
   for (const test of tests) {

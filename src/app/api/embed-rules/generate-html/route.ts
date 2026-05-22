@@ -81,7 +81,8 @@ function buildSystemPrompt(style: AiStyle, surface: AiSurface) {
     "- The summary value must be a short sentence describing the revision.",
     "- The notes value must be an array of short strings.",
     "- Do not include <script>, inline event handlers, javascript: URLs, forms that collect sensitive data, tracking pixels, or remote code.",
-    "- Avoid remote assets unless the user explicitly requests a specific image or font.",
+    "- Avoid remote assets unless the user explicitly provides the exact URL to use. Do not invent logo, image, font, CDN, or brand-asset URLs.",
+    "- If a logo or brand mark is needed without an exact supplied asset URL, create a text-based mark or CSS-only badge instead of using a remote image.",
     "- Keep all links intentional and accessible, and use target=\"_blank\" with rel=\"noopener noreferrer\" for external links.",
   ].join("\n\n");
 }

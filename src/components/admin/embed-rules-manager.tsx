@@ -1777,7 +1777,8 @@ export function EmbedRulesManager() {
                           </div>
                           <div className="space-y-2">
                             <Label>Timezone offsets</Label>
-                            <Textarea className="min-h-[80px]" placeholder={"-300\n-240"} value={conditionDraft.timezoneOffsets} onChange={(event) => setConditionDraft((current) => ({ ...current, timezoneOffsets: event.target.value }))} />
+                            <Textarea className="min-h-[80px]" placeholder={"360\n420"} value={conditionDraft.timezoneOffsets} onChange={(event) => setConditionDraft((current) => ({ ...current, timezoneOffsets: event.target.value }))} />
+                            <p className="text-xs text-muted-foreground">Leave blank for most rules. This is the browser timezone offset in minutes from UTC; Denver is usually 360 or 420 depending on daylight saving time.</p>
                           </div>
                           <div className="space-y-2">
                             <Label>Notes</Label>
