@@ -14,6 +14,7 @@ type ClientMessage = {
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 5000;
 const MAX_HTML_LENGTH = 70000;
+const MAX_SITE_CONTEXT_LENGTH = 6000;
 
 function coerceStyle(value: unknown): AiStyle {
   return value === "none" ? "none" : "jacob_barkin";
@@ -87,7 +88,92 @@ function buildSystemPrompt(style: AiStyle, surface: AiSurface) {
   ].join("\n\n");
 }
 
-function buildContextText(body: Record<string, unknown>, style: AiStyle, surface: AiSurface) {
+function isPublicHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    if (host === "localhost" || host === "0.0.0.0" || host === "::1") return false;
+    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return false;
+    if (/^169\.254\./.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function compactWhitespace(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function extractTagContent(html: string, pattern: RegExp) {
+  const matches = Array.from(html.matchAll(pattern))
+    .map((match) => compactWhitespace(match[1] || ""))
+    .filter(Boolean);
+  return Array.from(new Set(matches)).slice(0, 12);
+}
+
+function extractSiteContext(html: string, siteUrl: string) {
+  const title = compactWhitespace(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "");
+  const description = compactWhitespace(
+    html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1] ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i)?.[1] ||
+      ""
+  );
+  const headings = extractTagContent(html, /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)
+    .map((heading) => heading.replace(/<[^>]+>/g, ""));
+  const colors = Array.from(new Set((html.match(/#[0-9a-fA-F]{3,8}\b/g) || []).map((color) => color.toLowerCase()))).slice(0, 16);
+  const visibleText = compactWhitespace(
+    html
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  ).slice(0, 2400);
+
+  return truncateText(
+    [
+      `Explored URL: ${siteUrl}`,
+      title ? `Page title: ${title}` : "",
+      description ? `Meta description: ${description}` : "",
+      headings.length ? `Headings: ${headings.join(" | ")}` : "",
+      colors.length ? `Detected CSS colors: ${colors.join(", ")}` : "",
+      visibleText ? `Visible page text excerpt: ${visibleText}` : "",
+    ].filter(Boolean).join("\n"),
+    MAX_SITE_CONTEXT_LENGTH
+  ) || "";
+}
+
+async function fetchSiteContext(body: Record<string, unknown>) {
+  if (body.explore_site !== true) return "";
+  const siteUrl = truncateText(body.site_url, 2048) || "";
+  if (!siteUrl || !isPublicHttpUrl(siteUrl)) return "";
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3500);
+
+  try {
+    const response = await fetch(siteUrl, {
+      headers: {
+        "User-Agent": "Jacob Barkin Embed Rule Context Bot",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+      signal: controller.signal,
+    });
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !contentType.toLowerCase().includes("text/html")) return "";
+    const html = await response.text();
+    return extractSiteContext(html.slice(0, 250000), siteUrl);
+  } catch (error) {
+    console.warn("Site exploration failed", error);
+    return "";
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildContextText(body: Record<string, unknown>, style: AiStyle, surface: AiSurface, siteContext: string) {
   const currentHtml = typeof body.current_html === "string" ? truncateText(body.current_html, MAX_HTML_LENGTH) : "";
   const target = body.target && typeof body.target === "object" ? body.target : {};
 
@@ -96,6 +182,7 @@ function buildContextText(body: Record<string, unknown>, style: AiStyle, surface
     `Selected style: ${style === "jacob_barkin" ? "Jacob Barkin styled" : "No style"}`,
     `Rule action type: ${truncateText(body.action_type, 64) || "page_takeover"}`,
     `Target context JSON: ${JSON.stringify(target)}`,
+    siteContext ? `Explored target site context:\n${siteContext}` : "Explored target site context: not requested or unavailable",
     currentHtml ? `Current draft HTML to revise:\n${currentHtml}` : "Current draft HTML to revise: none yet",
   ].join("\n\n");
 }
@@ -145,10 +232,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "A user prompt is required" }, { status: 400 });
   }
 
+  const siteContext = await fetchSiteContext(body);
+
   const contents = [
     {
       role: "user",
-      parts: [{ text: buildContextText(body, style, surface) }],
+      parts: [{ text: buildContextText(body, style, surface, siteContext) }],
     },
     ...messages.map((message) => ({
       role: message.role === "assistant" ? "model" : "user",

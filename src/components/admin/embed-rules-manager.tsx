@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
@@ -13,7 +12,6 @@ import {
   Filter,
   Globe,
   Layers3,
-  LayoutTemplate,
   Pencil,
   PlayCircle,
   Plus,
@@ -83,11 +81,10 @@ type SiteOption = {
   last_page_url: string | null;
 };
 
-type TargetMode = "known_site" | "domain" | "exact_url" | "path_prefix";
+type TargetMode = "all_pages" | "exact_url" | "path_prefix";
 
 type RuleTargetDraft = {
   mode: TargetMode;
-  knownSiteHost: string;
   domain: string;
   exactUrl: string;
   pathPrefix: string;
@@ -161,8 +158,7 @@ const defaultRule: Rule = {
 };
 
 const defaultTargetDraft: RuleTargetDraft = {
-  mode: "domain",
-  knownSiteHost: "",
+  mode: "all_pages",
   domain: "",
   exactUrl: "",
   pathPrefix: "/",
@@ -217,14 +213,13 @@ const actionLabels: Record<string, string> = {
 };
 
 const targetModeLabels: Record<TargetMode, string> = {
-  known_site: "Known site",
-  domain: "Domain",
+  all_pages: "All pages",
   exact_url: "Exact URL",
   path_prefix: "Path prefix",
 };
 
 const wizardSteps: { id: WizardStep; label: string; description: string }[] = [
-  { id: "target", label: "Target", description: "Choose domain and action" },
+  { id: "target", label: "Target", description: "Choose site and pages" },
   { id: "content", label: "Content", description: "Pick template or custom HTML" },
   { id: "review", label: "Review", description: "Preview and save" },
 ];
@@ -368,7 +363,12 @@ function getTargetDraft(rule: Rule): RuleTargetDraft {
   const pathPrefixes = joinList(conditions.path_prefixes);
 
   if (exactUrls.length > 0) {
-    return { ...defaultTargetDraft, mode: "exact_url", exactUrl: exactUrls.join("\n") };
+    return {
+      ...defaultTargetDraft,
+      mode: "exact_url",
+      domain: hosts || normalizeHostTarget(exactUrls[0]),
+      exactUrl: exactUrls.join("\n"),
+    };
   }
 
   if (pathPrefixes) {
@@ -381,7 +381,7 @@ function getTargetDraft(rule: Rule): RuleTargetDraft {
   }
 
   if (hosts) {
-    return { ...defaultTargetDraft, mode: "domain", domain: hosts };
+    return { ...defaultTargetDraft, mode: "all_pages", domain: hosts };
   }
 
   return defaultTargetDraft;
@@ -431,16 +431,13 @@ function getActionDraft(rule: Rule, template: Template | null): RuleActionDraft 
 function buildConditionsObject(target: RuleTargetDraft, draft: RuleConditionDraft) {
   const conditions: Record<string, unknown> = {};
 
-  if (target.mode === "known_site" && target.knownSiteHost.trim()) {
-    conditions.hosts = [normalizeHostTarget(target.knownSiteHost)];
-  }
-
-  if (target.mode === "domain" && parseLineList(target.domain).length) {
+  if (target.mode === "all_pages" && parseLineList(target.domain).length) {
     conditions.hosts = uniqueList(parseLineList(target.domain).map(normalizeHostTarget));
   }
 
   if (target.mode === "exact_url") {
     const exactUrls = uniqueList(parseLineList(target.exactUrl).map(normalizeUrlTarget));
+    if (parseLineList(target.domain).length) conditions.hosts = uniqueList(parseLineList(target.domain).map(normalizeHostTarget));
     if (exactUrls.length === 1) conditions.exact_url = exactUrls[0];
     if (exactUrls.length > 1) conditions.exact_urls = exactUrls;
   }
@@ -465,6 +462,30 @@ function buildConditionsObject(target: RuleTargetDraft, draft: RuleConditionDraf
 
 function buildConditionsJson(target: RuleTargetDraft, draft: RuleConditionDraft) {
   return stringifyPayload(buildConditionsObject(target, draft));
+}
+
+function getPrimaryTargetHost(target: RuleTargetDraft) {
+  const domainHost = normalizeHostTarget(parseLineList(target.domain)[0] || "");
+  if (domainHost) return domainHost;
+  if (target.mode === "exact_url") return normalizeHostTarget(parseLineList(target.exactUrl)[0] || "");
+  return "";
+}
+
+function getSuggestedPreviewUrl(target: RuleTargetDraft) {
+  if (target.mode === "exact_url") {
+    const exactUrl = normalizeUrlTarget(parseLineList(target.exactUrl)[0] || "");
+    if (/^https?:\/\//i.test(exactUrl)) return exactUrl;
+  }
+
+  const host = getPrimaryTargetHost(target);
+  if (!host) return "https://example.com/";
+
+  if (target.mode === "path_prefix") {
+    const prefix = normalizePathPrefixTarget(parseLineList(target.pathPrefix)[0] || "/");
+    return `https://${host}${prefix}`;
+  }
+
+  return `https://${host}/`;
 }
 
 function buildConfigObject(rule: Rule, draft: RuleActionDraft) {
@@ -592,6 +613,7 @@ export function EmbedRulesManager() {
   const [conditionDraft, setConditionDraft] = useState<RuleConditionDraft>(defaultConditionDraft);
   const [actionDraft, setActionDraft] = useState<RuleActionDraft>(defaultActionDraft);
   const [aiStyle, setAiStyle] = useState<AiStyle>("jacob_barkin");
+  const [aiExploreSite, setAiExploreSite] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiError, setAiError] = useState("");
@@ -602,7 +624,7 @@ export function EmbedRulesManager() {
   const [actionFilter, setActionFilter] = useState("__all__");
   const [testUrl, setTestUrl] = useState("https://example.com/landing?utm_campaign=spring");
   const [testRuleId, setTestRuleId] = useState<string>("__any__");
-  const [draftPreviewUrl, setDraftPreviewUrl] = useState("https://example.com/");
+  const [draftPreviewUrl, setDraftPreviewUrl] = useState("");
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewExplain, setPreviewExplain] = useState<string[]>([]);
   const [draftPreviewHtml, setDraftPreviewHtml] = useState<string>("");
@@ -629,6 +651,7 @@ export function EmbedRulesManager() {
     () => buildConfigJson(editingRule, actionDraft),
     [actionDraft, editingRule]
   );
+  const suggestedDraftPreviewUrl = useMemo(() => getSuggestedPreviewUrl(targetDraft), [targetDraft]);
   const saveConditionsJson = rawJsonMode ? rawConditionsJson : generatedConditionsJson;
   const saveConfigJson = rawJsonMode ? rawConfigJson : generatedConfigJson;
 
@@ -725,6 +748,7 @@ export function EmbedRulesManager() {
     setRawConfigJson("{}");
     setContentMode("template");
     setAiStyle("jacob_barkin");
+    setAiExploreSite(false);
     setAiPrompt("");
     setAiMessages([]);
     setAiError("");
@@ -750,6 +774,7 @@ export function EmbedRulesManager() {
     setRawJsonMode(false);
     setContentMode(normalizedRule.unsafe_html ? "custom_html" : "template");
     setAiStyle("jacob_barkin");
+    setAiExploreSite(false);
     setAiPrompt("");
     setAiMessages([]);
     setAiError("");
@@ -809,7 +834,7 @@ export function EmbedRulesManager() {
     return true;
   }
 
-  async function saveRule(statusOverride?: string) {
+  async function saveRule(statusOverride?: string, options: { closeAfterSave?: boolean } = {}) {
     setIsSaving(true);
     try {
       validateRawJson();
@@ -847,7 +872,7 @@ export function EmbedRulesManager() {
         title: editingRule.id ? "Rule updated" : status === "active" ? "Rule enabled" : "Rule created disabled",
         description: "The rule was saved successfully.",
       });
-      if (wasEditingExisting) {
+      if (wasEditingExisting && !options.closeAfterSave) {
         setEditingRule(savedRule);
       } else {
         resetComposer();
@@ -983,11 +1008,12 @@ export function EmbedRulesManager() {
     setIsPreviewingDraft(true);
     try {
       validateRawJson();
+      const previewUrl = draftPreviewUrl.trim() || suggestedDraftPreviewUrl;
       const response = await fetch("/api/embed-rules/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url: draftPreviewUrl,
+          url: previewUrl,
           rule: {
             ...editingRule,
             conditions_json: saveConditionsJson,
@@ -1044,12 +1070,14 @@ export function EmbedRulesManager() {
           current_html: editingRule.unsafe_html || "",
           target: {
             mode: targetDraft.mode,
-            known_site_host: targetDraft.knownSiteHost,
             domain: targetDraft.domain,
             exact_url: targetDraft.exactUrl,
             path_prefix: targetDraft.pathPrefix,
+            preview_url: suggestedDraftPreviewUrl,
             conditions: buildConditionsObject(targetDraft, conditionDraft),
           },
+          explore_site: aiExploreSite,
+          site_url: suggestedDraftPreviewUrl,
           messages: nextMessages.map((message) => ({
             role: message.role,
             content: message.role === "assistant" && message.html
@@ -1207,8 +1235,8 @@ export function EmbedRulesManager() {
           </TabsList>
 
           <TabsContent value="rules">
-            <div className="grid gap-4 xl:grid-cols-[minmax(340px,0.9fr),minmax(460px,1.1fr)]">
-              <div className="order-2 space-y-4 xl:order-1">
+            <div className={composerOpen ? "grid gap-4 xl:grid-cols-[minmax(340px,0.9fr),minmax(460px,1.1fr)]" : "space-y-4"}>
+              <div className="space-y-4">
                 <div className="rounded-lg border bg-card p-4">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -1319,25 +1347,9 @@ export function EmbedRulesManager() {
                 </div>
               </div>
 
-              <div className="order-1 xl:order-2">
-                <div className={`sticky top-36 rounded-lg bg-card p-4 ${composerOpen ? "space-y-4 border-2 border-primary/30 shadow-sm shadow-primary/10" : "border border-dashed"}`}>
-                  {!composerOpen ? (
-                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 text-center">
-                      <div className="rounded-full bg-primary/10 p-4 text-primary">
-                        <LayoutTemplate className="h-7 w-7" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">No rule editor open</h3>
-                        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-                          Existing rules stay on the left. Open a clearly separated guided editor only when you are creating or editing a rule.
-                        </p>
-                      </div>
-                      <Button onClick={startNewRule}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Rule
-                      </Button>
-                    </div>
-                  ) : (
+              {composerOpen ? (
+              <div>
+                <div className="sticky top-36 space-y-4 rounded-lg border-2 border-primary/30 bg-card p-4 shadow-sm shadow-primary/10">
                     <>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -1429,92 +1441,84 @@ export function EmbedRulesManager() {
                     </div>
                   </div>
 
-                  <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-4 rounded-lg border p-3">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Globe className="h-4 w-4 text-primary" />
                       Target
                     </div>
-                    <div className="grid gap-3 md:grid-cols-[180px,1fr]">
-                      <div className="space-y-2">
-                        <Label>Match by</Label>
-                        <Select value={targetDraft.mode} onValueChange={(value) => setTargetDraft((current) => ({ ...current, mode: value as TargetMode }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="known_site">Known site</SelectItem>
-                            <SelectItem value="domain">Domain</SelectItem>
-                            <SelectItem value="exact_url">Exact URL</SelectItem>
-                            <SelectItem value="path_prefix">Path prefix</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-2">
+                      <Label>Domain</Label>
+                      <Input
+                        list="embed-rule-known-sites"
+                        placeholder="curriculum.kentdenver.org"
+                        value={targetDraft.domain}
+                        onChange={(event) => setTargetDraft((current) => ({ ...current, domain: event.target.value }))}
+                      />
+                      <datalist id="embed-rule-known-sites">
+                        {sites.map((site) => (
+                          <option key={site.installation_id} value={site.page_host}>
+                            {site.label || site.page_host}
+                          </option>
+                        ))}
+                      </datalist>
+                      <p className="text-xs text-muted-foreground">Type a domain or choose one of the tracked domains from the browser suggestions.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Pages</Label>
+                      <div className="grid gap-2 md:grid-cols-3">
+                        {[
+                          { value: "all_pages", label: "All pages", description: "Every page on this domain" },
+                          { value: "path_prefix", label: "Path prefix", description: "Only pages under a section" },
+                          { value: "exact_url", label: "Exact page", description: "Only one full URL" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setTargetDraft((current) => ({ ...current, mode: option.value as TargetMode }))}
+                            className={`rounded-lg border p-3 text-left transition-colors ${targetDraft.mode === option.value ? "border-primary bg-primary/10 text-primary" : "bg-background hover:border-primary/40"}`}
+                          >
+                            <div className="text-sm font-medium">{option.label}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">{option.description}</div>
+                          </button>
+                        ))}
                       </div>
+                    </div>
 
-                      {targetDraft.mode === "known_site" ? (
-                        <div className="space-y-2">
-                          <Label>Site</Label>
-                          <Select value={targetDraft.knownSiteHost || "__none__"} onValueChange={(value) => setTargetDraft((current) => ({ ...current, knownSiteHost: value === "__none__" ? "" : value }))}>
-                            <SelectTrigger><SelectValue placeholder="Choose a tracked site" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">Choose a tracked site</SelectItem>
-                              {sites.map((site) => (
-                                <SelectItem key={site.installation_id} value={site.page_host}>
-                                  {site.label || site.page_host}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : null}
+                    {targetDraft.mode === "path_prefix" ? (
+                      <div className="space-y-2">
+                        <Label>Path prefix</Label>
+                        <Input
+                          placeholder="/pricing"
+                          value={targetDraft.pathPrefix}
+                          onChange={(event) => setTargetDraft((current) => ({ ...current, pathPrefix: event.target.value }))}
+                        />
+                      </div>
+                    ) : null}
 
-                      {targetDraft.mode === "domain" ? (
-                        <div className="space-y-2">
-                          <Label>Domain</Label>
-                          <Textarea
-                            className="min-h-[72px]"
-                            placeholder={"example.com\nwww.example.com"}
-                            value={targetDraft.domain}
-                            onChange={(event) => setTargetDraft((current) => ({ ...current, domain: event.target.value }))}
-                          />
-                        </div>
-                      ) : null}
+                    {targetDraft.mode === "exact_url" ? (
+                      <div className="space-y-2">
+                        <Label>Exact URL</Label>
+                        <Input
+                          placeholder="https://curriculum.kentdenver.org/course-guide"
+                          value={targetDraft.exactUrl}
+                          onChange={(event) => setTargetDraft((current) => ({ ...current, exactUrl: event.target.value }))}
+                        />
+                      </div>
+                    ) : null}
 
-                      {targetDraft.mode === "exact_url" ? (
-                        <div className="space-y-2">
-                          <Label>Exact URL</Label>
-                          <Textarea
-                            className="min-h-[72px]"
-                            placeholder="https://example.com/pricing"
-                            value={targetDraft.exactUrl}
-                            onChange={(event) => setTargetDraft((current) => ({ ...current, exactUrl: event.target.value }))}
-                          />
-                        </div>
-                      ) : null}
-
-                      {targetDraft.mode === "path_prefix" ? (
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>Domain</Label>
-                            <Textarea
-                              className="min-h-[72px]"
-                              placeholder="example.com"
-                              value={targetDraft.domain}
-                              onChange={(event) => setTargetDraft((current) => ({ ...current, domain: event.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Path prefix</Label>
-                            <Textarea
-                              className="min-h-[72px]"
-                              placeholder={"/pricing\n/blog/"}
-                              value={targetDraft.pathPrefix}
-                              onChange={(event) => setTargetDraft((current) => ({ ...current, pathPrefix: event.target.value }))}
-                            />
-                          </div>
-                        </div>
-                      ) : null}
+                    <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+                      Preview/test URL: <span className="font-medium text-foreground">{draftPreviewUrl.trim() || suggestedDraftPreviewUrl}</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    {editingRule.id ? (
+                      <Button variant="outline" onClick={() => saveRule(undefined, { closeAfterSave: true })} disabled={isSaving}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {isSaving ? "Saving..." : "Save changes"}
+                      </Button>
+                    ) : null}
                     <Button onClick={() => setWizardStep("content")}>
                       Continue to content
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -1602,7 +1606,22 @@ export function EmbedRulesManager() {
                             No style
                           </Button>
                         </div>
-                      </div>
+	                      </div>
+
+                      <label className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={aiExploreSite}
+                          onChange={(event) => setAiExploreSite(event.target.checked)}
+                          className="mt-1"
+                        />
+                        <span>
+                          <span className="font-medium">Explore the target site first</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            Fetches the target URL server-side and gives Gemini the page title, meta description, headings, and visible text/style clues.
+                          </span>
+                        </span>
+                      </label>
 
                       {aiMessages.length > 0 ? (
                         <div className="space-y-2">
@@ -1805,10 +1824,18 @@ export function EmbedRulesManager() {
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to target
                     </Button>
-                    <Button onClick={() => setWizardStep("review")}>
-                      Continue to review
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      {editingRule.id ? (
+                        <Button variant="outline" onClick={() => saveRule(undefined, { closeAfterSave: true })} disabled={isSaving}>
+                          <Save className="mr-2 h-4 w-4" />
+                          {isSaving ? "Saving..." : "Save changes"}
+                        </Button>
+                      ) : null}
+                      <Button onClick={() => setWizardStep("review")}>
+                        Continue to review
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                     </>
                   ) : null}
@@ -1890,22 +1917,6 @@ export function EmbedRulesManager() {
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>Unsafe HTML override</Label>
-                          <Textarea
-                            className="min-h-[130px] font-mono text-xs"
-                            placeholder="Optional advanced override. Leave empty to use the selected template."
-                            value={editingRule.unsafe_html || ""}
-                            onChange={(event) => setEditingRule((current) => ({ ...current, unsafe_html: event.target.value }))}
-                          />
-                          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                              <span>Unsafe HTML bypasses structured rendering. Use it only when a system or structured template cannot express the output you need.</span>
-                            </div>
-                          </div>
-                        </div>
-
                         <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 p-3">
                           <div>
                             <div className="text-sm font-medium">Generated JSON</div>
@@ -1948,8 +1959,15 @@ export function EmbedRulesManager() {
                   <div className="space-y-3 rounded-lg border p-3">
                     <div className="grid gap-3 md:grid-cols-[1fr,auto] md:items-end">
                       <div className="space-y-2">
-                        <Label>Preview URL</Label>
-                        <Input value={draftPreviewUrl} onChange={(event) => setDraftPreviewUrl(event.target.value)} />
+                        <Label>Test draft against URL</Label>
+                        <Input
+                          placeholder={suggestedDraftPreviewUrl}
+                          value={draftPreviewUrl}
+                          onChange={(event) => setDraftPreviewUrl(event.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Used only for this preview. Leave blank to use the current target: {suggestedDraftPreviewUrl}
+                        </p>
                       </div>
                       <Button onClick={previewDraftRule} disabled={isPreviewingDraft}>
                         <PlayCircle className="mr-2 h-4 w-4" />
@@ -1975,7 +1993,7 @@ export function EmbedRulesManager() {
                       Back to content
                     </Button>
                     {editingRule.id ? (
-                      <Button onClick={() => saveRule()} disabled={isSaving}>
+                      <Button onClick={() => saveRule(undefined, { closeAfterSave: true })} disabled={isSaving}>
                         <Save className="mr-2 h-4 w-4" />
                         {isSaving ? "Saving..." : "Save changes"}
                       </Button>
@@ -1995,9 +2013,9 @@ export function EmbedRulesManager() {
                     </>
                   ) : null}
                     </>
-                  )}
                 </div>
               </div>
+              ) : null}
             </div>
           </TabsContent>
 
