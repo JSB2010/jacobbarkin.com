@@ -52,6 +52,7 @@ declare module 'react' {
         'data-position'?: 'inline' | 'fixed';
         'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'left' | 'right' | 'center';
+        'data-bottom-offset'?: string;
         'data-no-track'?: string | boolean;
         'data-no-rules'?: string | boolean;
         'data-site'?: string;
@@ -79,9 +80,10 @@ Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src
 - Add the script tag once per page. You can render multiple `<jb-credit>` elements after the script is loaded.
 - `data-auto` injects the element automatically; if you use `data-auto`, do not also add `<jb-credit>`.
 - For React/Next.js, only inject the script on the client (e.g., `useEffect`) to avoid SSR issues.
-- If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src` and `connect-src` or set `data-no-track` to disable analytics/heartbeat.
+- If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src`, `connect-src`, and `img-src` or set `data-no-track` to disable analytics/heartbeat.
 - `data-no-track` disables both analytics and heartbeat pings.
 - `data-no-rules` disables remote rule/custom-content evaluation while keeping analytics and heartbeat enabled.
+- The public `/embed/credit.js` file is generated from `src/embed/credit.js`; run `npm run build:embed` after runtime changes.
 - The script targets Safari 12+ and current evergreen Chrome, Firefox, and Edge.
 
 ---
@@ -97,6 +99,7 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 | `data-align`     | `left`, `center`, `right`                                        | `center`  | Horizontal alignment within container            |
 | `data-theme`     | `auto`, `light`, `dark`                                          | `auto`    | Color theme (auto detects from page)             |
 | `data-position`  | `inline`, `fixed`                                                | `inline`  | inline = normal flow, fixed = sticky footer bar  |
+| `data-bottom-offset` | CSS length, e.g. `16px`                                      | `0px`     | Bottom offset when `data-position="fixed"`       |
 | `data-no-track`  | (boolean)                                                        | false     | Disable analytics tracking for this embed        |
 | `data-no-rules`  | (boolean)                                                        | false     | Disable remote rules/replacements for this embed |
 | `data-site`      | string                                                           | host-based fallback | Stable installation identifier         |
@@ -131,7 +134,9 @@ By default, the script checks `/api/embed-rules/evaluate` for remote rules. Matc
 - replace the full document (`page_takeover`)
 - replace the embed itself (`inline_replace`)
 
-If rule evaluation fails, the script falls back to the legacy `/api/embed-custom-content` check. Add `data-no-rules` to skip both rule systems without disabling analytics.
+If rule evaluation fails or returns a non-OK response, the script falls back to the legacy `/api/embed-custom-content` check and renders matching legacy content in a sandboxed takeover iframe. Add `data-no-rules` to skip both rule systems without disabling analytics.
+
+Aggregate reporting is built from the canonical `embed_events` table by a scheduled rollup, so dashboard totals can lag by up to about 15 minutes. Event and installation views update immediately.
 
 ### Event Payload Fields
 
@@ -163,7 +168,7 @@ Text only by default. On hover, a chip background appears. Good for footers or s
 Ultra low-profile. Just the text "Designed by Jacob Barkin" with a gradient on the name. Subtle underline appears on hover. No chip, no background.
 
 ### data-only
-Completely invisible - no UI whatsoever. Only sends heartbeat pings to track active sites. Does NOT track impressions or clicks. Perfect for tracking site activity without visible credit.
+Completely invisible - no UI whatsoever. Only sends heartbeat pings to track active sites. Does NOT track load, impressions, or clicks. Perfect for tracking site activity without visible credit.
 
 ---
 
@@ -207,6 +212,11 @@ Large chip, right-aligned:
 Fixed footer bar:
 ```html
 <jb-credit data-position="fixed"></jb-credit>
+```
+
+Fixed footer bar with bottom offset:
+```html
+<jb-credit data-position="fixed" data-bottom-offset="16px"></jb-credit>
 ```
 
 Force dark theme:

@@ -52,6 +52,7 @@
         "shadcn-ui": "^0.9.5",
         "sharp": "^0.34.5",
         "tailwindcss": "^4.3.0",
+        "terser": "^5.36.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.59.4",
         "wrangler": "^4.92.0",
@@ -687,7 +688,7 @@
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, ""],
 
-    "acorn": ["acorn@8.15.0", "", { "bin": "bin/acorn" }, ""],
+    "acorn": ["acorn@8.16.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
 
     "acorn-jsx": ["acorn-jsx@5.3.2", "", { "peerDependencies": { "acorn": "^6.0.0 || ^7.0.0 || ^8.0.0" } }, ""],
 
@@ -769,7 +770,7 @@
 
     "combined-stream": ["combined-stream@1.0.8", "", { "dependencies": { "delayed-stream": "~1.0.0" } }, ""],
 
-    "commander": ["commander@7.2.0", "", {}, ""],
+    "commander": ["commander@2.20.3", "", {}, ""],
 
     "comment-json": ["comment-json@4.5.1", "", { "dependencies": { "array-timsort": "^1.0.3", "core-util-is": "^1.0.3", "esprima": "^4.0.1" } }, "sha512-taEtr3ozUmOB7it68Jll7s0Pwm+aoiHyXKrEC8SEodL4rNpdfDLqa7PfBlrgFoCNNdR8ImL+muti5IGvktJAAg=="],
 
@@ -1491,8 +1492,6 @@
 
     "eslint-plugin-react-hooks/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
-    "espree/acorn": ["acorn@8.16.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
-
     "express/cookie": ["cookie@0.7.2", "", {}, ""],
 
     "form-data/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, ""],
@@ -1547,9 +1546,9 @@
 
     "string-width/strip-ansi": ["strip-ansi@7.1.2", "", { "dependencies": { "ansi-regex": "^6.0.1" } }, ""],
 
-    "terser/acorn": ["acorn@8.16.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
+    "webpack-bundle-analyzer/acorn": ["acorn@8.15.0", "", { "bin": "bin/acorn" }, ""],
 
-    "terser/commander": ["commander@2.20.3", "", {}, ""],
+    "webpack-bundle-analyzer/commander": ["commander@7.2.0", "", {}, ""],
 
     "webpack-bundle-analyzer/ws": ["ws@7.5.10", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": "^5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, ""],
 

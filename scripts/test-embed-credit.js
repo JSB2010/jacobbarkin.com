@@ -5,13 +5,21 @@ const vm = require("node:vm");
 
 const repoRoot = path.resolve(__dirname, "..");
 const scriptPath = path.join(repoRoot, "public/embed/credit.js");
+const authoredScriptPath = path.join(repoRoot, "src/embed/credit.js");
+const buildEmbedPath = path.join(repoRoot, "scripts/build-embed.mjs");
 const middlewarePath = path.join(repoRoot, "src/middleware.ts");
 const rulesPath = path.join(repoRoot, "src/lib/embed/rules.ts");
 const rulesManagerPath = path.join(repoRoot, "src/components/admin/embed-rules-manager.tsx");
+const analyticsRoutePath = path.join(repoRoot, "src/app/api/embed-analytics/route.ts");
+const heartbeatRoutePath = path.join(repoRoot, "src/app/api/embed-heartbeat/route.ts");
 const source = fs.readFileSync(scriptPath, "utf8");
+const authoredSource = fs.existsSync(authoredScriptPath) ? fs.readFileSync(authoredScriptPath, "utf8") : "";
+const buildEmbedSource = fs.existsSync(buildEmbedPath) ? fs.readFileSync(buildEmbedPath, "utf8") : "";
 const middlewareSource = fs.readFileSync(middlewarePath, "utf8");
 const rulesSource = fs.readFileSync(rulesPath, "utf8");
 const rulesManagerSource = fs.readFileSync(rulesManagerPath, "utf8");
+const analyticsRouteSource = fs.readFileSync(analyticsRoutePath, "utf8");
+const heartbeatRouteSource = fs.readFileSync(heartbeatRoutePath, "utf8");
 
 class FakeElement {
   constructor(tagName = "div") {
@@ -227,8 +235,19 @@ function makeContext(options = {}) {
     },
     fetch(input, init) {
       fetchCalls.push({ input: String(input), init });
+      if (options.fetchReject) return Promise.reject(options.fetchReject);
+      const responseQueue = options.fetchResponses || null;
+      const queued = responseQueue && responseQueue.length ? responseQueue.shift() : null;
+      if (queued) {
+        return Promise.resolve({
+          ok: queued.ok !== undefined ? queued.ok : true,
+          status: queued.status || 200,
+          json: () => Promise.resolve(queued.json || { matched: false }),
+        });
+      }
       return Promise.resolve({
-        ok: true,
+        ok: options.fetchOk !== undefined ? options.fetchOk : true,
+        status: options.fetchStatus || 200,
         json: () => Promise.resolve(options.fetchJson || { matched: false }),
       });
     },
@@ -284,6 +303,21 @@ async function testSafari12Syntax() {
   assert.equal(source.includes("??"), false, "public embed script must not use nullish coalescing");
 }
 
+async function testEmbedBuildPipelineExists() {
+  assert.ok(fs.existsSync(authoredScriptPath), "authored embed source should live in src/embed/credit.js");
+  assert.ok(fs.existsSync(buildEmbedPath), "embed build script should exist");
+  assert.match(buildEmbedSource, /terser/, "embed build should use terser");
+  assert.notEqual(authoredSource.trim(), source.trim(), "public embed script should be generated/minified, not the authored source");
+}
+
+async function testSmallEmbedLogoIsUsed() {
+  const logoPath = path.join(repoRoot, "public/embed/jb-logo.png");
+  assert.ok(fs.existsSync(logoPath), "small embed logo should exist");
+  assert.ok(fs.statSync(logoPath).size < 20000, "small embed logo should stay below 20 KB");
+  assert.ok(source.includes("/embed/jb-logo.png"), "public embed script should reference the small embed logo");
+  assert.equal(source.includes("/images/Updated%20logo.png"), false, "public embed script should not reference the large portfolio logo");
+}
+
 async function testNoRulesSkipsRuleFetchOnly() {
   const env = makeContext({ scriptAttrs: ["data-no-rules"] });
   await flushMicrotasks();
@@ -315,11 +349,16 @@ async function testDataOnlyDoesNotRenderUiOrImpression() {
   const Ctor = env.getCtor();
   const element = new Ctor();
   element.setAttribute("data-variant", "data-only");
+  env.body.appendChild(element);
   element.connectedCallback();
   assert.ok(element.shadowRoot.innerHTML.includes("display: none"), "data-only should render invisible CSS only");
 
-  const eventNames = env.beacons.map((item) => item.blob && item.blob.constructor.name).length;
-  assert.ok(eventNames >= 0, "beacon plumbing should remain available");
+  env.context.JBCredit.analytics.flush(element);
+  const events = await collectBeaconEvents(env);
+  assert.equal(events.some((event) => event.event_name === "load"), false, "data-only should not emit load events");
+  assert.equal(events.some((event) => event.event_name === "impression"), false, "data-only should not emit impression events");
+  assert.equal(events.some((event) => event.event_name === "click"), false, "data-only should not emit click events");
+  assert.ok(events.some((event) => event.event_name === "heartbeat"), "data-only should emit heartbeat events");
 }
 
 async function testAnalyticsPayloadAndDuplicateImpression() {
@@ -372,7 +411,7 @@ async function testRuleActionsAreExplicit() {
   assert.equal(inlineReplace.context.document.openCalled, false, "inline_replace should not replace the whole document");
 }
 
-async function testBlockedBeaconDoesNotFallbackToFetch() {
+async function testBlockedBeaconFallsBackToFetch() {
   const env = makeContext({ sendBeaconResult: false });
   const Ctor = env.getCtor();
   const element = new Ctor();
@@ -382,8 +421,95 @@ async function testBlockedBeaconDoesNotFallbackToFetch() {
   env.context.JBCredit.analytics.flush(element);
 
   assert.ok(env.beacons.length >= 1, "analytics should try sendBeacon first");
-  assert.equal(env.fetchCalls.length, 1, "failed sendBeacon should not retry analytics with fetch");
-  assert.equal(env.fetchCalls[0].input, "https://jacobbarkin.com/api/embed-rules/evaluate");
+  assert.equal(env.fetchCalls.length >= 2, true, "failed sendBeacon should retry analytics with fetch");
+  assert.ok(
+    env.fetchCalls.some((call) => call.input === "https://jacobbarkin.com/api/embed-analytics"),
+    "fallback fetch should target analytics endpoint"
+  );
+}
+
+async function testLateInlineRuleAppliesToConnectedElement() {
+  const env = makeContext({
+    fetchResponses: [
+      { ok: true, json: { matched: true, action_type: "inline_replace", html: "<strong>late inline</strong>", rule_id: "rule-1" } },
+    ],
+  });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.connectedCallback();
+  assert.notEqual(element.shadowRoot.innerHTML, "<strong>late inline</strong>", "fixture should connect before async rule result");
+  await flushMicrotasks();
+  assert.equal(element.shadowRoot.innerHTML, "<strong>late inline</strong>", "late inline replacement should apply");
+}
+
+async function testLateCreditOverrideAppliesToConnectedElement() {
+  const env = makeContext({
+    fetchResponses: [
+      {
+        ok: true,
+        json: {
+          matched: true,
+          action_type: "credit_variant_override",
+          credit_override: { variant: "text", theme: "dark", size: "small", align: "left" },
+          rule_id: "rule-2",
+        },
+      },
+    ],
+  });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.connectedCallback();
+  await flushMicrotasks();
+  assert.equal(element.getAttribute("data-variant"), "text");
+  assert.equal(element.getAttribute("data-theme"), "dark");
+  assert.equal(element.getAttribute("data-size"), "small");
+  assert.equal(element.getAttribute("data-align"), "left");
+}
+
+async function testNonOkRuleEvaluationUsesIframeLegacyFallback() {
+  const env = makeContext({
+    fetchResponses: [
+      { ok: false, status: 503, json: { error: "unavailable" } },
+      { ok: true, json: { match: true, content_html: "<html><body>legacy</body></html>" } },
+    ],
+  });
+  await flushMicrotasks();
+  const takeoverFrame = env.context.document.body.children.find((child) => child.tagName === "IFRAME");
+  assert.ok(takeoverFrame, "legacy fallback should mount an iframe takeover");
+  assert.ok(takeoverFrame.srcdoc.includes("legacy"));
+  assert.equal(env.context.document.openCalled, false, "legacy fallback should not use document.open");
+  assert.equal(env.context.document.closeCalled, false, "legacy fallback should not use document.close");
+}
+
+async function testHeartbeatTimingSeparatesVisibleAndDataOnlyEmbeds() {
+  const visibleEnv = makeContext({ scriptAttrs: ["data-no-rules"], runTimersImmediately: false });
+  const VisibleCtor = visibleEnv.getCtor();
+  const visible = new VisibleCtor();
+  visibleEnv.body.appendChild(visible);
+  visible.connectedCallback();
+  visibleEnv.context.JBCredit.analytics.flush(visible);
+  let visibleEvents = await collectBeaconEvents(visibleEnv);
+  assert.equal(visibleEvents.some((event) => event.event_name === "heartbeat"), false, "visible embed should not emit immediate heartbeat");
+
+  const dataOnlyEnv = makeContext({ scriptAttrs: ["data-no-rules"], runTimersImmediately: true });
+  const DataOnlyCtor = dataOnlyEnv.getCtor();
+  const dataOnly = new DataOnlyCtor();
+  dataOnly.setAttribute("data-variant", "data-only");
+  dataOnlyEnv.body.appendChild(dataOnly);
+  dataOnly.connectedCallback();
+  dataOnlyEnv.context.JBCredit.analytics.flush(dataOnly);
+  const dataOnlyEvents = await collectBeaconEvents(dataOnlyEnv);
+  assert.ok(dataOnlyEvents.some((event) => event.event_name === "heartbeat"), "data-only should keep early heartbeat");
+}
+
+async function testFixedBottomOffsetIsSupported() {
+  const env = makeContext({ scriptAttrs: ["data-no-rules"] });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.setAttribute("data-position", "fixed");
+  element.setAttribute("data-bottom-offset", "16px");
+  element.connectedCallback();
+  assert.ok(element.shadowRoot.innerHTML.includes("bottom: var(--jb-credit-bottom-offset, 16px)"));
 }
 
 async function testPublicRuntimeEndpointsAreNotGloballyProtected() {
@@ -447,17 +573,42 @@ async function testRuleTargetsAreNormalized() {
   );
 }
 
+async function testCanonicalTelemetryWritesOnly() {
+  assert.doesNotMatch(analyticsRouteSource, /INSERT INTO embed_analytics/, "analytics POST should not write legacy embed_analytics rows");
+  assert.doesNotMatch(heartbeatRouteSource, /INSERT INTO embed_heartbeat/, "heartbeat POST should not write legacy embed_heartbeat rows");
+  assert.doesNotMatch(heartbeatRouteSource, /INSERT INTO embed_sites/, "heartbeat POST should not write legacy embed_sites rows");
+  assert.doesNotMatch(analyticsRouteSource, /incrementDailyMetric/, "analytics POST should not increment daily metrics directly");
+  assert.doesNotMatch(heartbeatRouteSource, /incrementDailyMetric/, "heartbeat POST should not increment daily metrics directly");
+  assert.match(analyticsRouteSource, /FROM embed_events/, "analytics admin GET should read canonical embed_events");
+  assert.match(heartbeatRouteSource, /FROM embed_installations/, "heartbeat admin GET should read canonical installations");
+}
+
+async function testRuleEvaluationUsesFilteredRulesAndStableRollout() {
+  assert.match(rulesSource, /listEvaluableRules/, "rule evaluation should use a filtered rule query");
+  assert.match(rulesSource, /stableRolloutBucket/, "rule rollout should use a stable bucket helper");
+  assert.doesNotMatch(rulesSource, /context\.installation_id\}\|\$\{context\.url\}\|\$\{rule\.id\}/, "rollout should not include page URL");
+}
+
 async function run() {
   const tests = [
     testSafari12Syntax,
+    testEmbedBuildPipelineExists,
+    testSmallEmbedLogoIsUsed,
     testNoRulesSkipsRuleFetchOnly,
     testAutoInjectCopiesNoRules,
     testDataOnlyDoesNotRenderUiOrImpression,
     testAnalyticsPayloadAndDuplicateImpression,
     testRuleActionsAreExplicit,
-    testBlockedBeaconDoesNotFallbackToFetch,
+    testBlockedBeaconFallsBackToFetch,
+    testLateInlineRuleAppliesToConnectedElement,
+    testLateCreditOverrideAppliesToConnectedElement,
+    testNonOkRuleEvaluationUsesIframeLegacyFallback,
+    testHeartbeatTimingSeparatesVisibleAndDataOnlyEmbeds,
+    testFixedBottomOffsetIsSupported,
     testPublicRuntimeEndpointsAreNotGloballyProtected,
     testRuleTargetsAreNormalized,
+    testCanonicalTelemetryWritesOnly,
+    testRuleEvaluationUsesFilteredRulesAndStableRollout,
   ];
 
   for (const test of tests) {

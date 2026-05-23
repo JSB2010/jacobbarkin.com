@@ -163,12 +163,39 @@ export async function listRules(db: D1Database) {
   return result.results || [];
 }
 
+async function listEvaluableRules(db: D1Database) {
+  const result = await db.prepare(
+    `SELECT * FROM embed_rules
+     WHERE status IN ('active', 'scheduled', 'preview')
+     ORDER BY
+       CASE status
+         WHEN 'active' THEN 0
+         WHEN 'scheduled' THEN 1
+         WHEN 'preview' THEN 2
+         ELSE 3
+       END,
+       priority ASC,
+       updated_at DESC`
+  ).all<EmbedRule>();
+
+  return result.results || [];
+}
+
+function stableRolloutBucket(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0) % 100;
+}
+
 export async function evaluateRules(
   db: D1Database,
   context: EmbedRuleEvaluationContext,
   debug = false
 ): Promise<EmbedRuleEvaluationResult> {
-  const rules = await listRules(db);
+  const rules = await listEvaluableRules(db);
   const explain: string[] = [];
 
   for (const rule of rules) {
@@ -179,9 +206,7 @@ export async function evaluateRules(
 
     const rolloutPercent = Math.min(Math.max(rule.rollout_percent || 100, 0), 100);
     if (rolloutPercent < 100) {
-      const bucket = Math.abs(
-        Array.from(`${context.installation_id}|${context.url}|${rule.id}`).reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      ) % 100;
+      const bucket = stableRolloutBucket(`${context.installation_id}|${rule.id}`);
       if (bucket >= rolloutPercent) {
         if (debug) explain.push(`${rule.name}: skipped because rollout bucket ${bucket} >= ${rolloutPercent}`);
         continue;

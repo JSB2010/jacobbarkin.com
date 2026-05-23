@@ -7,6 +7,7 @@ The public asset is a standalone browser script at `/embed/credit.js`.
 
 ### Components
 1. **Static Script Asset**: `public/embed/credit.js`
+   - Generated from authored source at `src/embed/credit.js` by `npm run build:embed`.
    - Defines the `<jb-credit>` custom element.
    - Supports manual placement and `data-auto` injection.
    - Evaluates remote rules unless `data-no-rules` is present.
@@ -17,11 +18,13 @@ The public asset is a standalone browser script at `/embed/credit.js`.
 3. **Rules Engine**
    - Public evaluation endpoint: `/api/embed-rules/evaluate`.
    - Supported actions: `banner`, `redirect`, `credit_variant_override`, `page_takeover`, and `inline_replace`.
-   - Legacy custom content fallback endpoint: `/api/embed-custom-content`.
+   - Legacy custom content fallback endpoint: `/api/embed-custom-content`, rendered through the same sandboxed takeover frame when used.
 4. **Telemetry**
    - Analytics endpoint: `/api/embed-analytics`.
    - Heartbeat endpoint: `/api/embed-heartbeat`.
-   - Storage: D1 tables including `embed_analytics`, `embed_heartbeat`, `embed_events`, `embed_installations`, and `embed_daily_metrics`.
+   - Canonical storage: `embed_events`.
+   - Immediate site summaries: `embed_installations`.
+   - Rollup reporting: `embed_daily_metrics`, rebuilt by the scheduled worker.
 
 ## Usage
 
@@ -46,10 +49,17 @@ Disable analytics and heartbeat:
 <jb-credit data-no-track></jb-credit>
 ```
 
+Fixed footer with an offset:
+```html
+<jb-credit data-position="fixed" data-bottom-offset="16px"></jb-credit>
+```
+
 ## Analytics Payload
 
 The embed sends batched JSON events for `load`, `impression`, `click`, `heartbeat`,
 `replacement_applied`, `replacement_skipped`, and `error`.
+
+The `data-only` variant is invisible and emits heartbeat telemetry only.
 
 Payload fields include:
 - Page context: `page_url`, `page_host`, `page_path`, `page_title`, `referrer`, `referrer_host`, and UTM fields.
@@ -61,8 +71,9 @@ Payload fields include:
 ## Development
 
 To modify the embed:
-1. Edit `public/embed/credit.js`.
-2. Update `public/embed/INSTRUCTIONS.md`.
-3. Run `npm run test:embed`.
-4. Run `npm run generate:embed-instructions` so `src/app/embed/instructions.ts` stays in sync.
-5. Use `/embed/smoke.html` or the `/embed` page to browser-check manual, auto, data-only, fixed, and duplicate-script scenarios.
+1. Edit `src/embed/credit.js`.
+2. Run `npm run build:embed` to generate `public/embed/credit.js`.
+3. Update `public/embed/INSTRUCTIONS.md`.
+4. Run `npm run test:embed`.
+5. Run `npm run generate:embed-instructions` so `src/app/embed/instructions.ts` stays in sync.
+6. Use `/embed/smoke.html` or the `/embed` page to browser-check manual, auto, data-only, fixed, and duplicate-script scenarios.

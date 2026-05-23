@@ -31,6 +31,7 @@ const codeExamples = {
   react: `// React / Next.js\nimport { useEffect } from 'react';\n\nuseEffect(() => {\n  const script = document.createElement('script');\n  script.src = 'https://jacobbarkin.com/embed/credit.js';\n  document.head.appendChild(script);\n}, []);\n\n// In your JSX:\n<jb-credit></jb-credit>`,
   vue: `// Vue\nimport { onMounted } from 'vue';\n\nonMounted(() => {\n  const script = document.createElement('script');\n  script.src = 'https://jacobbarkin.com/embed/credit.js';\n  document.head.appendChild(script);\n});\n\n// In your template:\n<jb-credit></jb-credit>`,
   custom: `<!-- Custom example -->\n<script src="https://jacobbarkin.com/embed/credit.js"><\/script>\n<jb-credit\n  data-variant="badge"\n  data-size="large"\n  data-align="left"\n  data-theme="dark"\n  data-site="client-marketing-site"\n  data-page-group="footer"\n  data-experiment="credit-v3-a">\n</jb-credit>`,
+  fixed: `<!-- Fixed footer with offset -->\n<script src="https://jacobbarkin.com/embed/credit.js"><\/script>\n<jb-credit data-position="fixed" data-bottom-offset="16px"></jb-credit>`,
 };
 
 const variantDemos: { id: VariantId; label: string; description: string; badge?: string }[] = [
