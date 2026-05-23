@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getD1Database } from "@/lib/db/d1";
+import { parsePublicJsonBody } from "@/lib/embed/ingestion";
 import { evaluateRules } from "@/lib/embed/rules";
 import { deriveInstallationId, getUrlParts, parseNumber, truncateText } from "@/lib/embed/utils";
 
@@ -8,6 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
 };
 
 export async function OPTIONS() {
@@ -20,7 +22,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ matched: false }, { headers: corsHeaders });
   }
 
-  const body = await request.json();
+  const parsedBody = await parsePublicJsonBody(request);
+  const body = Array.isArray(parsedBody) ? {} : parsedBody;
   const url = truncateText(body.url || body.page_url, 2048);
   if (!url) {
     return NextResponse.json({ error: "url is required" }, { status: 400, headers: corsHeaders });

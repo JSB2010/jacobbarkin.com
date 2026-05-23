@@ -15,7 +15,7 @@ type ConditionMatchResult = {
 };
 
 function isStatusActive(rule: EmbedRule) {
-  if (rule.status === "paused" || rule.status === "archived" || rule.status === "draft") return false;
+  if (rule.status === "paused" || rule.status === "archived" || rule.status === "draft" || rule.status === "preview") return false;
 
   const now = Date.now();
   const start = rule.start_at ? Date.parse(rule.start_at) : null;
@@ -166,12 +166,11 @@ export async function listRules(db: D1Database) {
 async function listEvaluableRules(db: D1Database) {
   const result = await db.prepare(
     `SELECT * FROM embed_rules
-     WHERE status IN ('active', 'scheduled', 'preview')
+     WHERE status IN ('active', 'scheduled')
      ORDER BY
        CASE status
          WHEN 'active' THEN 0
          WHEN 'scheduled' THEN 1
-         WHEN 'preview' THEN 2
          ELSE 3
        END,
        priority ASC,
@@ -221,24 +220,24 @@ export async function evaluateRules(
     }
 
     const template = await resolveTemplate(db, rule.template_id);
-    const configJson =
-      safeJsonParse<Record<string, unknown>>(rule.config_json, {}).template_config
-        ? JSON.stringify(safeJsonParse<Record<string, unknown>>(rule.config_json, {}).template_config)
-        : rule.config_json;
+    const config = safeJsonParse<Record<string, string | Record<string, unknown>>>(rule.config_json, {});
+    const templateConfig = config.template_config;
+    const configJson = templateConfig && typeof templateConfig === "object"
+      ? JSON.stringify(templateConfig)
+      : rule.config_json;
 
     const html =
       rule.unsafe_html ||
       (template ? renderTemplate(template, configJson) : null);
 
-    const config = safeJsonParse<Record<string, string>>(rule.config_json, {});
-    const redirect_url = rule.action_type === "redirect" ? config.redirect_url || null : null;
+    const redirect_url = rule.action_type === "redirect" && typeof config.redirect_url === "string" ? config.redirect_url : null;
     const credit_override =
       rule.action_type === "credit_variant_override"
         ? {
-            variant: config.variant || "",
-            theme: config.theme || "",
-            size: config.size || "",
-            align: config.align || "",
+            variant: typeof config.variant === "string" ? config.variant : "",
+            theme: typeof config.theme === "string" ? config.theme : "",
+            size: typeof config.size === "string" ? config.size : "",
+            align: typeof config.align === "string" ? config.align : "",
           }
         : null;
 

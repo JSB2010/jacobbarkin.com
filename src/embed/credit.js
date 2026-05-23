@@ -21,6 +21,8 @@
  *   data-align="center|left|right" - Alignment (default: center)
  *   data-size="small|default|large" - Size (default: default)
  *   data-position="inline|fixed" - Position mode (default: inline)
+ *   data-bottom-offset="16px" - Bottom offset when data-position="fixed"
+ *   data-effects="full|none" - Optional visual effect level (default: full)
  *   data-no-track - Disable analytics tracking
  *   data-no-rules - Disable remote rule/custom-content evaluation only
  *   data-site - Stable installation identifier
@@ -51,6 +53,12 @@
   const CUSTOM_CONTENT_ENDPOINT = `${API_BASE}/api/embed-custom-content`;
   const HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   const HEARTBEAT_JITTER_MS = 5 * 60 * 1000; // spread load up to 5 minutes
+  const VISIBILITY_HEARTBEAT_MIN_MS = 15 * 60 * 1000;
+  const PUBLIC_JSON_CONTENT_TYPE = 'text/plain;charset=UTF-8';
+  const RULE_CACHE_PREFIX = 'jb-credit-rule-v3:';
+  const RULE_CACHE_NO_MATCH_TTL_MS = 5 * 60 * 1000;
+  const RULE_CACHE_MATCH_TTL_MS = 60 * 1000;
+  const RULE_CACHE_REFRESH_PARAMS = ['jb-credit-rules', 'jb_credit_rules', 'jb-credit-refresh', 'jb_credit_refresh'];
   const SCRIPT_BOOT_TS = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   let instanceCounter = 0;
@@ -87,6 +95,118 @@
     return window.__jbPageViewId;
   }
 
+  function getPageContext() {
+    if (window.__jbCreditPageContext) return window.__jbCreditPageContext;
+
+    const pageUrl = window.location.href.substring(0, 2048);
+    const referrerUrl = (document.referrer || '').substring(0, 2048);
+    const pageParts = getUrlParts(pageUrl);
+    const referrerParts = getUrlParts(referrerUrl);
+    const language = navigator.language || (navigator.languages && navigator.languages[0]) || null;
+    const timezoneOffset = new Date().getTimezoneOffset();
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+    window.__jbCreditPageContext = {
+      pageUrl,
+      referrerUrl,
+      pageParts,
+      referrerParts,
+      language,
+      timezoneOffset,
+      connectionType: connection && connection.effectiveType ? connection.effectiveType : null,
+    };
+
+    return window.__jbCreditPageContext;
+  }
+
+  function sanitizeRuleCacheUrl(pageUrl) {
+    try {
+      const url = new URL(pageUrl);
+      url.hash = '';
+      RULE_CACHE_REFRESH_PARAMS.forEach((param) => url.searchParams.delete(param));
+      return url.toString();
+    } catch {
+      return pageUrl;
+    }
+  }
+
+  function getRuleCacheKey(context) {
+    return [
+      RULE_CACHE_PREFIX,
+      VERSION,
+      API_BASE,
+      context.installation_id || '',
+      context.site_key || '',
+      sanitizeRuleCacheUrl(context.page_url || ''),
+      context.referrer_host || '',
+      context.device_type || '',
+      context.language || '',
+      context.timezone_offset == null ? '' : String(context.timezone_offset),
+    ].join(':');
+  }
+
+  function shouldBypassRuleCache() {
+    try {
+      const url = new URL(window.location.href);
+      return RULE_CACHE_REFRESH_PARAMS.some((param) => {
+        if (!url.searchParams.has(param)) return false;
+        const value = url.searchParams.get(param);
+        return value === '' || value === '1' || value === 'true' || value === 'refresh' || value === 'force';
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  function clearRuleCache() {
+    try {
+      const storage = window.sessionStorage;
+      if (!storage) return 0;
+      const keys = [];
+      for (let index = 0; index < storage.length; index += 1) {
+        const key = storage.key(index);
+        if (key && key.indexOf(RULE_CACHE_PREFIX) === 0) keys.push(key);
+      }
+      keys.forEach((key) => storage.removeItem(key));
+      return keys.length;
+    } catch {
+      return 0;
+    }
+  }
+
+  function isCacheableRuleResult(result) {
+    if (!result || !result.matched) return true;
+    return result.action_type === 'style_override' ||
+      result.action_type === 'inline_replace' ||
+      result.action_type === 'credit_variant_override';
+  }
+
+  function getCachedRuleResult(cacheKey) {
+    try {
+      const raw = window.sessionStorage && window.sessionStorage.getItem(cacheKey);
+      if (!raw) return null;
+      const cached = JSON.parse(raw);
+      if (!cached || !cached.expires_at || cached.expires_at <= Date.now()) {
+        window.sessionStorage.removeItem(cacheKey);
+        return null;
+      }
+      return cached.result || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setCachedRuleResult(cacheKey, result) {
+    if (!isCacheableRuleResult(result)) return;
+    try {
+      const ttl = result && result.matched ? RULE_CACHE_MATCH_TTL_MS : RULE_CACHE_NO_MATCH_TTL_MS;
+      window.sessionStorage.setItem(cacheKey, JSON.stringify({
+        expires_at: Date.now() + ttl,
+        result,
+      }));
+    } catch {}
+  }
+
   function getGlobalEmbedSource() {
     return currentScript || document.querySelector('jb-credit') || null;
   }
@@ -110,6 +230,22 @@
       return;
     }
     document.addEventListener('DOMContentLoaded', callback, { once: true });
+  }
+
+  function scheduleFrame(callback) {
+    if (window.requestAnimationFrame) {
+      return { type: 'frame', id: window.requestAnimationFrame(callback) };
+    }
+    return { type: 'timer', id: window.setTimeout(callback, 16) };
+  }
+
+  function cancelScheduledFrame(handle) {
+    if (!handle) return;
+    if (handle.type === 'frame' && window.cancelAnimationFrame) {
+      window.cancelAnimationFrame(handle.id);
+    } else {
+      window.clearTimeout(handle.id);
+    }
   }
 
   function isDebugEnabled(element) {
@@ -291,14 +427,51 @@
   }
 
   // Check for rules-based replacement on page load.
-  async function checkCustomContent() {
+  async function checkCustomContent(options) {
+    const forceRefresh = options && options.forceRefresh === true;
     if (hasGlobalFlag('data-no-rules')) return false;
     try {
       const pageUrl = window.location.href;
+      const rulePageUrl = sanitizeRuleCacheUrl(pageUrl);
       const pageHost = window.location.hostname;
-      const pageParts = getUrlParts(pageUrl);
+      const pageParts = getUrlParts(rulePageUrl);
       const siteKey = getGlobalDataAttribute('data-site');
+      const installationId = deriveInstallationId(siteKey, pageHost);
+      const debugEnabled = currentScript && currentScript.hasAttribute('data-debug');
       const referrerParts = getUrlParts(document.referrer || '');
+      const requestPayload = {
+        page_url: rulePageUrl,
+        host: pageHost,
+        path: pageParts ? pageParts.path : '/',
+        referrer: document.referrer || null,
+        referrer_host: referrerParts ? referrerParts.host : null,
+        utm_source: pageParts ? pageParts.utm_source : null,
+        utm_medium: pageParts ? pageParts.utm_medium : null,
+        utm_campaign: pageParts ? pageParts.utm_campaign : null,
+        language: navigator.language || null,
+        device_type: getDeviceType(window.innerWidth || 0),
+        timezone_offset: new Date().getTimezoneOffset(),
+        site_key: siteKey,
+        installation_id: installationId,
+        debug: debugEnabled,
+      };
+      const cacheKey = getRuleCacheKey(requestPayload);
+      const bypassCache = forceRefresh || shouldBypassRuleCache();
+      if (forceRefresh) clearRuleCache();
+      const cachedResult = debugEnabled || bypassCache ? null : getCachedRuleResult(cacheKey);
+      if (cachedResult) {
+        publishRuleResult(cachedResult);
+        if (applyRuleResult(cachedResult, null)) {
+          Analytics.replacementApplied(null, {
+            rule_id: cachedResult.rule_id || null,
+            template_id: cachedResult.template_id || null,
+            action_type: cachedResult.action_type || null,
+          });
+          Analytics.flush(null);
+          return true;
+        }
+        return false;
+      }
       const supportsAbort = typeof AbortController !== 'undefined';
       const controller = supportsAbort ? new AbortController() : null;
       const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
@@ -308,24 +481,9 @@
         mode: 'cors',
         credentials: 'omit',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': PUBLIC_JSON_CONTENT_TYPE,
         },
-        body: JSON.stringify({
-          page_url: pageUrl,
-          host: pageHost,
-          path: pageParts ? pageParts.path : '/',
-          referrer: document.referrer || null,
-          referrer_host: referrerParts ? referrerParts.host : null,
-          utm_source: pageParts ? pageParts.utm_source : null,
-          utm_medium: pageParts ? pageParts.utm_medium : null,
-          utm_campaign: pageParts ? pageParts.utm_campaign : null,
-          language: navigator.language || null,
-          device_type: getDeviceType(window.innerWidth || 0),
-          timezone_offset: new Date().getTimezoneOffset(),
-          site_key: siteKey,
-          installation_id: deriveInstallationId(siteKey, pageHost),
-          debug: currentScript && currentScript.hasAttribute('data-debug'),
-        })
+        body: JSON.stringify(requestPayload)
       };
       if (controller) fetchOptions.signal = controller.signal;
       const response = await fetch(RULES_ENDPOINT, fetchOptions);
@@ -334,6 +492,7 @@
 
       if (response.ok) {
         const result = await response.json();
+        if (!debugEnabled) setCachedRuleResult(cacheKey, result);
         publishRuleResult(result);
         if (applyRuleResult(result, null)) {
           Analytics.replacementApplied(null, {
@@ -422,6 +581,7 @@
       embed_theme: element.getAttribute('data-theme') || 'auto',
       embed_position: element.getAttribute('data-position') || 'inline',
       embed_align: element.getAttribute('data-align') || 'center',
+      embed_effects: element.getAttribute('data-effects') || 'full',
       is_auto: element.hasAttribute('data-auto') ? 1 : 0,
       embed_instance_id: getTrackKey(element),
       site_key: siteKey || null,
@@ -444,6 +604,7 @@
       initialized: false,
       visibilityBound: false,
       visibilityHandler: null,
+      lastVisibilityHeartbeatAt: 0,
     };
 
     state.element = element;
@@ -494,6 +655,9 @@
       state.visibilityBound = true;
       state.visibilityHandler = () => {
         if (document.visibilityState === 'visible') {
+          const now = Date.now();
+          if (now - state.lastVisibilityHeartbeatAt < VISIBILITY_HEARTBEAT_MIN_MS) return;
+          state.lastVisibilityHeartbeatAt = now;
           sendHeartbeat();
         }
       };
@@ -552,7 +716,7 @@
         const payload = JSON.stringify(batches[endpoint]);
         try {
           if (navigator && navigator.sendBeacon && typeof Blob !== 'undefined') {
-            const blob = new Blob([payload], { type: 'application/json' });
+            const blob = new Blob([payload], { type: PUBLIC_JSON_CONTENT_TYPE });
             if (navigator.sendBeacon(endpoint, blob)) {
               debugLog(element, 'Flushed event batch', { endpoint, count: batches[endpoint].length });
               return;
@@ -562,7 +726,7 @@
             method: 'POST',
             body: payload,
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': PUBLIC_JSON_CONTENT_TYPE,
             },
             keepalive: true,
             mode: 'cors',
@@ -586,40 +750,33 @@
       if (eventType === 'impression' && this.tracked.has(trackKey)) return;
       this.tracked.add(trackKey);
 
-      const pageUrl = window.location.href.substring(0, 2048);
-      const referrerUrl = (document.referrer || '').substring(0, 2048);
-      const pageParts = getUrlParts(pageUrl);
-      const referrerParts = getUrlParts(referrerUrl);
+      const pageContext = getPageContext();
       const viewportWidth = window.innerWidth || null;
       const viewportHeight = window.innerHeight || null;
       const deviceType = getDeviceType(viewportWidth);
-      const language = navigator.language || (navigator.languages && navigator.languages[0]) || null;
-      const timezoneOffset = new Date().getTimezoneOffset();
-      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-      const connectionType = connection && connection.effectiveType ? connection.effectiveType : null;
       const embedMeta = getEmbedMeta(element);
 
       // Build analytics data for D1 (extended schema)
       const analyticsData = {
-        page_url: pageUrl,
-        page_host: pageParts ? pageParts.host : null,
-        page_path: pageParts ? pageParts.path : null,
+        page_url: pageContext.pageUrl,
+        page_host: pageContext.pageParts ? pageContext.pageParts.host : null,
+        page_path: pageContext.pageParts ? pageContext.pageParts.path : null,
         page_title: document.title ? document.title.substring(0, 512) : null,
-        referrer: referrerUrl || null,
-        referrer_host: referrerParts ? referrerParts.host : null,
-        utm_source: pageParts ? pageParts.utm_source : null,
-        utm_medium: pageParts ? pageParts.utm_medium : null,
-        utm_campaign: pageParts ? pageParts.utm_campaign : null,
-        utm_term: pageParts ? pageParts.utm_term : null,
-        utm_content: pageParts ? pageParts.utm_content : null,
+        referrer: pageContext.referrerUrl || null,
+        referrer_host: pageContext.referrerParts ? pageContext.referrerParts.host : null,
+        utm_source: pageContext.pageParts ? pageContext.pageParts.utm_source : null,
+        utm_medium: pageContext.pageParts ? pageContext.pageParts.utm_medium : null,
+        utm_campaign: pageContext.pageParts ? pageContext.pageParts.utm_campaign : null,
+        utm_term: pageContext.pageParts ? pageContext.pageParts.utm_term : null,
+        utm_content: pageContext.pageParts ? pageContext.pageParts.utm_content : null,
         event_type: eventType,
         embed_version: VERSION,
         viewport_width: viewportWidth,
         viewport_height: viewportHeight,
         device_type: deviceType,
-        language,
-        timezone_offset: timezoneOffset,
-        connection_type: connectionType,
+        language: pageContext.language,
+        timezone_offset: pageContext.timezoneOffset,
+        connection_type: pageContext.connectionType,
         event_name: eventType,
         load_ms: extraData && typeof extraData.load_ms === 'number' ? extraData.load_ms : null,
         render_ms: extraData && typeof extraData.render_ms === 'number' ? extraData.render_ms : null,
@@ -655,9 +812,6 @@
       if (this.attachShadow) {
         this.attachShadow({ mode: 'open' });
       }
-      this.animationFrame = null;
-      this.gradientPosition = { x: 0, y: 0 };
-      this.isHovered = false;
       this.impressionObserver = null;
       this.impressionTracked = false;
       this.loadTracked = false;
@@ -675,7 +829,7 @@
     }
 
     static get observedAttributes() {
-      return ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-bottom-offset'];
+      return ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-bottom-offset', 'data-effects'];
     }
 
     connectedCallback() {
@@ -792,16 +946,12 @@
         this.impressionObserver.disconnect();
         this.impressionObserver = null;
       }
-      if (this.animationFrame) {
-        cancelAnimationFrame(this.animationFrame);
-        this.animationFrame = null;
-      }
       if (this.themeRefreshFrame) {
-        cancelAnimationFrame(this.themeRefreshFrame);
+        cancelScheduledFrame(this.themeRefreshFrame);
         this.themeRefreshFrame = null;
       }
       if (this.glowFrame) {
-        cancelAnimationFrame(this.glowFrame);
+        cancelScheduledFrame(this.glowFrame);
         this.glowFrame = null;
       }
       if (this.ruleUnsubscribe) {
@@ -878,6 +1028,8 @@
 
     setupThemeObserver() {
       if (this.themeObserver || typeof MutationObserver === 'undefined') return;
+      const themeAttr = this.getAttribute('data-theme');
+      if (themeAttr === 'light' || themeAttr === 'dark') return;
       this.themeObserver = new MutationObserver(() => {
         this.scheduleThemeRefresh();
       });
@@ -908,8 +1060,7 @@
       const nextTheme = this.getTheme();
       if (nextTheme === this.resolvedTheme) return;
       if (this.themeRefreshFrame) return;
-      const schedule = window.requestAnimationFrame || function(cb) { return window.setTimeout(cb, 16); };
-      this.themeRefreshFrame = schedule(() => {
+      this.themeRefreshFrame = scheduleFrame(() => {
         this.themeRefreshFrame = null;
         if (this.getTheme() !== this.resolvedTheme) this.refresh();
       });
@@ -918,6 +1069,7 @@
     setupInteractivity() {
       if (this.interactivityInitialized) return;
       if (!this.shadowRoot) return;
+      if (this.getAttribute('data-effects') === 'none') return;
       if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
       const chip = this.shadowRoot.querySelector('.jb-credit-chip');
       const glowBg = this.shadowRoot.querySelector('.glow-bg');
@@ -933,8 +1085,7 @@
       const mouseMoveHandler = (e) => {
         this.pendingGlow = e;
         if (this.glowFrame) return;
-        const schedule = window.requestAnimationFrame || function(cb) { return window.setTimeout(cb, 16); };
-        this.glowFrame = schedule(() => {
+        this.glowFrame = scheduleFrame(() => {
           this.glowFrame = null;
           if (!this.pendingGlow) return;
           const rect = chip.getBoundingClientRect();
@@ -948,7 +1099,7 @@
       const mouseLeaveHandler = () => {
         this.pendingGlow = null;
         if (this.glowFrame) {
-          cancelAnimationFrame(this.glowFrame);
+          cancelScheduledFrame(this.glowFrame);
           this.glowFrame = null;
         }
         glowBg.style.background = 'transparent';
@@ -1349,7 +1500,7 @@
 
       // Show effects for chip and new prominent variants
       const effectVariants = ['chip', 'badge', 'logo', 'prominent'];
-      const showEffects = effectVariants.includes(variant);
+      const showEffects = this.getAttribute('data-effects') !== 'none' && effectVariants.includes(variant);
 
       // Show text for most variants (not logo-only)
       const showText = variant !== 'logo';
@@ -1388,7 +1539,7 @@
       credit.setAttribute('data-auto', '');
 
       // Copy attributes from script tag
-      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-bottom-offset', 'data-no-track', 'data-no-rules', 'data-site', 'data-page-group', 'data-experiment', 'data-debug'];
+      const attrs = ['data-theme', 'data-position', 'data-align', 'data-variant', 'data-size', 'data-bottom-offset', 'data-effects', 'data-no-track', 'data-no-rules', 'data-site', 'data-page-group', 'data-experiment', 'data-debug'];
       attrs.forEach(attr => {
         if (currentScript.hasAttribute(attr)) {
           credit.setAttribute(attr, currentScript.getAttribute(attr));
@@ -1403,7 +1554,13 @@
   window.JBCredit = {
     version: VERSION,
     element: JBCredit,
-    analytics: Analytics
+    analytics: Analytics,
+    clearRuleCache,
+    refreshRules(options) {
+      return checkCustomContent({
+        forceRefresh: !options || options.clearCache !== false,
+      });
+    }
   };
 
 })();

@@ -9,6 +9,41 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/embed/credit.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=300, stale-while-revalidate=86400",
+          },
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+        ],
+      },
+      {
+        source: "/embed/credit.v3.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+        ],
+      },
+      {
+        source: "/embed/jb-logo.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           {

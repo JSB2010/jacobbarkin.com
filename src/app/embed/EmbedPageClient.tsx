@@ -219,6 +219,10 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
                 <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">inline</strong> | fixed (sticky footer bar)</p>
               </div>
               <div className="border rounded-lg p-3 sm:p-4">
+                <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-effects</code>
+                <p className="text-sm text-muted-foreground mt-1"><strong className="text-foreground">full</strong> | none</p>
+              </div>
+              <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-no-track</code>
                 <p className="text-sm text-muted-foreground mt-1">Disable analytics tracking for this embed</p>
               </div>

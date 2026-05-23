@@ -12,6 +12,7 @@ declare module 'react' {
           'data-size'?: 'small' | 'default' | 'large';
           'data-align'?: 'left' | 'right' | 'center';
           'data-bottom-offset'?: string;
+          'data-effects'?: 'full' | 'none';
           'data-no-track'?: string | boolean;
           'data-no-rules'?: string | boolean;
           'data-site'?: string;

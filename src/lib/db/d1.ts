@@ -4,6 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
+  batch?(statements: D1PreparedStatement[]): Promise<unknown[]>;
 }
 
 export interface D1PreparedStatement {
@@ -123,6 +124,7 @@ async function getLocalD1Database(): Promise<D1Database | null> {
 
     localDb = {
       prepare: (query: string) => new LocalPreparedStatement(db.prepare(query)),
+      batch: (statements: D1PreparedStatement[]) => Promise.all(statements.map((statement) => statement.run())),
     };
 
     return localDb;

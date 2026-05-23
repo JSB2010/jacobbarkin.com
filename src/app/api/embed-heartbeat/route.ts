@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { getD1Database } from "@/lib/db/d1";
+import { ingestTelemetryPayloads, parsePublicJsonBody } from "@/lib/embed/ingestion";
 import {
   buildSessionFingerprint,
   deriveInstallationId,
-  generateId,
   getUrlParts,
-  insertEmbedEvent,
   normalizeEventName,
   parseBooleanInt,
   parseNumber,
   truncateText,
-  upsertInstallation,
   type EmbedTelemetryPayload,
 } from "@/lib/embed/utils";
 
@@ -100,9 +98,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payload = await request.json();
+    const payload = await parsePublicJsonBody(request);
     const bodies = Array.isArray(payload) ? payload : Array.isArray(payload?.events) ? payload.events : [payload];
-    const ids: string[] = [];
+    const telemetryPayloads: EmbedTelemetryPayload[] = [];
     let invalidCount = 0;
 
     for (const body of bodies) {
@@ -112,11 +110,10 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const id = generateId("evt");
-      await insertEmbedEvent(db, id, telemetryPayload);
-      await upsertInstallation(db, telemetryPayload);
-      ids.push(id);
+      telemetryPayloads.push(telemetryPayload);
     }
+
+    const ids = await ingestTelemetryPayloads(db, telemetryPayloads);
 
     if (!ids.length) {
       return NextResponse.json(

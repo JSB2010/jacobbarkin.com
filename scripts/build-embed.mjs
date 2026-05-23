@@ -7,6 +7,10 @@ const sourcePath = path.join(root, "src", "embed", "credit.js");
 const outputPath = path.join(root, "public", "embed", "credit.js");
 
 const source = await readFile(sourcePath, "utf8");
+const versionMatch = source.match(/const VERSION = ['"]([^'"]+)['"]/);
+const version = versionMatch?.[1] || "3";
+const versionedOutputPath = path.join(root, "public", "embed", `credit.v${version.split(".")[0]}.js`);
+
 const result = await minify(source, {
   compress: {
     passes: 2,
@@ -24,3 +28,4 @@ if (!result.code) {
 
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${result.code}\n`, "utf8");
+await writeFile(versionedOutputPath, `${result.code}\n`, "utf8");

@@ -53,6 +53,7 @@ declare module 'react' {
         'data-size'?: 'small' | 'default' | 'large';
         'data-align'?: 'left' | 'right' | 'center';
         'data-bottom-offset'?: string;
+        'data-effects'?: 'full' | 'none';
         'data-no-track'?: string | boolean;
         'data-no-rules'?: string | boolean;
         'data-site'?: string;
@@ -77,13 +78,15 @@ Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src
 
 ## Implementation Notes (for AI agents)
 
+- **Agent default policy:** use the default embed configuration unless the current task or earlier user instructions explicitly request a different option. Do not set `data-no-track`, `data-no-rules`, or `data-effects="none"` unless tracking, rules, or visual effects are specifically clarified in the prompt.
 - Add the script tag once per page. You can render multiple `<jb-credit>` elements after the script is loaded.
 - `data-auto` injects the element automatically; if you use `data-auto`, do not also add `<jb-credit>`.
 - For React/Next.js, only inject the script on the client (e.g., `useEffect`) to avoid SSR issues.
 - If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src`, `connect-src`, and `img-src` or set `data-no-track` to disable analytics/heartbeat.
 - `data-no-track` disables both analytics and heartbeat pings.
 - `data-no-rules` disables remote rule/custom-content evaluation while keeping analytics and heartbeat enabled.
-- The public `/embed/credit.js` file is generated from `src/embed/credit.js`; run `npm run build:embed` after runtime changes.
+- `data-effects="none"` removes hover glow/border/pulse markup for performance-sensitive host pages.
+- The public `/embed/credit.js` file is the recommended install URL for existing and new sites. The auxiliary immutable `/embed/credit.v3.js` file is generated from the same source, but snippets should continue using `/embed/credit.js`; run `npm run build:embed` after runtime changes.
 - The script targets Safari 12+ and current evergreen Chrome, Firefox, and Edge.
 
 ---
@@ -100,6 +103,7 @@ All options are optional. Set via `data-*` attributes on the `<jb-credit>` eleme
 | `data-theme`     | `auto`, `light`, `dark`                                          | `auto`    | Color theme (auto detects from page)             |
 | `data-position`  | `inline`, `fixed`                                                | `inline`  | inline = normal flow, fixed = sticky footer bar  |
 | `data-bottom-offset` | CSS length, e.g. `16px`                                      | `0px`     | Bottom offset when `data-position="fixed"`       |
+| `data-effects`   | `full`, `none`                                                   | `full`    | Disable decorative hover effects with `none`     |
 | `data-no-track`  | (boolean)                                                        | false     | Disable analytics tracking for this embed        |
 | `data-no-rules`  | (boolean)                                                        | false     | Disable remote rules/replacements for this embed |
 | `data-site`      | string                                                           | host-based fallback | Stable installation identifier         |
@@ -135,6 +139,10 @@ By default, the script checks `/api/embed-rules/evaluate` for remote rules. Matc
 - replace the embed itself (`inline_replace`)
 
 If rule evaluation fails or returns a non-OK response, the script falls back to the legacy `/api/embed-custom-content` check and renders matching legacy content in a sandboxed takeover iframe. Add `data-no-rules` to skip both rule systems without disabling analytics.
+
+Rule checks are sent as CORS-safelisted text/plain JSON to reduce preflight overhead, and low-risk no-match/style/inline/variant results are cached briefly in session storage. Admin preview rules are not evaluated publicly.
+
+To manually bypass the rule cache while testing a change, load the page with `?jb-credit-rules=refresh` or run `window.JBCredit.refreshRules({ clearCache: true })` in the browser console after the embed has loaded.
 
 Aggregate reporting is built from the canonical `embed_events` table by a scheduled rollup, so dashboard totals can lag by up to about 15 minutes. Event and installation views update immediately.
 
@@ -217,6 +225,11 @@ Fixed footer bar:
 Fixed footer bar with bottom offset:
 ```html
 <jb-credit data-position="fixed" data-bottom-offset="16px"></jb-credit>
+```
+
+Performance-sensitive embed without decorative hover effects:
+```html
+<jb-credit data-effects="none"></jb-credit>
 ```
 
 Force dark theme:

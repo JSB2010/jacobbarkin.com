@@ -12,6 +12,8 @@ const rulesPath = path.join(repoRoot, "src/lib/embed/rules.ts");
 const rulesManagerPath = path.join(repoRoot, "src/components/admin/embed-rules-manager.tsx");
 const analyticsRoutePath = path.join(repoRoot, "src/app/api/embed-analytics/route.ts");
 const heartbeatRoutePath = path.join(repoRoot, "src/app/api/embed-heartbeat/route.ts");
+const telemetryIngestionPath = path.join(repoRoot, "src/lib/embed/ingestion.ts");
+const nextConfigPath = path.join(repoRoot, "next.config.mjs");
 const source = fs.readFileSync(scriptPath, "utf8");
 const authoredSource = fs.existsSync(authoredScriptPath) ? fs.readFileSync(authoredScriptPath, "utf8") : "";
 const buildEmbedSource = fs.existsSync(buildEmbedPath) ? fs.readFileSync(buildEmbedPath, "utf8") : "";
@@ -20,6 +22,8 @@ const rulesSource = fs.readFileSync(rulesPath, "utf8");
 const rulesManagerSource = fs.readFileSync(rulesManagerPath, "utf8");
 const analyticsRouteSource = fs.readFileSync(analyticsRoutePath, "utf8");
 const heartbeatRouteSource = fs.readFileSync(heartbeatRoutePath, "utf8");
+const telemetryIngestionSource = fs.existsSync(telemetryIngestionPath) ? fs.readFileSync(telemetryIngestionPath, "utf8") : "";
+const nextConfigSource = fs.readFileSync(nextConfigPath, "utf8");
 
 class FakeElement {
   constructor(tagName = "div") {
@@ -114,6 +118,12 @@ function makeContext(options = {}) {
   const beacons = [];
   const documentListeners = new Map();
   const windowListeners = new Map();
+  const sessionValues = options.sessionStorageValues || new Map();
+  const counters = {
+    mutationObserveCount: 0,
+    mutationDisconnectCount: 0,
+    mediaChangeListenerCount: 0,
+  };
   const currentScript = new FakeElement("script");
   currentScript.src = options.scriptSrc || "https://jacobbarkin.com/embed/credit.js";
   for (const attr of options.scriptAttrs || []) currentScript.setAttribute(attr, "");
@@ -193,12 +203,21 @@ function makeContext(options = {}) {
     },
     location: new URL(options.pageUrl || "https://example.com/path?utm_campaign=spring"),
     sessionStorage: {
-      values: new Map(),
+      values: sessionValues,
+      get length() {
+        return this.values.size;
+      },
+      key(index) {
+        return Array.from(this.values.keys())[index] || null;
+      },
       getItem(key) {
         return this.values.get(key) || null;
       },
       setItem(key, value) {
         this.values.set(key, String(value));
+      },
+      removeItem(key) {
+        this.values.delete(key);
       },
     },
     performance: {
@@ -208,8 +227,12 @@ function makeContext(options = {}) {
       return { getPropertyValue: () => "" };
     },
     MutationObserver: class {
-      observe() {}
-      disconnect() {}
+      observe() {
+        counters.mutationObserveCount += 1;
+      }
+      disconnect() {
+        counters.mutationDisconnectCount += 1;
+      }
     },
     IntersectionObserver: class {
       constructor(callback) {
@@ -260,9 +283,13 @@ function makeContext(options = {}) {
     matchMedia() {
       return {
         matches: false,
-        addEventListener() {},
+        addEventListener(type) {
+          if (type === "change") counters.mediaChangeListenerCount += 1;
+        },
         removeEventListener() {},
-        addListener() {},
+        addListener() {
+          counters.mediaChangeListenerCount += 1;
+        },
         removeListener() {},
       };
     },
@@ -281,6 +308,7 @@ function makeContext(options = {}) {
     beacons,
     documentListeners,
     windowListeners,
+    counters,
     getCtor: () => customElements.get("jb-credit"),
   };
 }
@@ -298,6 +326,16 @@ async function collectBeaconEvents(env) {
   return batches.flat();
 }
 
+async function collectBeaconBatches(env) {
+  return Promise.all(
+    env.beacons.map(async (item) => ({
+      endpoint: item.endpoint,
+      type: item.blob.type,
+      body: JSON.parse(await item.blob.text()),
+    }))
+  );
+}
+
 async function testSafari12Syntax() {
   assert.equal(source.includes("?."), false, "public embed script must not use optional chaining");
   assert.equal(source.includes("??"), false, "public embed script must not use nullish coalescing");
@@ -307,6 +345,8 @@ async function testEmbedBuildPipelineExists() {
   assert.ok(fs.existsSync(authoredScriptPath), "authored embed source should live in src/embed/credit.js");
   assert.ok(fs.existsSync(buildEmbedPath), "embed build script should exist");
   assert.match(buildEmbedSource, /terser/, "embed build should use terser");
+  assert.match(buildEmbedSource, /credit\.v\$\{version\.split/, "embed build should also write a versioned public script");
+  assert.ok(fs.existsSync(path.join(repoRoot, "public/embed/credit.v3.js")), "versioned embed script should be generated");
   assert.notEqual(authoredSource.trim(), source.trim(), "public embed script should be generated/minified, not the authored source");
 }
 
@@ -426,6 +466,163 @@ async function testBlockedBeaconFallsBackToFetch() {
     env.fetchCalls.some((call) => call.input === "https://jacobbarkin.com/api/embed-analytics"),
     "fallback fetch should target analytics endpoint"
   );
+  const analyticsFallback = env.fetchCalls.find((call) => call.input === "https://jacobbarkin.com/api/embed-analytics");
+  assert.equal(
+    analyticsFallback?.init?.headers?.["Content-Type"],
+    "text/plain;charset=UTF-8",
+    "fallback fetch should use a CORS-safelisted content type"
+  );
+}
+
+async function testPublicPostsUseTextPlainJson() {
+  const env = makeContext({ sendBeaconResult: true });
+  await flushMicrotasks();
+  const ruleFetch = env.fetchCalls.find((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate");
+  assert.equal(ruleFetch?.init?.headers?.["Content-Type"], "text/plain;charset=UTF-8", "rule evaluation should avoid JSON preflights");
+
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.connectedCallback();
+  env.context.JBCredit.analytics.flush(element);
+  const beaconBatches = await collectBeaconBatches(env);
+  assert.ok(
+    beaconBatches.some((batch) => /^text\/plain/i.test(batch.type)),
+    "sendBeacon payloads should use text/plain JSON"
+  );
+}
+
+async function testRuleEvaluationUsesSessionCacheForNoMatch() {
+  const sessionStorageValues = new Map();
+  const first = makeContext({
+    sessionStorageValues,
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+  assert.equal(
+    first.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "first page view should evaluate rules"
+  );
+
+  const second = makeContext({ sessionStorageValues });
+  await flushMicrotasks();
+  assert.equal(
+    second.fetchCalls.some((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate"),
+    false,
+    "recent no-match results should be reused without a network call"
+  );
+}
+
+async function testRuleCacheKeysIncludeTargetingContext() {
+  const sessionStorageValues = new Map();
+  const first = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring",
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+
+  const second = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=summer",
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+
+  assert.equal(
+    first.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "first context should evaluate rules"
+  );
+  assert.equal(
+    second.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "different UTM context should not reuse a stale no-match rule cache"
+  );
+}
+
+async function testRuleCacheCanBeBypassedWithUrlFlag() {
+  const sessionStorageValues = new Map();
+  const cached = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring",
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+  assert.equal(cached.fetchCalls.some((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate"), true);
+
+  const bypassed = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring&jb-credit-rules=refresh",
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+  assert.equal(
+    bypassed.fetchCalls.some((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate"),
+    true,
+    "jb-credit-rules=refresh should bypass cached rule results"
+  );
+  const ruleFetch = bypassed.fetchCalls.find((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate");
+  const rulePayload = JSON.parse(ruleFetch.init.body);
+  assert.equal(
+    rulePayload.page_url,
+    "https://example.com/path?utm_campaign=spring",
+    "manual refresh params should not be sent to rule matching"
+  );
+}
+
+async function testRuleCacheCanBeClearedAndRefetchedFromConsoleApi() {
+  const sessionStorageValues = new Map();
+  const env = makeContext({
+    sessionStorageValues,
+    fetchResponses: [
+      { ok: true, json: { matched: false } },
+      { ok: true, json: { matched: false } },
+    ],
+  });
+  await flushMicrotasks();
+  assert.equal(env.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length, 1);
+
+  await env.context.JBCredit.refreshRules({ clearCache: true });
+  await flushMicrotasks();
+
+  assert.equal(
+    env.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    2,
+    "JBCredit.refreshRules({ clearCache: true }) should refetch rules"
+  );
+}
+
+async function testVisibilityHeartbeatIsThrottled() {
+  const env = makeContext({ scriptAttrs: ["data-no-rules"], runTimersImmediately: false });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  env.body.appendChild(element);
+  element.connectedCallback();
+
+  const visibilityHandler = env.documentListeners.get("visibilitychange");
+  assert.ok(visibilityHandler, "heartbeat should bind a visibility handler");
+  env.context.document.visibilityState = "visible";
+  visibilityHandler();
+  visibilityHandler();
+  env.context.JBCredit.analytics.flush(element);
+
+  const events = await collectBeaconEvents(env);
+  assert.equal(
+    events.filter((event) => event.event_name === "heartbeat").length,
+    1,
+    "visibility heartbeats should be throttled"
+  );
+}
+
+async function testExplicitThemeSkipsThemeObservers() {
+  const env = makeContext({ scriptAttrs: ["data-no-rules"] });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.setAttribute("data-theme", "dark");
+  element.connectedCallback();
+  assert.equal(env.counters.mutationObserveCount, 0, "explicit themes should not create mutation observers");
+  assert.equal(env.counters.mediaChangeListenerCount, 0, "explicit themes should not listen for color-scheme changes");
 }
 
 async function testLateInlineRuleAppliesToConnectedElement() {
@@ -512,6 +709,16 @@ async function testFixedBottomOffsetIsSupported() {
   assert.ok(element.shadowRoot.innerHTML.includes("bottom: var(--jb-credit-bottom-offset, 16px)"));
 }
 
+async function testEffectsCanBeDisabled() {
+  const env = makeContext({ scriptAttrs: ["data-no-rules"] });
+  const Ctor = env.getCtor();
+  const element = new Ctor();
+  element.setAttribute("data-effects", "none");
+  element.connectedCallback();
+  assert.equal(element.shadowRoot.innerHTML.includes('<div class="glow-bg">'), false, "data-effects=none should omit glow markup");
+  assert.equal(element.shadowRoot.innerHTML.includes("animated-border"), true, "base stylesheet can still include effect classes");
+}
+
 async function testPublicRuntimeEndpointsAreNotGloballyProtected() {
   assert.match(
     middlewareSource,
@@ -581,12 +788,55 @@ async function testCanonicalTelemetryWritesOnly() {
   assert.doesNotMatch(heartbeatRouteSource, /incrementDailyMetric/, "heartbeat POST should not increment daily metrics directly");
   assert.match(analyticsRouteSource, /FROM embed_events/, "analytics admin GET should read canonical embed_events");
   assert.match(heartbeatRouteSource, /FROM embed_installations/, "heartbeat admin GET should read canonical installations");
+  assert.match(analyticsRouteSource, /parsePublicJsonBody/, "analytics POST should accept text/plain JSON");
+  assert.match(heartbeatRouteSource, /parsePublicJsonBody/, "heartbeat POST should accept text/plain JSON");
+  assert.match(analyticsRouteSource, /ingestTelemetryPayloads/, "analytics POST should use shared ingestion");
+  assert.match(heartbeatRouteSource, /ingestTelemetryPayloads/, "heartbeat POST should use shared ingestion");
+  assert.match(telemetryIngestionSource, /\.batch\(/, "shared ingestion should use D1 batch when available");
 }
 
 async function testRuleEvaluationUsesFilteredRulesAndStableRollout() {
   assert.match(rulesSource, /listEvaluableRules/, "rule evaluation should use a filtered rule query");
   assert.match(rulesSource, /stableRolloutBucket/, "rule rollout should use a stable bucket helper");
   assert.doesNotMatch(rulesSource, /context\.installation_id\}\|\$\{context\.url\}\|\$\{rule\.id\}/, "rollout should not include page URL");
+  assert.doesNotMatch(rulesSource, /status IN \('active', 'scheduled', 'preview'\)/, "public rule evaluation should not include preview rules");
+  assert.match(rulesSource, /status IN \('active', 'scheduled'\)/, "public rule evaluation should include only live evaluable statuses");
+}
+
+async function testEmbedAssetCacheHeadersExist() {
+  assert.match(nextConfigSource, /source: "\/embed\/credit\.js"/, "embed script should have explicit cache headers");
+  assert.match(nextConfigSource, /stale-while-revalidate=86400/, "embed script should use stale-while-revalidate");
+  assert.match(nextConfigSource, /source: "\/embed\/credit\.v3\.js"/, "versioned embed script should have explicit cache headers");
+  assert.match(nextConfigSource, /max-age=31536000, immutable/, "versioned embed script should be immutable");
+  assert.match(nextConfigSource, /source: "\/embed\/jb-logo\.png"/, "embed logo should have explicit cache headers");
+}
+
+async function testRemovedDeadMetricHelpers() {
+  assert.doesNotMatch(
+    fs.readFileSync(path.join(repoRoot, "src/lib/embed/utils.ts"), "utf8"),
+    /incrementDailyMetric|createMetricIncrement|DailyMetricIncrement/,
+    "unused direct daily metric helpers should be removed"
+  );
+}
+
+async function testInstructionsTellAgentsToUseDefaults() {
+  const instructionsSource = fs.readFileSync(path.join(repoRoot, "public/embed/INSTRUCTIONS.md"), "utf8");
+  assert.match(instructionsSource, /Agent default policy/, "instructions should include an agent default policy");
+  assert.match(
+    instructionsSource,
+    /Do not set `data-no-track`, `data-no-rules`, or `data-effects="none"` unless/,
+    "instructions should tell agents not to disable defaults unless explicitly requested"
+  );
+  assert.match(
+    instructionsSource,
+    /recommended install URL for existing and new sites/,
+    "instructions should keep /embed/credit.js as the install URL"
+  );
+  assert.doesNotMatch(
+    fs.readFileSync(path.join(repoRoot, "docs/features/EMBED.md"), "utf8"),
+    /New installs may use `\/embed\/credit\.v3\.js`/,
+    "feature docs should not recommend the versioned URL for new installs"
+  );
 }
 
 async function run() {
@@ -600,15 +850,26 @@ async function run() {
     testAnalyticsPayloadAndDuplicateImpression,
     testRuleActionsAreExplicit,
     testBlockedBeaconFallsBackToFetch,
+    testPublicPostsUseTextPlainJson,
+    testRuleEvaluationUsesSessionCacheForNoMatch,
+    testRuleCacheKeysIncludeTargetingContext,
+    testRuleCacheCanBeBypassedWithUrlFlag,
+    testRuleCacheCanBeClearedAndRefetchedFromConsoleApi,
+    testVisibilityHeartbeatIsThrottled,
+    testExplicitThemeSkipsThemeObservers,
     testLateInlineRuleAppliesToConnectedElement,
     testLateCreditOverrideAppliesToConnectedElement,
     testNonOkRuleEvaluationUsesIframeLegacyFallback,
     testHeartbeatTimingSeparatesVisibleAndDataOnlyEmbeds,
     testFixedBottomOffsetIsSupported,
+    testEffectsCanBeDisabled,
     testPublicRuntimeEndpointsAreNotGloballyProtected,
     testRuleTargetsAreNormalized,
     testCanonicalTelemetryWritesOnly,
     testRuleEvaluationUsesFilteredRulesAndStableRollout,
+    testEmbedAssetCacheHeadersExist,
+    testRemovedDeadMetricHelpers,
+    testInstructionsTellAgentsToUseDefaults,
   ];
 
   for (const test of tests) {

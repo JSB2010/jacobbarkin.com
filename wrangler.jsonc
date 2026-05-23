@@ -60,17 +60,19 @@
 	// Observability configuration
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1,
+    // Keep Workers observability enabled, but sample production traffic so public embed
+    // analytics/rule requests do not produce full-volume persisted logs and traces.
+    "head_sampling_rate": 0.1,
     "logs": {
       "enabled": true,
-      "head_sampling_rate": 1,
+      "head_sampling_rate": 0.1,
       "persist": true,
       "invocation_logs": true
     },
     "traces": {
       "enabled": true,
       "persist": true,
-      "head_sampling_rate": 1
+      "head_sampling_rate": 0.1
     }
   }
 }

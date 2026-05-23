@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { D1Database } from "@/lib/db/d1";
+import type { D1Database, D1PreparedStatement } from "@/lib/db/d1";
 import type { EmbedEventName } from "@/lib/embed/types";
 
 export type EmbedTelemetryPayload = {
@@ -46,31 +46,6 @@ export type EmbedTelemetryPayload = {
   render_ms: number | null;
   session_fingerprint: string | null;
   created_at: string;
-};
-
-export type DailyMetricKey = {
-  metric_date: string;
-  installation_id: string;
-  page_host: string;
-  page_group: string;
-  embed_variant: string;
-  embed_version: string;
-  device_type: string;
-  is_auto: number;
-  rule_id: string;
-  template_id: string;
-  experiment_id: string;
-  variant_key: string;
-};
-
-export type DailyMetricIncrement = DailyMetricKey & {
-  loads?: number;
-  impressions?: number;
-  clicks?: number;
-  heartbeats?: number;
-  errors?: number;
-  replacement_applied?: number;
-  replacement_skipped?: number;
 };
 
 export function truncateText(value: unknown, max: number): string | null {
@@ -156,12 +131,12 @@ export function buildSessionFingerprint(ipAddress: string, userAgent: string, pa
     .digest("hex");
 }
 
-export async function upsertInstallation(db: D1Database, payload: EmbedTelemetryPayload) {
+export function prepareUpsertInstallation(db: D1Database, payload: EmbedTelemetryPayload): D1PreparedStatement {
   const impressionIncrement = payload.event_name === "impression" ? 1 : 0;
   const clickIncrement = payload.event_name === "click" ? 1 : 0;
   const heartbeatIncrement = payload.event_name === "heartbeat" ? 1 : 0;
 
-  await db.prepare(
+  return db.prepare(
     `INSERT INTO embed_installations (
        installation_id,
        site_key,
@@ -266,11 +241,15 @@ export async function upsertInstallation(db: D1Database, payload: EmbedTelemetry
     impressionIncrement,
     clickIncrement,
     heartbeatIncrement
-  ).run();
+  );
 }
 
-export async function insertEmbedEvent(db: D1Database, id: string, payload: EmbedTelemetryPayload) {
-  await db.prepare(
+export async function upsertInstallation(db: D1Database, payload: EmbedTelemetryPayload) {
+  await prepareUpsertInstallation(db, payload).run();
+}
+
+export function prepareInsertEmbedEvent(db: D1Database, id: string, payload: EmbedTelemetryPayload): D1PreparedStatement {
+  return db.prepare(
     `INSERT INTO embed_events (
        id,
        installation_id,
@@ -361,99 +340,9 @@ export async function insertEmbedEvent(db: D1Database, id: string, payload: Embe
     payload.connection_type,
     payload.session_fingerprint,
     payload.created_at
-  ).run();
+  );
 }
 
-export async function incrementDailyMetric(db: D1Database, metric: DailyMetricIncrement) {
-  await db.prepare(
-    `INSERT INTO embed_daily_metrics (
-       metric_date,
-       installation_id,
-       page_host,
-       page_group,
-       embed_variant,
-       embed_version,
-       device_type,
-       is_auto,
-       rule_id,
-       template_id,
-       experiment_id,
-       variant_key,
-       loads,
-       impressions,
-       clicks,
-       heartbeats,
-       errors,
-       replacement_applied,
-       replacement_skipped,
-       updated_at
-     )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-     ON CONFLICT(
-       metric_date,
-       installation_id,
-       page_host,
-       page_group,
-       embed_variant,
-       embed_version,
-       device_type,
-       is_auto,
-       rule_id,
-       template_id,
-       experiment_id,
-       variant_key
-     ) DO UPDATE SET
-       loads = embed_daily_metrics.loads + excluded.loads,
-       impressions = embed_daily_metrics.impressions + excluded.impressions,
-       clicks = embed_daily_metrics.clicks + excluded.clicks,
-       heartbeats = embed_daily_metrics.heartbeats + excluded.heartbeats,
-       errors = embed_daily_metrics.errors + excluded.errors,
-       replacement_applied = embed_daily_metrics.replacement_applied + excluded.replacement_applied,
-       replacement_skipped = embed_daily_metrics.replacement_skipped + excluded.replacement_skipped,
-       updated_at = datetime('now')`
-  ).bind(
-    metric.metric_date,
-    metric.installation_id,
-    metric.page_host,
-    metric.page_group,
-    metric.embed_variant,
-    metric.embed_version,
-    metric.device_type,
-    metric.is_auto,
-    metric.rule_id,
-    metric.template_id,
-    metric.experiment_id,
-    metric.variant_key,
-    metric.loads || 0,
-    metric.impressions || 0,
-    metric.clicks || 0,
-    metric.heartbeats || 0,
-    metric.errors || 0,
-    metric.replacement_applied || 0,
-    metric.replacement_skipped || 0
-  ).run();
-}
-
-export function createMetricIncrement(payload: EmbedTelemetryPayload): DailyMetricIncrement {
-  return {
-    metric_date: payload.created_at.slice(0, 10),
-    installation_id: payload.installation_id,
-    page_host: payload.page_host || "",
-    page_group: payload.page_group || "",
-    embed_variant: payload.embed_variant || "",
-    embed_version: payload.embed_version || "",
-    device_type: payload.device_type || "",
-    is_auto: payload.is_auto,
-    rule_id: payload.rule_id || "",
-    template_id: payload.template_id || "",
-    experiment_id: payload.experiment_id || "",
-    variant_key: payload.variant_key || "",
-    loads: payload.event_name === "load" ? 1 : 0,
-    impressions: payload.event_name === "impression" ? 1 : 0,
-    clicks: payload.event_name === "click" ? 1 : 0,
-    heartbeats: payload.event_name === "heartbeat" ? 1 : 0,
-    errors: payload.event_name === "error" ? 1 : 0,
-    replacement_applied: payload.event_name === "replacement_applied" ? 1 : 0,
-    replacement_skipped: payload.event_name === "replacement_skipped" ? 1 : 0,
-  };
+export async function insertEmbedEvent(db: D1Database, id: string, payload: EmbedTelemetryPayload) {
+  await prepareInsertEmbedEvent(db, id, payload).run();
 }
