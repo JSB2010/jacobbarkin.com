@@ -47,6 +47,7 @@ export type EmbedRuleConditionSet = {
   installation_ids?: string[];
   site_keys?: string[];
   timezone_offsets?: number[];
+  require_timezone_offset?: boolean;
 };
 
 export type EmbedTemplate = {

@@ -6,8 +6,12 @@ const vm = require("node:vm");
 const repoRoot = path.resolve(__dirname, "..");
 const scriptPath = path.join(repoRoot, "public/embed/credit.js");
 const middlewarePath = path.join(repoRoot, "src/middleware.ts");
+const rulesPath = path.join(repoRoot, "src/lib/embed/rules.ts");
+const rulesManagerPath = path.join(repoRoot, "src/components/admin/embed-rules-manager.tsx");
 const source = fs.readFileSync(scriptPath, "utf8");
 const middlewareSource = fs.readFileSync(middlewarePath, "utf8");
+const rulesSource = fs.readFileSync(rulesPath, "utf8");
+const rulesManagerSource = fs.readFileSync(rulesManagerPath, "utf8");
 
 class FakeElement {
   constructor(tagName = "div") {
@@ -405,6 +409,44 @@ async function testPublicRuntimeEndpointsAreNotGloballyProtected() {
   );
 }
 
+async function testRuleTargetsAreNormalized() {
+  assert.match(
+    rulesSource,
+    /function normalizeHostValue/,
+    "rule evaluation should normalize saved host targets before matching"
+  );
+  assert.match(
+    rulesSource,
+    /normalizeUrlValue\(conditions\.exact_url\)/,
+    "rule evaluation should normalize exact URL targets before matching"
+  );
+  assert.match(
+    rulesSource,
+    /normalizePathPrefixValue/,
+    "rule evaluation should normalize path-prefix targets before matching"
+  );
+  assert.match(
+    rulesManagerSource,
+    /parseLineList\(target\.domain\)\.map\(normalizeHostTarget\)/,
+    "rule composer should serialize domain targets as canonical hostnames"
+  );
+  assert.match(
+    rulesManagerSource,
+    /parseLineList\(target\.exactUrl\)\.map\(normalizeUrlTarget\)/,
+    "rule composer should serialize exact URLs canonically"
+  );
+  assert.match(
+    rulesSource,
+    /conditions\.require_timezone_offset === true/,
+    "timezone offsets should only affect matching when explicitly opted in through raw JSON"
+  );
+  assert.doesNotMatch(
+    rulesManagerSource,
+    /conditions\.timezone_offsets = parseNumberLineList\(draft\.timezoneOffsets\)/,
+    "friendly rule composer should not serialize timezone offsets by default"
+  );
+}
+
 async function run() {
   const tests = [
     testSafari12Syntax,
@@ -415,6 +457,7 @@ async function run() {
     testRuleActionsAreExplicit,
     testBlockedBeaconDoesNotFallbackToFetch,
     testPublicRuntimeEndpointsAreNotGloballyProtected,
+    testRuleTargetsAreNormalized,
   ];
 
   for (const test of tests) {

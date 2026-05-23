@@ -104,7 +104,6 @@ type RuleConditionDraft = {
   languages: string;
   installationIds: string;
   siteKeys: string;
-  timezoneOffsets: string;
 };
 
 type RuleActionDraft = {
@@ -180,7 +179,6 @@ const defaultConditionDraft: RuleConditionDraft = {
   languages: "",
   installationIds: "",
   siteKeys: "",
-  timezoneOffsets: "",
 };
 
 const defaultActionDraft: RuleActionDraft = {
@@ -272,11 +270,47 @@ function parseLineList(value: string) {
     .filter(Boolean);
 }
 
-function parseNumberLineList(value: string) {
-  return value
-    .split("\n")
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isFinite(item));
+function normalizeHostTarget(value: string) {
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return "";
+
+  try {
+    if (/^https?:\/\//i.test(trimmed)) return new URL(trimmed).hostname.toLowerCase();
+    if (trimmed.includes("/")) return new URL(`https://${trimmed}`).hostname.toLowerCase();
+    return new URL(`https://${trimmed}`).hostname.toLowerCase();
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, "").split("/")[0].split(":")[0].toLowerCase();
+  }
+}
+
+function normalizeUrlTarget(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    url.hash = "";
+    const pathname = url.pathname === "/" ? "/" : url.pathname.replace(/\/+$/, "");
+    return `${url.protocol}//${url.host.toLowerCase()}${pathname}${url.search}`;
+  } catch {
+    return trimmed;
+  }
+}
+
+function normalizePathPrefixTarget(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const path = /^https?:\/\//i.test(trimmed) ? new URL(trimmed).pathname : trimmed;
+    return path.startsWith("/") ? path : `/${path}`;
+  } catch {
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  }
+}
+
+function uniqueList(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function parseQueryLines(value: string) {
@@ -300,12 +334,6 @@ function parseQueryLines(value: string) {
 function joinList(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).join("\n")
-    : "";
-}
-
-function joinNumberList(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item)).join("\n")
     : "";
 }
 
@@ -373,7 +401,6 @@ function getConditionDraft(rule: Rule): RuleConditionDraft {
     languages: joinList(conditions.languages),
     installationIds: joinList(conditions.installation_ids),
     siteKeys: joinList(conditions.site_keys),
-    timezoneOffsets: joinNumberList(conditions.timezone_offsets),
   };
 }
 
@@ -405,22 +432,22 @@ function buildConditionsObject(target: RuleTargetDraft, draft: RuleConditionDraf
   const conditions: Record<string, unknown> = {};
 
   if (target.mode === "known_site" && target.knownSiteHost.trim()) {
-    conditions.hosts = [target.knownSiteHost.trim()];
+    conditions.hosts = [normalizeHostTarget(target.knownSiteHost)];
   }
 
   if (target.mode === "domain" && parseLineList(target.domain).length) {
-    conditions.hosts = parseLineList(target.domain);
+    conditions.hosts = uniqueList(parseLineList(target.domain).map(normalizeHostTarget));
   }
 
   if (target.mode === "exact_url") {
-    const exactUrls = parseLineList(target.exactUrl);
+    const exactUrls = uniqueList(parseLineList(target.exactUrl).map(normalizeUrlTarget));
     if (exactUrls.length === 1) conditions.exact_url = exactUrls[0];
     if (exactUrls.length > 1) conditions.exact_urls = exactUrls;
   }
 
   if (target.mode === "path_prefix") {
-    if (parseLineList(target.domain).length) conditions.hosts = parseLineList(target.domain);
-    if (parseLineList(target.pathPrefix).length) conditions.path_prefixes = parseLineList(target.pathPrefix);
+    if (parseLineList(target.domain).length) conditions.hosts = uniqueList(parseLineList(target.domain).map(normalizeHostTarget));
+    if (parseLineList(target.pathPrefix).length) conditions.path_prefixes = uniqueList(parseLineList(target.pathPrefix).map(normalizePathPrefixTarget));
   }
 
   if (draft.pathRegex.trim()) conditions.path_regex = draft.pathRegex.trim();
@@ -433,8 +460,6 @@ function buildConditionsObject(target: RuleTargetDraft, draft: RuleConditionDraf
   if (parseLineList(draft.languages).length) conditions.languages = parseLineList(draft.languages);
   if (parseLineList(draft.installationIds).length) conditions.installation_ids = parseLineList(draft.installationIds);
   if (parseLineList(draft.siteKeys).length) conditions.site_keys = parseLineList(draft.siteKeys);
-  if (parseNumberLineList(draft.timezoneOffsets).length) conditions.timezone_offsets = parseNumberLineList(draft.timezoneOffsets);
-
   return conditions;
 }
 
@@ -1858,11 +1883,6 @@ export function EmbedRulesManager() {
                           <div className="space-y-2">
                             <Label>Installation IDs</Label>
                             <Textarea className="min-h-[80px]" placeholder={"install_123\ninstall_456"} value={conditionDraft.installationIds} onChange={(event) => setConditionDraft((current) => ({ ...current, installationIds: event.target.value }))} />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Timezone offsets</Label>
-                            <Textarea className="min-h-[80px]" placeholder={"360\n420"} value={conditionDraft.timezoneOffsets} onChange={(event) => setConditionDraft((current) => ({ ...current, timezoneOffsets: event.target.value }))} />
-                            <p className="text-xs text-muted-foreground">Leave blank for most rules. This is the browser timezone offset in minutes from UTC; Denver is usually 360 or 420 depending on daylight saving time.</p>
                           </div>
                           <div className="space-y-2">
                             <Label>Notes</Label>

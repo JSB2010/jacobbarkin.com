@@ -9,6 +9,11 @@ import type {
 import { getSystemTemplateById, renderTemplate } from "@/lib/embed/templates";
 import { safeJsonParse } from "@/lib/embed/utils";
 
+type ConditionMatchResult = {
+  matched: boolean;
+  reason?: string;
+};
+
 function isStatusActive(rule: EmbedRule) {
   if (rule.status === "paused" || rule.status === "archived" || rule.status === "draft") return false;
 
@@ -31,38 +36,106 @@ function getQueryParamValue(url: string, key: string) {
   }
 }
 
-function matchesConditions(conditions: EmbedRuleConditionSet, context: EmbedRuleEvaluationContext) {
-  if (conditions.exact_url && context.url !== conditions.exact_url) return false;
-  if (conditions.exact_urls?.length && !conditions.exact_urls.includes(context.url)) return false;
-  if (conditions.hosts?.length && !conditions.hosts.includes(context.host)) return false;
-  if (conditions.path_prefixes?.length && !conditions.path_prefixes.some((prefix) => context.path.startsWith(prefix))) {
-    return false;
+function normalizeHostValue(value: string | null | undefined) {
+  const trimmed = value?.trim().toLowerCase();
+  if (!trimmed) return "";
+
+  try {
+    if (/^https?:\/\//i.test(trimmed)) return new URL(trimmed).hostname.toLowerCase();
+    if (trimmed.includes("/")) return new URL(`https://${trimmed}`).hostname.toLowerCase();
+    return new URL(`https://${trimmed}`).hostname.toLowerCase();
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, "").split("/")[0].split(":")[0].toLowerCase();
   }
+}
+
+function normalizeUrlValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(trimmed);
+    url.hash = "";
+    const pathname = url.pathname === "/" ? "/" : url.pathname.replace(/\/+$/, "");
+    return `${url.protocol}//${url.host.toLowerCase()}${pathname}${url.search}`;
+  } catch {
+    return trimmed;
+  }
+}
+
+function normalizePathPrefixValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return "";
+
+  try {
+    const path = /^https?:\/\//i.test(trimmed) ? new URL(trimmed).pathname : trimmed;
+    return path.startsWith("/") ? path : `/${path}`;
+  } catch {
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  }
+}
+
+function normalizeStringList(values: string[] | undefined, normalize: (value: string) => string) {
+  return Array.from(new Set((values || []).map((value) => normalize(value)).filter(Boolean)));
+}
+
+function matchesConditions(conditions: EmbedRuleConditionSet, context: EmbedRuleEvaluationContext): ConditionMatchResult {
+  const contextUrl = normalizeUrlValue(context.url);
+  const contextHost = normalizeHostValue(context.host);
+  const contextPath = context.path.startsWith("/") ? context.path : `/${context.path}`;
+
+  if (conditions.exact_url && contextUrl !== normalizeUrlValue(conditions.exact_url)) {
+    return { matched: false, reason: "exact URL did not match" };
+  }
+
+  const exactUrls = normalizeStringList(conditions.exact_urls, normalizeUrlValue);
+  if (exactUrls.length && !exactUrls.includes(contextUrl)) {
+    return { matched: false, reason: "exact URL list did not match" };
+  }
+
+  const hosts = normalizeStringList(conditions.hosts, normalizeHostValue);
+  if (hosts.length && !hosts.includes(contextHost)) {
+    return { matched: false, reason: "host did not match" };
+  }
+
+  const pathPrefixes = normalizeStringList(conditions.path_prefixes, normalizePathPrefixValue);
+  if (pathPrefixes.length && !pathPrefixes.some((prefix) => contextPath.startsWith(prefix))) {
+    return { matched: false, reason: "path prefix did not match" };
+  }
+
   if (conditions.path_regex) {
     try {
       const regex = new RegExp(conditions.path_regex);
-      if (!regex.test(context.path)) return false;
+      if (!regex.test(contextPath)) return { matched: false, reason: "path regex did not match" };
     } catch {
-      return false;
+      return { matched: false, reason: "path regex is invalid" };
     }
   }
+
   if (conditions.query_contains) {
     for (const [key, value] of Object.entries(conditions.query_contains)) {
-      if (getQueryParamValue(context.url, key) !== value) return false;
+      if (getQueryParamValue(context.url, key) !== value) return { matched: false, reason: `query param ${key} did not match` };
     }
   }
+
   if (conditions.referrer_hosts?.length) {
-    if (!context.referrer_host || !conditions.referrer_hosts.includes(context.referrer_host)) return false;
+    const referrerHost = normalizeHostValue(context.referrer_host);
+    const referrerHosts = normalizeStringList(conditions.referrer_hosts, normalizeHostValue);
+    if (!referrerHost || !referrerHosts.includes(referrerHost)) return { matched: false, reason: "referrer host did not match" };
   }
-  if (conditions.utm_sources?.length && !conditions.utm_sources.includes(context.utm_source || "")) return false;
-  if (conditions.utm_mediums?.length && !conditions.utm_mediums.includes(context.utm_medium || "")) return false;
-  if (conditions.utm_campaigns?.length && !conditions.utm_campaigns.includes(context.utm_campaign || "")) return false;
-  if (conditions.device_types?.length && !conditions.device_types.includes(context.device_type || "")) return false;
-  if (conditions.languages?.length && !conditions.languages.includes(context.language || "")) return false;
-  if (conditions.installation_ids?.length && !conditions.installation_ids.includes(context.installation_id)) return false;
-  if (conditions.site_keys?.length && !conditions.site_keys.includes(context.site_key || "")) return false;
-  if (conditions.timezone_offsets?.length && !conditions.timezone_offsets.includes(context.timezone_offset ?? Number.NaN)) return false;
-  return true;
+
+  if (conditions.utm_sources?.length && !conditions.utm_sources.includes(context.utm_source || "")) return { matched: false, reason: "UTM source did not match" };
+  if (conditions.utm_mediums?.length && !conditions.utm_mediums.includes(context.utm_medium || "")) return { matched: false, reason: "UTM medium did not match" };
+  if (conditions.utm_campaigns?.length && !conditions.utm_campaigns.includes(context.utm_campaign || "")) return { matched: false, reason: "UTM campaign did not match" };
+  if (conditions.device_types?.length && !conditions.device_types.includes(context.device_type || "")) return { matched: false, reason: "device type did not match" };
+  if (conditions.languages?.length && !conditions.languages.includes(context.language || "")) return { matched: false, reason: "language did not match" };
+  if (conditions.installation_ids?.length && !conditions.installation_ids.includes(context.installation_id)) return { matched: false, reason: "installation ID did not match" };
+  if (conditions.site_keys?.length && !conditions.site_keys.includes(context.site_key || "")) return { matched: false, reason: "site key did not match" };
+  if (conditions.require_timezone_offset === true && conditions.timezone_offsets?.length && !conditions.timezone_offsets.includes(context.timezone_offset ?? Number.NaN)) {
+    return { matched: false, reason: "timezone offset did not match" };
+  }
+
+  return { matched: true };
 }
 
 async function resolveTemplate(db: D1Database, templateId: string | null) {
@@ -116,8 +189,9 @@ export async function evaluateRules(
     }
 
     const conditions = safeJsonParse<EmbedRuleConditionSet>(rule.conditions_json, {});
-    if (!matchesConditions(conditions, context)) {
-      if (debug) explain.push(`${rule.name}: conditions did not match`);
+    const conditionMatch = matchesConditions(conditions, context);
+    if (!conditionMatch.matched) {
+      if (debug) explain.push(`${rule.name}: ${conditionMatch.reason || "conditions did not match"}`);
       continue;
     }
 
