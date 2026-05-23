@@ -196,8 +196,17 @@
     }
   }
 
+  function removeCachedRuleResult(cacheKey) {
+    try {
+      if (window.sessionStorage) window.sessionStorage.removeItem(cacheKey);
+    } catch {}
+  }
+
   function setCachedRuleResult(cacheKey, result) {
-    if (!isCacheableRuleResult(result)) return;
+    if (!isCacheableRuleResult(result)) {
+      removeCachedRuleResult(cacheKey);
+      return;
+    }
     try {
       const ttl = result && result.matched ? RULE_CACHE_MATCH_TTL_MS : RULE_CACHE_NO_MATCH_TTL_MS;
       window.sessionStorage.setItem(cacheKey, JSON.stringify({

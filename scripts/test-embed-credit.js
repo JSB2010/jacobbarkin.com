@@ -571,6 +571,65 @@ async function testRuleCacheCanBeBypassedWithUrlFlag() {
   );
 }
 
+async function testRuleRefreshClearsStaleNoMatchCacheForNonCacheableMatches() {
+  const sessionStorageValues = new Map();
+  const first = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring",
+    fetchResponses: [{ ok: true, json: { matched: false } }],
+  });
+  await flushMicrotasks();
+  assert.equal(
+    first.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "first no-match should fetch and cache"
+  );
+
+  const refreshed = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring&jb-credit-rules=refresh",
+    fetchResponses: [
+      {
+        ok: true,
+        json: {
+          matched: true,
+          action_type: "page_takeover",
+          html: "<html><body>now active</body></html>",
+          rule_id: "rule-live",
+        },
+      },
+    ],
+  });
+  await flushMicrotasks();
+  assert.equal(
+    refreshed.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "refresh flag should fetch the newly active rule"
+  );
+
+  const normalReload = makeContext({
+    sessionStorageValues,
+    pageUrl: "https://example.com/path?utm_campaign=spring",
+    fetchResponses: [
+      {
+        ok: true,
+        json: {
+          matched: true,
+          action_type: "page_takeover",
+          html: "<html><body>still active</body></html>",
+          rule_id: "rule-live",
+        },
+      },
+    ],
+  });
+  await flushMicrotasks();
+  assert.equal(
+    normalReload.fetchCalls.filter((call) => call.input === "https://jacobbarkin.com/api/embed-rules/evaluate").length,
+    1,
+    "normal reload after refresh should not reuse the old no-match cache"
+  );
+}
+
 async function testRuleCacheCanBeClearedAndRefetchedFromConsoleApi() {
   const sessionStorageValues = new Map();
   const env = makeContext({
@@ -854,6 +913,7 @@ async function run() {
     testRuleEvaluationUsesSessionCacheForNoMatch,
     testRuleCacheKeysIncludeTargetingContext,
     testRuleCacheCanBeBypassedWithUrlFlag,
+    testRuleRefreshClearsStaleNoMatchCacheForNonCacheableMatches,
     testRuleCacheCanBeClearedAndRefetchedFromConsoleApi,
     testVisibilityHeartbeatIsThrottled,
     testExplicitThemeSkipsThemeObservers,
