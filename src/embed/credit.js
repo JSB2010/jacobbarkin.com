@@ -1080,44 +1080,7 @@
       if (!this.shadowRoot) return;
       if (this.getAttribute('data-effects') === 'none') return;
       if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
-      const chip = this.shadowRoot.querySelector('.jb-credit-chip');
-      const glowBg = this.shadowRoot.querySelector('.glow-bg');
-
-      if (!chip || !glowBg) return;
       this.interactivityInitialized = true;
-
-      // Get theme for glow color
-      const isDark = this.getTheme() === 'dark';
-      const glowColor = isDark ? 'rgba(96, 165, 250, 0.4)' : 'rgba(59, 130, 246, 0.35)';
-
-      // Mouse move for glow follow effect on the chip
-      const mouseMoveHandler = (e) => {
-        this.pendingGlow = e;
-        if (this.glowFrame) return;
-        this.glowFrame = scheduleFrame(() => {
-          this.glowFrame = null;
-          if (!this.pendingGlow) return;
-          const rect = chip.getBoundingClientRect();
-          const x = this.pendingGlow.clientX - rect.left;
-          const y = this.pendingGlow.clientY - rect.top;
-          this.pendingGlow = null;
-          glowBg.style.background = `radial-gradient(80px circle at ${x}px ${y}px, ${glowColor}, transparent 70%)`;
-        });
-      };
-
-      const mouseLeaveHandler = () => {
-        this.pendingGlow = null;
-        if (this.glowFrame) {
-          cancelScheduledFrame(this.glowFrame);
-          this.glowFrame = null;
-        }
-        glowBg.style.background = 'transparent';
-      };
-
-      chip.addEventListener('mousemove', mouseMoveHandler);
-      chip.addEventListener('mouseleave', mouseLeaveHandler);
-      this.interactionHandlers.push({ target: chip, type: 'mousemove', handler: mouseMoveHandler });
-      this.interactionHandlers.push({ target: chip, type: 'mouseleave', handler: mouseLeaveHandler });
     }
 
     refresh() {
@@ -1145,9 +1108,9 @@
           primaryLight: '#60a5fa',
           secondary: '#10b981',
           accent: '#06b6d4',
-          border: '#e5e7eb',
-          bg: 'rgba(255, 255, 255, 0.95)',
-          chipBg: 'rgba(255, 255, 255, 0.95)'
+          border: 'rgba(229, 231, 235, 0.6)',
+          bg: 'rgba(255, 255, 255, 0.7)',
+          chipBg: 'rgba(255, 255, 255, 0.65)'
         },
         dark: {
           text: '#9ca3af',
@@ -1156,9 +1119,9 @@
           primaryLight: '#93c5fd',
           secondary: '#34d399',
           accent: '#22d3ee',
-          border: '#374151',
-          bg: 'rgba(17, 24, 39, 0.95)',
-          chipBg: 'rgba(17, 24, 39, 0.95)'
+          border: 'rgba(55, 65, 81, 0.5)',
+          bg: 'rgba(17, 24, 39, 0.7)',
+          chipBg: 'rgba(17, 24, 39, 0.6)'
         }
       };
 
@@ -1175,11 +1138,11 @@
       let styles = `
         :host {
           display: block;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           line-height: 1.5;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
-          contain: content;
+          contain: layout style;
         }
 
         *, *::before, *::after {
@@ -1190,7 +1153,7 @@
         .jb-credit-wrapper {
           display: flex;
           justify-content: ${align};
-          padding: 0.25rem;
+          padding: 0.5rem 0.5rem 1.5rem 0.5rem;
         }
 
         /* The chip element */
@@ -1202,8 +1165,11 @@
           padding: ${s.padding};
           border-radius: 9999px;
           background: ${c.chipBg};
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border: 1px solid ${c.border};
           cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, ${isDark ? '0.3' : '0.05'}), inset 0 1px 1px rgba(255, 255, 255, ${isDark ? '0.05' : '0.4'});
           transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                       box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                       border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1214,24 +1180,32 @@
         }
 
         .jb-credit-chip:hover {
-          border-color: ${c.primary}60;
-          box-shadow: 0 0 12px ${c.primary}20, 0 2px 6px rgba(0, 0, 0, 0.06);
-          transform: translateY(-1px);
+          border-color: ${c.secondary}70;
+          box-shadow: 0 6px 20px ${c.secondary}22, inset 0 1px 1px rgba(255, 255, 255, ${isDark ? '0.1' : '0.5'});
+          transform: translateY(-1.5px);
         }
 
-        /* Mouse-follow glow */
+        /* Surface sheen */
         .glow-bg {
           position: absolute;
           inset: 0;
           border-radius: inherit;
+          background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, ${isDark ? '0.1' : '0.42'}) 48%, transparent 76%);
           pointer-events: none;
           z-index: 0;
           opacity: 0;
+          transform: translateX(-115%);
           transition: opacity 0.2s ease;
         }
 
         .jb-credit-chip:hover .glow-bg {
           opacity: 1;
+          animation: surfaceSheen 0.9s ease;
+        }
+
+        @keyframes surfaceSheen {
+          0% { transform: translateX(-115%); }
+          100% { transform: translateX(115%); }
         }
 
         /* Animated gradient border on chip */
@@ -1240,7 +1214,7 @@
           inset: -1px;
           border-radius: inherit;
           padding: 1.5px;
-          background: linear-gradient(90deg, ${c.primary}, ${c.secondary}, ${c.accent}, ${c.primary});
+          background: linear-gradient(90deg, ${c.secondary}, ${c.secondary}, ${c.secondary});
           background-size: 300% 100%;
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -1269,7 +1243,7 @@
           position: absolute;
           inset: -3px;
           border-radius: inherit;
-          border: 1.5px solid ${c.primary};
+          border: 1.5px solid ${c.secondary};
           opacity: 0;
           pointer-events: none;
         }
@@ -1290,13 +1264,15 @@
           width: ${s.logo};
           height: ${s.logo};
           object-fit: contain;
-          transition: transform 0.25s ease;
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
           flex-shrink: 0;
-          border-radius: 2px;
+          border-radius: 4px;
+          filter: none;
         }
 
         .jb-credit-chip:hover .logo-icon {
-          transform: scale(1.1);
+          transform: scale(1.12);
+          filter: drop-shadow(0 4px 8px ${c.secondary}30);
         }
 
         /* Text */
@@ -1306,7 +1282,9 @@
           font-size: ${s.font};
           color: ${c.text};
           white-space: nowrap;
+          font-weight: 500;
           transition: color 0.25s ease;
+          letter-spacing: -0.01em;
         }
 
         .jb-credit-chip:hover .credit-text {
@@ -1314,15 +1292,20 @@
         }
 
         .credit-name {
-          font-weight: 600;
+          font-weight: 700;
           background: linear-gradient(135deg, ${c.primary}, ${c.secondary});
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          transition: text-decoration-color 0.2s ease;
+        }
+
+        .jb-credit-chip:hover .credit-name {
+          text-decoration-color: ${c.primary};
         }
 
         .jb-credit-chip:focus {
-          outline: 2px solid ${c.primary};
+          outline: 2px solid ${c.secondary};
           outline-offset: 2px;
         }
 `;
@@ -1354,7 +1337,12 @@
         styles += `
         .jb-credit-chip {
           background: transparent;
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
           border: none;
+          box-shadow: none;
+          filter: none;
+          overflow: visible;
           padding: 0;
           border-radius: 0;
         }
@@ -1362,14 +1350,34 @@
           transform: none;
           box-shadow: none;
         }
+        .jb-credit-chip:hover .credit-text {
+          color: ${c.text};
+        }
         .credit-name {
+          background: linear-gradient(90deg, ${c.primary} 0%, ${c.secondary} 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          background-repeat: repeat;
+          background-size: 100% 100%;
+          background-position: 0% 50%;
           text-decoration: underline;
-          text-decoration-color: ${c.primary}40;
+          text-decoration-color: transparent;
           text-underline-offset: 2px;
           transition: text-decoration-color 0.2s ease;
         }
         .jb-credit-chip:hover .credit-name {
+          text-decoration-color: transparent;
+        }
+        .credit-name:hover {
+          background-image: linear-gradient(90deg, ${c.primary} 0%, ${c.secondary} 25%, ${c.primary} 50%, ${c.secondary} 75%, ${c.primary} 100%);
+          background-size: 200% 100%;
+          animation: subtleNameShift 2.4s linear infinite;
           text-decoration-color: ${c.primary};
+        }
+        @keyframes subtleNameShift {
+          0% { background-position: 0% 50%; }
+          100% { background-position: -200% 50%; }
         }
         .logo-icon { display: none; }
         .animated-border { display: none; }
@@ -1391,10 +1399,10 @@
           width: 40px !important;
           height: 40px !important;
           border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+          box-shadow: none;
         }
         .jb-credit-chip:hover .logo-icon {
-          transform: scale(1.08) rotate(2deg);
+          transform: scale(1.12);
         }
         .credit-text {
           font-size: 0.6875rem;
@@ -1414,10 +1422,10 @@
           width: 36px !important;
           height: 36px !important;
           border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          box-shadow: none;
         }
         .jb-credit-chip:hover .logo-icon {
-          transform: scale(1.1) rotate(3deg);
+          transform: scale(1.12);
         }
         .credit-text { display: none; }
 `;
@@ -1434,7 +1442,7 @@
           width: 28px !important;
           height: 28px !important;
           border-radius: 5px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+          box-shadow: none;
         }
         .jb-credit-chip:hover .logo-icon {
           transform: scale(1.12);
