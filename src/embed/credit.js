@@ -604,6 +604,7 @@
 
   function scheduleHeartbeat(element) {
     if (!element || element.hasAttribute('data-no-track')) return;
+    if (navigator && navigator.globalPrivacyControl === true) return;
     const isDataOnly = (element.getAttribute('data-variant') || 'prominent') === 'data-only';
 
     const state = window.__jbHeartbeat || {
@@ -749,6 +750,7 @@
       // Skip if tracking disabled
       if (element && element.hasAttribute && element.hasAttribute('data-no-track')) return;
       if (!element && currentScript && currentScript.hasAttribute('data-no-track')) return;
+      if (navigator && navigator.globalPrivacyControl === true) return;
 
       // Skip localhost/development
       const host = window.location.hostname;

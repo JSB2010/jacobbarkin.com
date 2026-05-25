@@ -84,6 +84,7 @@ Make sure this `.d.ts` file is included by your `tsconfig.json` (e.g., in a `src
 - For React/Next.js, only inject the script on the client (e.g., `useEffect`) to avoid SSR issues.
 - If the site uses a strict Content Security Policy, allow `https://jacobbarkin.com` in `script-src`, `connect-src`, and `img-src` or set `data-no-track` to disable analytics/heartbeat.
 - `data-no-track` disables both analytics and heartbeat pings.
+- The embed honors Global Privacy Control by disabling analytics and heartbeat telemetry when that browser signal is present.
 - `data-no-rules` disables remote rule/custom-content evaluation while keeping analytics and heartbeat enabled.
 - `data-effects="none"` removes hover glow/border/pulse markup for performance-sensitive host pages.
 - The public `/embed/credit.js` file is the recommended install URL for existing and new sites. The auxiliary immutable `/embed/credit.v3.js` file is generated from the same source, but snippets should continue using `/embed/credit.js`; run `npm run build:embed` after runtime changes.
@@ -127,6 +128,10 @@ By default, the embed tracks **impressions** (when visible) and **clicks**. It a
 - Heartbeat pings (about once per hour while the page is open/visible) to track active sites
 
 Disable analytics per-embed with `data-no-track`.
+
+The embed honors Global Privacy Control by disabling analytics and heartbeat telemetry when that
+browser signal is present. More detail is available in the Privacy Policy:
+https://jacobbarkin.com/privacy
 
 ### Remote Rules
 

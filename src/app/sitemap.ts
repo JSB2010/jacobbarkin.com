@@ -34,6 +34,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      path: '/privacy',
+      lastModified: new Date('2026-05-25'),
+      changeFrequency: 'yearly' as const,
+      priority: 0.4,
+    },
+    {
       path: '/public-transportation',
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,

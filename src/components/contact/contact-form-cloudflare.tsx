@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -326,6 +327,14 @@ export function ContactFormCloudflare() {
               </>
             )}
           </Button>
+          <p className="text-xs leading-5 text-muted-foreground">
+            By sending a message, you agree that the information submitted here may be stored and used to
+            respond to you as described in the{" "}
+            <Link href="/privacy" className="font-medium text-primary underline-offset-4 hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </form>
       )}
     </div>

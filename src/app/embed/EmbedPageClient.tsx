@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -224,7 +225,9 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
               </div>
               <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-no-track</code>
-                <p className="text-sm text-muted-foreground mt-1">Disable analytics tracking for this embed</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Disable analytics tracking for this embed. The embed also honors Global Privacy Control for telemetry.
+                </p>
               </div>
               <div className="border rounded-lg p-3 sm:p-4">
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm">data-site / data-page-group / data-experiment</code>
@@ -299,6 +302,21 @@ export default function EmbedPageClient({ instructionsText }: EmbedPageClientPro
               <span><strong className="text-foreground">Optional analytics</strong> - Track impressions and clicks, or disable with <code className="bg-muted px-1 rounded">data-no-track</code>.</span>
             </li>
           </ul>
+        </Card>
+
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3">Privacy and Tracking</h2>
+          <p className="text-sm sm:text-base text-muted-foreground leading-7">
+            The embed sends operational telemetry by default, including page URL, referrer, UTM parameters,
+            viewport/device context, language, timezone offset, embed configuration, impressions, clicks,
+            errors, and heartbeat events. Site owners can disable telemetry with{" "}
+            <code className="bg-muted px-1 rounded">data-no-track</code>, and visitors using Global Privacy
+            Control will not send embed analytics or heartbeat telemetry. See the{" "}
+            <Link href="/privacy" className="font-medium text-primary underline-offset-4 hover:underline">
+              Privacy Policy
+            </Link>{" "}
+            for details.
+          </p>
         </Card>
 
         <Card className="p-4 sm:p-6">
