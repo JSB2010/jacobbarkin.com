@@ -41,7 +41,7 @@
     "analyze-bundle": "ANALYZE=true bun run build"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.4.2",
+    "@clerk/nextjs": "^7.4.3",
     "@hookform/resolvers": "^5.4.0",
     "@opennextjs/cloudflare": "^1.19.11",
     "@radix-ui/react-accordion": "^1.2.12",
