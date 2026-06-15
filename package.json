@@ -41,7 +41,7 @@
     "analyze-bundle": "ANALYZE=true bun run build"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.4.2",
+    "@clerk/nextjs": "^7.5.2",
     "@hookform/resolvers": "^5.4.0",
     "@opennextjs/cloudflare": "^1.19.11",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -57,7 +57,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
-    "lucide-react": "^1.17.0",
+    "lucide-react": "^1.18.0",
     "next": "16.2.7",
     "next-themes": "^0.4.6",
     "node-fetch": "^3.3.2",
@@ -118,7 +118,7 @@
   ],
   "optionalDependencies": {
     "@ast-grep/napi-linux-x64-gnu": "^0.43.0",
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.0",
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.1",
     "@unrs/resolver-binding-linux-x64-gnu": "^1.12.2",
     "lightningcss-linux-x64-gnu": "^1.32.0"
   }
