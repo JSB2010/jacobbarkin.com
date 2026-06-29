@@ -36,11 +36,11 @@ export default function SignInPage() {
             },
             variables: {
               colorPrimary: "hsl(var(--primary))",
-              colorText: "hsl(var(--foreground))",
-              colorTextSecondary: "hsl(var(--muted-foreground))",
+              colorForeground: "hsl(var(--foreground))",
+              colorMutedForeground: "hsl(var(--muted-foreground))",
               colorBackground: "hsl(var(--card))",
-              colorInputBackground: "hsl(var(--background))",
-              colorInputText: "hsl(var(--foreground))",
+              colorInput: "hsl(var(--background))",
+              colorInputForeground: "hsl(var(--foreground))",
               borderRadius: "0.75rem",
             },
           }}
