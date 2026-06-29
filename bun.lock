@@ -48,7 +48,7 @@
         "dotenv": "^17.4.2",
         "eslint": "^10.5.0",
         "eslint-plugin-react-hooks": "^7.1.1",
-        "nodemailer": "^8.0.10",
+        "nodemailer": "^9.0.1",
         "shadcn-ui": "^0.9.5",
         "sharp": "^0.35.1",
         "tailwindcss": "^4.3.1",
@@ -1176,7 +1176,7 @@
 
     "node-releases": ["node-releases@2.0.27", "", {}, ""],
 
-    "nodemailer": ["nodemailer@8.0.10", "", {}, "sha512-BLFuSth7QtHOkBzyqTehWWyub0NTRDuK2Q2SQfnGLsrJnzyU+Yeh4WpV1eZGuARFj1xQJHIdnTuJZLP+b9R1GQ=="],
+    "nodemailer": ["nodemailer@9.0.1", "", {}, "sha512-Gwv8SQewT616ZM/URn0H54b8PWo/Wum7md3EW2aWy1lO27+WZCX+Xyak3J+NlmHUjDh5ME+uesJUDRbR3Ye8Bw=="],
 
     "npm-run-path": ["npm-run-path@4.0.1", "", { "dependencies": { "path-key": "^3.0.0" } }, ""],
 
