@@ -10,7 +10,6 @@ import {
   SiAppwrite,
   SiReact,
   SiFirebase,
-  SiOpenai,
   SiNextdotjs,
   SiTailwindcss,
   SiTypescript,
@@ -80,7 +79,7 @@ export default function AboutPage() {
     { title: "Google Cloud", icon: <SiGooglecloud className="h-6 w-6" /> },
     { title: "Appwrite", icon: <SiAppwrite className="h-6 w-6" /> },
     { title: "Cloudflare Workers", icon: <SiCloudflare className="h-6 w-6" /> },
-    { title: "AI Integration", icon: <SiOpenai className="h-6 w-6" /> },
+    { title: "AI Integration", icon: <FaLaptopCode className="h-6 w-6" /> },
     { title: "VM Management", icon: <FaServer className="h-6 w-6" /> },
     { title: "Accessibility", icon: <FaUniversalAccess className="h-6 w-6" /> },
     { title: "User Data Protection", icon: <FaUserShield className="h-6 w-6" /> }
