@@ -91,7 +91,7 @@
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0",
-    "wrangler": "^4.107.0",
+    "wrangler": "^4.110.0",
     "ws": "8.21.0"
   },
   "overrides": {
