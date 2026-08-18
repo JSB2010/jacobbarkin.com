@@ -12,12 +12,19 @@
         "statusBar.background": "#3976ab",
         "statusBar.foreground": "#e7e7e7",
         "statusBarItem.hoverBackground": "#5290c5",
-        "statusBarItem.remoteBackground": "#3976ab",
+        "statusBarItem.remoteBackground": "#df9fc1",
         "statusBarItem.remoteForeground": "#e7e7e7",
         "titleBar.activeBackground": "#3976ab",
         "titleBar.activeForeground": "#e7e7e7",
         "titleBar.inactiveBackground": "#3976ab99",
-        "titleBar.inactiveForeground": "#e7e7e799"
+        "titleBar.inactiveForeground": "#e7e7e799",
+        "activityBarTop.activeBackground": "#5290c5",
+        "activityBarTop.background": "#5290c5",
+        "activityBarTop.foreground": "#15202b",
+        "activityBarTop.inactiveForeground": "#15202b99",
+        "commandCenter.foreground": "#e7e7e7",
+        "statusBar.debuggingBackground": "#3976ab",
+        "statusBar.debuggingForeground": "#e7e7e7"
     },
     "peacock.color": "#3976ab",
     "sonarlint.connectedMode.project": {
