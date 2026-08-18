@@ -10,7 +10,6 @@ updates:
       timezone: "America/Denver"
     labels:
       - "dependencies"
-      - "npm"
     open-pull-requests-limit: 20
     commit-message:
       prefix: "deps"
@@ -79,6 +78,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "framer-motion"
         update-types: ["version-update:semver-major"]
+      # Next.js 16 and typescript-eslint 8 require TypeScript below 6.1/7.
+      # Keep receiving compatible 6.0.x patch updates.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -90,7 +95,6 @@ updates:
       timezone: "America/Denver"
     labels:
       - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "ci"
     groups:
