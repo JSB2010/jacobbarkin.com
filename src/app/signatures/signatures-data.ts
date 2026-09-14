@@ -154,6 +154,118 @@ export const signatures: SignatureDefinition[] = [
 </div>`
   },
   {
+    id: "safe-online-exam",
+    label: "Professional Safe Online Exam (Outlook-optimized)",
+    organization: "Safe Online Exam",
+    rawPath: "/signatures/safe-online-exam/html",
+    description: "Polished professional Safe Online Exam signature with full contact information and both website links.",
+    html: `<div data-spark-custom-html="true"><!-- Jacob Barkin – Professional Safe Online Exam Signature -->
+  <style>
+    /* Dark mode overrides for clients that support prefers-color-scheme (Apple Mail, iOS Mail, some webmail) */
+    @media (prefers-color-scheme: dark) {
+      .jb-soe-card { background: transparent !important; }
+      .jb-soe-card .jb-soe-name { color: #f9fafb !important; }
+      .jb-soe-card .jb-soe-muted { color: #e5e7eb !important; }
+      .jb-soe-card .jb-soe-subtle { color: #d1d5db !important; }
+      .jb-soe-card .jb-soe-divider { background: #374151 !important; }
+      .jb-soe-card a { color: #60a5fa !important; }
+      .jb-soe-card .jb-soe-gradient-bar { background: linear-gradient(180deg, #60a5fa 0%, #34d399 100%) !important; }
+      .jb-soe-card .jb-icon { filter: invert(1) brightness(1.25) !important; }
+      .jb-soe-card .jb-social-github { background: #111827 !important; }
+      .jb-soe-card .jb-social-linkedin { background: rgb(50, 114, 174) !important; }
+      .jb-soe-card .jb-social-img { filter: none !important; }
+    }
+  </style>
+  <!--[if mso]>
+  <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding:0;">
+  <![endif]-->
+  <table cellpadding="0" cellspacing="0" role="presentation" class="jb-soe-card" style="border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width:480px; background:transparent; border:0; border-radius:8px;">
+    <tbody>
+      <tr>
+        <td class="jb-soe-gradient-bar" style="width:4px; background:linear-gradient(180deg, #3b82f6 0%, #10b981 100%); border-radius:6px 0 0 6px; mso-line-height-rule:exactly;">
+          <!--[if mso]><div style="width:4px; background:#3b82f6;">&nbsp;</div><![endif]-->
+        </td>
+        <td style="padding:12px 16px;">
+          <!-- Name and Title -->
+          <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+            <tbody>
+              <tr>
+                <td style="padding-right:12px; vertical-align:top;">
+                  <img src="https://jacobbarkin.com/images/Updated%20logo.png" width="48" height="48" alt="Jacob Barkin" style="display:block; border:0; outline:none; border-radius:6px;">
+                </td>
+                <td style="vertical-align:top;">
+                  <div class="jb-soe-name" style="font-size:18px; line-height:1.3; font-weight:700; color:#3b82f6; margin:0; padding:0;">Jacob Barkin</div>
+                  <div class="jb-soe-muted" style="font-size:13px; line-height:1.4; color:#6b7280; font-weight:500; margin:0; padding:3px 0 0 0;">Student Developer · Safe Online Exam</div>
+                  <div class="jb-soe-subtle" style="font-size:12px; line-height:1.4; color:#9ca3af; font-weight:400; margin:0; padding:2px 0 0 0;">Denver, CO</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Divider -->
+          <div style="height:8px; line-height:8px; font-size:8px;">&nbsp;</div>
+          <div class="jb-soe-divider" style="height:1px; background:#e5e7eb; margin:0; mso-line-height-rule:exactly;"></div>
+          <div style="height:8px; line-height:8px; font-size:8px;">&nbsp;</div>
+
+          <!-- Contact Info -->
+          <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+            <tbody>
+              <tr>
+                <td class="jb-soe-muted" style="font-size:13px; line-height:1.8; color:#6b7280; padding:0 0 3px 0;">
+                  <img class="jb-icon" src="${SITE_BASE_URL}/icons/mail.png" width="14" height="14" alt="Email" style="vertical-align:middle; margin-right:7px; display:inline-block; border:0; outline:none;">
+                  <a href="mailto:{{EMAIL}}" style="color:#374151; text-decoration:none; font-weight:500;">{{EMAIL}}</a>
+                </td>
+              </tr>
+              <tr>
+                <td class="jb-soe-muted" style="font-size:13px; line-height:1.8; color:#6b7280; padding:0 0 3px 0;">
+                  <img class="jb-icon" src="${SITE_BASE_URL}/icons/phone.png" width="14" height="14" alt="Phone" style="vertical-align:middle; margin-right:7px; display:inline-block; border:0; outline:none;">
+                  <a href="tel:+13033356920" style="color:#374151; text-decoration:none; font-weight:500;">(303) 335-6920</a>
+                </td>
+              </tr>
+              <tr>
+                <td class="jb-soe-muted" style="font-size:13px; line-height:1.8; color:#6b7280; padding:0 0 3px 0;">
+                  <img src="https://jacobbarkin.com/favicon.ico" width="14" height="14" alt="jacobbarkin.com" style="vertical-align:middle; margin-right:7px; display:inline-block; border:0; outline:none; border-radius:3px;">
+                  <a href="https://jacobbarkin.com" style="color:#3b82f6; text-decoration:none; font-weight:500;">jacobbarkin.com</a>
+                </td>
+              </tr>
+              <tr>
+                <td class="jb-soe-muted" style="font-size:13px; line-height:1.8; color:#6b7280; padding:0;">
+                  <img src="https://safeonlineexam.com/brand/safe-online-exam-icon.png" width="14" height="14" alt="safeonlineexam.com" style="vertical-align:middle; margin-right:7px; display:inline-block; border:0; outline:none; border-radius:3px;">
+                  <a href="https://safeonlineexam.com" style="color:#3b82f6; text-decoration:none; font-weight:500;">safeonlineexam.com</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Social Links -->
+          <div style="height:10px; line-height:10px; font-size:10px;">&nbsp;</div>
+
+          <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+            <tbody>
+              <tr valign="middle">
+                <td style="padding-right:8px; vertical-align:middle;">
+                  <a href="https://github.com/jsb2010" aria-label="GitHub: jsb2010" title="GitHub" class="jb-social-github" style="display:inline-block; background:#111827; border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                    <img class="jb-social-img" src="https://user-images.githubusercontent.com/3369400/139447912-e0f43f33-6d9f-45f8-be46-2df5bbc91289.png" width="16" height="16" alt="GitHub" style="display:block; border:0; outline:none;">
+                  </a>
+                </td>
+                <td style="vertical-align:middle;">
+                  <a href="https://www.linkedin.com/in/jacobbarkin" aria-label="LinkedIn: jacobbarkin" title="LinkedIn" class="jb-social-linkedin" style="display:inline-block; background:rgb(50, 114, 174); border-radius:6px; padding:6px; text-decoration:none; line-height:0;">
+                    <img class="jb-social-img" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" width="16" height="16" alt="LinkedIn" style="display:block; border:0; outline:none;">
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <!--[if mso]>
+  </td></tr></table>
+  <![endif]-->
+</div>`
+  },
+  {
     id: "professional",
     label: "Professional (Outlook-optimized)",
     organization: "Universal",
