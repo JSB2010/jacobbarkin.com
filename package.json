@@ -81,7 +81,7 @@
     "baseline-browser-mapping": "^2.11.22",
     "better-sqlite3": "^13.0.3",
     "critters": "^0.0.25",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.0",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "nodemailer": "^10.0.10",
