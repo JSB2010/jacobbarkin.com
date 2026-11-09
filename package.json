@@ -41,7 +41,7 @@
     "analyze-bundle": "ANALYZE=true bun run build"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.9.19",
+    "@clerk/nextjs": "^7.9.25",
     "@hookform/resolvers": "^6.0.2",
     "@opennextjs/cloudflare": "^1.20.13",
     "@radix-ui/react-accordion": "^1.3.1",
@@ -57,7 +57,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.43.0",
-    "lucide-react": "^1.61.0",
+    "lucide-react": "^1.70.0",
     "next": "16.4.5",
     "next-themes": "^0.4.6",
     "node-fetch": "^3.3.2",
@@ -65,11 +65,11 @@
     "react-dom": "^19.3.1",
     "react-hook-form": "^7.91.0",
     "react-icons": "^5.7.0",
-    "resend": "^6.34.1",
+    "resend": "^6.37.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.6.7",
-    "zustand": "^5.0.16"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "16.4.5",
@@ -117,9 +117,9 @@
     "workerd"
   ],
   "optionalDependencies": {
-    "@ast-grep/napi-linux-x64-gnu": "^0.51.0",
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.3",
-    "@unrs/resolver-binding-linux-x64-gnu": "^1.12.2",
+    "@ast-grep/napi-linux-x64-gnu": "^0.51.1",
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.5",
+    "@unrs/resolver-binding-linux-x64-gnu": "^1.13.0",
     "lightningcss-linux-x64-gnu": "^1.33.0"
   }
 }
