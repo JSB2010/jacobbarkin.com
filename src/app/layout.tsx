@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import JsonLd from "@/components/json-ld";
+import { MountainBackground } from "@/components/mountain-background";
 
 const clerkPublishableKey =
   process.env.CLERK_PUBLISHABLE_KEY ||
@@ -107,13 +108,14 @@ export const metadata: Metadata = {
 function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased min-h-screen bg-background`}>
+      <body className={`${inter.variable} antialiased min-h-screen`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           storageKey="jacob-barkin-theme"
         >
+          <MountainBackground />
           <div className="relative flex min-h-screen flex-col">
             <Header />
             <main className="flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8">{children}</main>
